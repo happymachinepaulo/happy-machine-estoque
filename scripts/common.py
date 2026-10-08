@@ -10,11 +10,12 @@ class RemoteError(SystemExit):
         super().__init__(f'Supabase respondeu HTTP {status} em {path.split("?")[0]}. Revise a configuração e execute novamente.')
 
 def load_env():
-    path=ROOT/'.env.local'
-    if path.exists():
-        for line in path.read_text(encoding='utf-8-sig').splitlines():
-            if line.strip() and not line.startswith('#') and '=' in line:
-                k,v=line.split('=',1);os.environ.setdefault(k.strip(),v.strip().strip('"').strip("'"))
+    for name in ('.env.local','.env'):
+        path=ROOT/name
+        if path.exists():
+            for line in path.read_text(encoding='utf-8-sig').splitlines():
+                if line.strip() and not line.startswith('#') and '=' in line:
+                    k,v=line.split('=',1);os.environ.setdefault(k.strip(),v.strip().strip('"').strip("'"))
 
 def remote(path,method='GET',data=None,service=True,headers=None):
     load_env();url=os.environ.get('SUPABASE_URL','').rstrip('/')

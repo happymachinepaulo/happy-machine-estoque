@@ -41,6 +41,8 @@ def remote(path, method='GET', data=None, token=None, service=False, raw=False, 
             raise APIError('O serviço de e-mail não conseguiu enviar o código. O administrador precisa revisar o SMTP no Supabase (servidor, porta, remetente e senha de app). Aguarde 60 segundos antes de tentar novamente.',503) from None
         try: detail=json.loads(e.read())
         except Exception: detail={}
+        if path.startswith('/storage/v1/object/') and (detail.get('code')=='NoSuchKey' or str(detail.get('statusCode'))=='404'):
+            raise APIError('Arquivo da foto não encontrado no Storage privado.',404) from None
         msg=detail.get('message') or detail.get('msg') or detail.get('error_description') or 'Não foi possível concluir a operação.'
         status=e.code if e.code in (400,401,403,404,409,422,429) else 502
         raise APIError(msg,status) from None
@@ -262,6 +264,23 @@ class handler(BaseHTTPRequestHandler):
             return self.respond(json.dumps(content,ensure_ascii=False).encode(),ctype='application/json',extra={'Content-Disposition':'attachment; filename="estoque_online.json"'})
         raise APIError('Rota não encontrada.',404)
     def post(self,path):
+        if path=='/api/photos/urls':
+            ids=self.json_body().get('ids',[])
+            if not isinstance(ids,list) or len(ids)>500:raise APIError('Lista de fotos inválida.')
+            ids=list(dict.fromkeys(integer(value,1) for value in ids))
+            if not ids:return self.respond({})
+            rows=self.rows('photos',select='id,storage_path',id='in.('+','.join(map(str,ids))+')')
+            paths=[r['storage_path'] for r in rows]
+            if not paths:return self.respond({})
+            signed=remote('/storage/v1/object/sign/stock-photos','POST',{'paths':paths,'expiresIn':600},token=self.auth_token)
+            by_path={r['path']:r for r in signed}
+            base=settings()[0]+'/storage/v1'
+            result={}
+            for row in rows:
+                item=by_path.get(row['storage_path'],{})
+                url=item.get('signedURL') or item.get('signedUrl')
+                if url and not item.get('error'):result[str(row['id'])]=base+url
+            return self.respond(result)
         if path=='/api/products' or re.fullmatch(r'/api/products/\d+/update',path):
             fields,photo=self.multipart();uploaded=None
             for k in ('quantity','min_quantity','existing_photo_id'):

@@ -87,6 +87,12 @@ Executar `python scripts/check_cloud.py` para verificar cadastro fechado, bucket
 
 ## Backup
 
+Se os registros foram importados, mas as fotos não aparecem, execute `python scripts/repair_photo_storage.py` na raiz com `.env.local` ou `.env` configurado. O script transfere somente fotos preparadas cujos caminhos ainda correspondem aos registros atuais. Não altera o catálogo, não sobrescreve arquivos existentes e verifica SHA-256 após cada transferência. O bucket continua privado.
+
+As imagens da interface usam links assinados emitidos em lote após confirmar senha e e-mail. O navegador baixa diretamente do Storage privado; os links valem por 10 minutos. A API antiga de fotos continua disponível para compatibilidade. Quem tiver um desses links poderá utilizá-lo até expirar, mesmo após o usuário sair.
+
+Novas entregas de dados podem ser aplicadas pelo SQL Editor sem substituir o banco inteiro. O arquivo `migration/adicoes_paulo_20261008/005_fotos_paulo_revisao.sql` adiciona 28 fotos apenas em revisão (21 exemplos e 7 complementares), com nomes provisórios e sem criar produtos ou alterar quantidades. Os objetos correspondentes devem estar no bucket antes de executar o SQL. Essa entrega é privada e não vai ao GitHub nem à Vercel.
+
 A exportação JSON da interface contém dados e referências das fotos; não contém os arquivos de imagem. Manter também backup dos objetos privados do Storage e do PostgreSQL. O SQLite original e o snapshot privado preservam as imagens anteriores à migração.
 
 ## Quando não receber o e-mail
