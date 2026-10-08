@@ -1,0 +1,19 @@
+# A raiz inteira pode ser enviada: dados locais e migração não entram no deploy.
+local/
+.private/
+entrega/
+migration/
+supabase/
+scripts/
+tests/
+.env*
+!.env.example
+**/__pycache__/
+**/*.pyc
+**/*.db
+**/*.db-wal
+**/*.db-shm
+**/*.zip
+*.md
+*.bat
+.git/

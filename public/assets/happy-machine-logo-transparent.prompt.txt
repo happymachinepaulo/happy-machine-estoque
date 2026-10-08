@@ -1,0 +1,5 @@
+Tool: built-in ImageGen
+Source: happy-machine-logo.png
+Output: happy-machine-logo-transparent.png (RGBA, transparent background)
+
+Use case: background-extraction. Edit target: the attached Happy Machine logo. Remove only the external white background, making it genuinely transparent with alpha. Preserve the original red bear, black outlines, face, paws, multicolored HAPPY letters and exact MACHINE text below, horizontal rules, original composition and proportions. Preserve white fills that are integral to the bear's ears and muzzle and letter interiors. Do not redesign, restyle, recolor, add shadows, add text, or change lettering. Clean cutout suitable for a dark navy website header; keep original logo legible with tight framing and minimal transparent padding.

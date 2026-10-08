@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Happy Machine • Estoque</title>
+  <link rel="stylesheet" href="/style.css?v=20261008-2">
+  <link rel="stylesheet" href="/brand.css?v=20261008-2"><link rel="stylesheet" href="/auth.css">
+  <link rel="icon" href="/assets/happy-machine-logo.png" type="image/png">
+  <meta name="theme-color" content="#f5f5f3">
+  <link rel="preload" href="/assets/Manrope.ttf" as="font" type="font/ttf" crossorigin>
+</head>
+<body data-auth="locked">
+<section id="authRoot" aria-label="Acesso ao estoque"><aside class="authStory"><div class="authBrand"><img src="/assets/happy-machine-logo-transparent.png" alt="Happy Machine"><span>Happy Machine</span></div><div><h1>Cada peça.<br>Cada movimento.<br><span>Sob controle.</span></h1><p>Seu estoque e sua equipe conectados, com acesso reservado e autenticação em duas etapas.</p></div><small>Estoque &amp; manutenção</small></aside><div class="authMain"><div class="authCard"><div class="authEyebrow">Acesso reservado à equipe</div><div id="authMessage" class="authMessage" role="status" aria-live="polite">Conectando…</div><div id="loginStep"><h2>Bem-vindo de volta.</h2><p>Entre com sua conta para cuidar do estoque.</p><form id="loginForm"><label class="field"><span>E-mail</span><input id="authEmail" type="email" autocomplete="username" required placeholder="seu@email.com"></label><label class="field"><span>Senha</span><input id="authPassword" type="password" autocomplete="current-password" required placeholder="Sua senha de acesso"></label><button class="btn primary" type="submit">Entrar <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></form><div class="authFoot">Contas são criadas pelo administrador.<br>Após a senha, confirme o código do seu autenticador.</div></div><div id="mfaStep" hidden><h2 id="mfaTitle">Confirme que é você</h2><p id="mfaDescription"></p><div id="mfaSetup" hidden><img id="mfaQr" alt="QR code para configurar o aplicativo autenticador"><details><summary>Configurar usando uma chave manual</summary><code id="mfaSecret"></code></details></div><form id="mfaCodeForm"><label class="field"><span>Código do autenticador</span><input id="authCode" class="mfaCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required placeholder="000000"></label><button class="btn primary" type="submit">Verificar e entrar</button></form><button id="authBack" class="textBtn" type="button">Voltar para o login</button></div></div></div></section>
+<a class="skipLink" href="#mainContent">Ir para o conteúdo</a>
+<svg class="svgDefinitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Zm-9 5 9 5 9-5M12 13v8M7.5 5.5l9 5"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 16 5-5 4 4 4-5 5 6"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 7h16m-4-4 4 4-4 4M21 17H5m4-4-4 4 4 4"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 5h12M9 12h12M9 19h12M3 5h1M3 12h1M3 19h1"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7a9 9 0 0 0-15-1L3 9m0-5v5h5M4 17a9 9 0 0 0 15 1l2-3m0 5v-5h-5"/></symbol>
+  <symbol id="i-warning" viewBox="0 0 24 24"><path d="m12 3 10 18H2L12 3Zm0 6v5m0 3v1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16M8 4v6m8 4v6"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v10H3V6Z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+</defs></svg>
+<header class="topbar">
+  <div class="brand"><div class="logoCard"><img class="brandLogo" src="/assets/happy-machine-logo-transparent.png" alt="Happy Machine"></div><div class="brandText"><strong>Happy Machine</strong><small>Estoque &amp; manutenção</small></div></div>
+  <nav aria-label="Navegação principal">
+    <button class="nav active" data-view="estoque" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg> Estoque</button>
+    <button class="nav" data-view="fotos"><svg class="icon" aria-hidden="true"><use href="#i-photo"/></svg> Revisar fotos <small id="photoBadge"></small></button>
+    <button class="nav" data-view="historico"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg> Movimentações</button>
+    <button class="nav" data-view="dados"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg> Backup e dados</button>
+    <button id="usersNav" class="nav" data-view="users" hidden><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> Usuários</button>
+  </nav>
+  <button id="commandButton" class="headerSearch" aria-label="Buscar no catálogo"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><kbd>/</kbd></button>
+<div class="accountControls"><span id="accountName"></span><button id="logoutButton" class="textBtn" type="button">Sair</button></div></header>
+
+<main class="container" id="mainContent" tabindex="-1">
+  <div class="workspaceBar"><span>Happy Machine <span class="crumbDivider">/</span> <strong id="workspaceTitle">Estoque</strong></span><span id="headerDate"></span></div>
+  <section id="view-estoque" class="view active">
+    <div class="pagehead">
+      <div><h1>Estoque de peças<span class="titlePeriod">.</span></h1><p>Tudo no lugar. Cada peça, cada movimento.</p></div>
+      <div class="headActions"><a href="/api/export.csv" class="btn"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg> Exportar lista</a><button id="btnNovo" class="btn primary"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg> Nova peça</button></div>
+    </div>
+    <div class="overview"><div id="stats" class="stats"></div><button id="heroReviewButton" class="reviewSpotlight"><span class="spotlightIcon"><svg class="icon" aria-hidden="true"><use href="#i-photo"/></svg></span><span class="spotlightText"><strong>Uma foto. A peça certa.</strong><span>Organize as imagens do catálogo</span></span><span class="spotlightCount" id="heroReviewCount"></span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></div>
+    <div id="reviewNotice" class="reviewNotice hidden"></div>
+    <div class="cataloguePanel"><div class="filterTitle"><span><svg class="icon" aria-hidden="true"><use href="#i-filter"/></svg> Encontre sua peça <small id="activeFilterCount"></small></span><button id="resetFilters" class="textBtn">Limpar filtros</button></div><div class="toolbar catalogueToolbar">
+      <label class="search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="busca" type="search" placeholder="Buscar peça, código ou categoria…" aria-label="Buscar peças"><kbd>/</kbd></label>
+      <select id="categoria" aria-label="Filtrar categoria"><option value="">Todas as categorias</option></select>
+      <select id="statusEstoque" aria-label="Situação dos itens"><option value="todos">Todos os itens</option><option value="confirmado">Itens conferidos</option><option value="pendente">Itens para revisar</option></select>
+      <label class="check"><input id="somenteBaixo" type="checkbox"> Estoque baixo</label>
+      <button id="btnRecarregar" class="btn" aria-label="Atualizar estoque"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg></button>
+    </div><div id="categoryChips" class="categoryChips" aria-label="Categorias rápidas"></div></div>
+    <div class="collectionHead"><div><h2>Catálogo de peças</h2><span id="resultCount" class="muted" aria-live="polite"></span></div><div class="collectionTools"><label class="check"><input id="semFoto" type="checkbox"> Sem foto</label><select id="sortProducts" aria-label="Ordenar peças"><option value="name">Nome A–Z</option><option value="quantity-desc">Maior quantidade</option><option value="quantity-asc">Menor quantidade</option><option value="updated">Atualizados recentemente</option></select><div class="viewSwitch"><button id="gridView" class="active" aria-label="Ver em cartões" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg></button><button id="listView" aria-label="Ver em lista" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg></button></div></div></div>
+    <div id="products" class="products" aria-busy="false"></div>
+    <div id="emptyProducts" class="empty hidden"><strong>Nenhuma peça encontrada</strong><p>Experimente outro nome ou ajuste os filtros.</p><button id="clearFilters" class="btn">Limpar filtros</button></div>
+    <div class="catalogueFoot"><span>Itens para conferir aparecem sinalizados e ficam fora do total de unidades.</span><span id="lastSync" role="status"></span></div>
+  </section>
+
+  <section id="view-fotos" class="view">
+    <div class="pagehead"><div><h1>Revisão de fotos<span class="titlePeriod">.</span></h1><p>Identifique, associe ou cadastre uma peça a partir da imagem.</p></div><div class="sectionEmblem"><svg class="icon" aria-hidden="true"><use href="#i-photo"/></svg></div></div>
+    <div id="reviewSummary" class="reviewSummary"></div>
+    <datalist id="photoProductList"></datalist>
+    <div class="panel toolbar"><label class="search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="photoSearch" type="search" placeholder="Buscar imagem, peça ou observação…" aria-label="Buscar fotos"></label><select id="photoStatus" aria-label="Situação das fotos"><option value="pendente">Para revisar</option><option value="confirmada">Associadas às peças</option><option value="oculta">Ocultas</option><option value="todas">Todas as fotos</option></select><select id="photoOrigin" aria-label="Origem das fotos"><option value="all">Todas as origens</option><option value="paulo-20261008">Paulo · novas fotos 08/10</option></select><span id="photoCount" class="muted" aria-live="polite"></span></div>
+    <div id="photoReview" class="photoReview"></div>
+    <div id="photoPagination" class="pagination hidden"><button id="photoPrev" class="btn">← Anterior</button><span id="photoPageLabel"></span><button id="photoNext" class="btn">Próxima →</button></div>
+  </section>
+
+  <section id="view-historico" class="view">
+    <div class="pagehead"><div><h1>Movimentações<span class="titlePeriod">.</span></h1><p>A história do seu estoque, movimento por movimento.</p></div><div class="sectionEmblem"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg></div></div>
+    <div class="panel toolbar"><label class="search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="historySearch" type="search" placeholder="Buscar peça, tipo ou observação…" aria-label="Buscar movimentações"></label><select id="historyTypeFilter" aria-label="Tipo de movimentação"><option value="">Todos os movimentos</option><option value="entrada">Entradas</option><option value="saida">Saídas</option><option value="ajuste">Ajustes</option><option value="cadastro">Cadastros</option></select><span class="muted">500 registros mais recentes</span></div>
+    <div class="panel tablebox"><table><thead><tr><th>Data</th><th>Peça</th><th>Tipo</th><th>Alteração</th><th>Antes</th><th>Depois</th><th>Observação</th></tr></thead><tbody id="historyBody"></tbody></table></div>
+  </section>
+
+  <section id="view-dados" class="view">
+    <div class="pagehead"><div><h1>Seu estoque, protegido<span class="titlePeriod">.</span></h1><p>Guarde uma cópia completa ou leve o catálogo para uma planilha.</p></div><div class="sectionEmblem"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></div></div>
+    <div class="dataGrid">
+      <div class="panel dataCard backupCard"><span class="dataIcon"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></span><h2>Uma cópia de tudo.</h2><p>Exporte peças, quantidades, histórico e referências das fotos. As imagens ficam no armazenamento privado do projeto.</p><a class="btn primary" href="/api/backup"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg> Exportar cópia dos dados</a><small>Arquivo JSON com o catálogo, histórico e referências das fotos</small></div>
+      <div class="panel dataCard"><span class="dataIcon"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg></span><h2>Leve para a planilha.</h2><p>Exporte o catálogo para conferir, analisar ou compartilhar com sua equipe.</p><a class="btn" href="/api/export.csv"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg> Exportar catálogo</a><small>Arquivo CSV compatível com Excel</small></div>
+      <div class="panel dataCard dangerPanel"><span class="dataIcon"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg></span><h2>Restaurar uma cópia.</h2><p>Substitui o estoque pelo arquivo escolhido. O estoque atual é salvo antes da restauração.</p><p class="onlineBackupInfo">A restauração é realizada pelo administrador com o procedimento de recuperação do banco e do armazenamento. O backup local original foi preservado.</p></div>
+    </div>
+  </section>
+<section id="view-users" class="view"><div class="pagehead"><div><h1>A equipe<span class="titlePeriod">.</span></h1><p>Crie contas e controle quem pode acessar o estoque.</p></div><div class="sectionEmblem"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></div></div><form id="newUserForm" class="panel usersForm"><label class="field"><span>Nome</span><input id="newUserName" maxlength="100" required placeholder="Nome da pessoa"></label><label class="field"><span>E-mail</span><input id="newUserEmail" type="email" required placeholder="pessoa@email.com"></label><button class="btn primary" type="submit">Criar usuário</button></form><p id="usersMessage" class="muted" role="status" aria-live="polite"></p><div id="userCredential" class="userCredential" hidden><strong>Conta criada: <span id="credentialEmail"></span></strong><p>Guarde a senha e entregue à pessoa autorizada. Ela aparece somente nesta confirmação. O usuário deverá configurar o autenticador no primeiro acesso.</p><code id="credentialPassword"></code><button id="dismissCredential" type="button" class="textBtn">Já guardei a senha</button></div><div class="panel tablebox"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Permissão</th><th>Acesso</th><th>Ações</th></tr></thead><tbody id="usersBody"></tbody></table></div></section></main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<dialog id="productDialog" class="dialog" aria-labelledby="productTitle" aria-describedby="productSubtitle">
+  <form id="productForm" method="dialog">
+    <div class="dialogHead"><div><h2 id="productTitle">Nova peça</h2><p id="productSubtitle">Foto, nome e quantidade.</p></div><button type="button" class="iconBtn closeDialog" aria-label="Fechar formulário">×</button></div>
+    <input id="productId" type="hidden">
+    <div class="formGrid">
+      <label class="field span2"><span>Nome da peça *</span><input id="name" name="name" required maxlength="160" placeholder="Ex.: Sensor grande de Mega"></label>
+      <label class="field"><span>Categoria</span><input id="category" name="category" list="categoryList" maxlength="100" placeholder="Ex.: Sensores"><datalist id="categoryList"></datalist></label>
+      <label id="qtyField" class="field"><span>Quantidade inicial</span><input id="quantity" name="quantity" type="number" min="0" step="1" value="0" required></label>
+      <label class="field"><span>Estoque mínimo</span><input id="min_quantity" name="min_quantity" type="number" min="0" step="1" value="0"></label>
+      <label class="field span2"><span>Observações</span><textarea id="notes" name="notes" rows="3" placeholder="Modelo, aplicação, localização, condição..."></textarea></label>
+      <div class="field span2"><span>Foto</span><div class="photoActions"><label class="btn fileBtn">Escolher foto<input id="photo" name="photo" type="file" accept="image/*" hidden></label><button id="btnCamera" class="btn" type="button">Usar câmera</button><span id="photoName" class="muted">Nenhuma nova foto selecionada</span></div><div id="photoPreviewWrap" class="photoPreviewWrap hidden"><img id="photoPreview" alt="Prévia da foto"></div></div>
+    </div>
+    <div class="dialogActions"><button type="button" class="btn closeDialog">Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
+  </form>
+</dialog>
+
+<dialog id="detailDialog" class="dialog wide" aria-labelledby="detailName">
+  <div class="dialogHead"><div><h2 id="detailName"></h2><p id="detailCategory"></p></div><button type="button" class="iconBtn closeDetail" aria-label="Fechar detalhes">×</button></div>
+  <div class="detailTop">
+    <div id="detailPhotos" class="detailPhotos"></div>
+    <div class="detailInfo">
+      <div class="qtyBig"><span>Quantidade atual</span><strong id="detailQty">0</strong></div>
+      <div id="detailMin" class="muted"></div>
+      <p id="detailNotes"></p>
+      <div id="detailReview" class="reviewNotice hidden"><span>Confira a identificação e a quantidade deste item para incluí-lo no total do estoque.</span><button id="confirmProduct" class="btn primary">Confirmar item e contagem</button></div>
+      <div class="actions"><button id="btnEntrada" class="btn success">+ Entrada</button><button id="btnSaida" class="btn danger">− Saída</button><button id="btnAjuste" class="btn">Ajustar</button><button id="btnEditar" class="btn">Editar</button><button id="btnExcluir" class="btn ghostDanger">Excluir</button></div>
+    </div>
+  </div>
+  <h3>Histórico desta peça</h3><div class="panel tablebox"><table><thead><tr><th>Data</th><th>Tipo</th><th>Alteração</th><th>Antes</th><th>Depois</th><th>Observação</th></tr></thead><tbody id="detailHistory"></tbody></table></div>
+</dialog>
+
+<dialog id="imageDialog" class="dialog imageDialog" aria-label="Visualizador de imagem"><button type="button" id="closeImage" class="iconBtn" aria-label="Fechar imagem">×</button><img id="fullImage" alt="Foto ampliada da peça"><p id="imageCaption"></p></dialog>
+
+<dialog id="movementDialog" class="dialog small" aria-labelledby="movementTitle" aria-describedby="movementProduct">
+  <form id="movementForm" method="dialog">
+    <div class="dialogHead"><div><h2 id="movementTitle">Entrada</h2><p id="movementProduct"></p></div><button type="button" class="iconBtn closeMovement" aria-label="Fechar movimentação">×</button></div>
+    <input id="movementKind" type="hidden">
+    <label id="movementAmountField" class="field"><span>Quantidade</span><input id="movementAmount" type="number" min="1" step="1" value="1"></label>
+    <label id="adjustField" class="field hidden"><span>Nova quantidade total</span><input id="newQuantity" type="number" min="0" step="1"></label>
+    <label class="field"><span>Observação (opcional)</span><input id="movementNote" maxlength="180" placeholder="Ex.: chegou reposição / usado na máquina 4"></label>
+    <div class="dialogActions"><button type="button" class="btn closeMovement">Cancelar</button><button class="btn primary" type="submit">Confirmar</button></div>
+  </form>
+</dialog>
+
+<dialog id="cameraDialog" class="dialog cameraDialog" aria-labelledby="cameraTitle">
+  <div class="dialogHead"><div><h2 id="cameraTitle">Tirar foto</h2><p>Use uma câmera conectada ao computador.</p></div><button type="button" class="iconBtn closeCamera" aria-label="Fechar câmera">×</button></div>
+  <video id="cameraVideo" autoplay playsinline></video>
+  <canvas id="cameraCanvas" class="hidden"></canvas>
+  <div class="dialogActions"><button type="button" class="btn closeCamera">Cancelar</button><button id="capturePhoto" type="button" class="btn primary">Tirar foto</button></div>
+</dialog>
+
+<script src="/assets/supabase.js"></script><script src="/auth.js"></script><script src="/users.js"></script>
+</body>
+</html>
