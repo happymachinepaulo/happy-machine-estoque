@@ -97,6 +97,38 @@ class HttpSecurity(Security):
     def test_no_public_signup_endpoint(self):
         status,_,_=self.request('/api/signup','POST',data=b'{}')
         self.assertIn(status,(401,403,404))
+    def test_authenticated_http_mutations_dispatch_stock_rpc(self):
+        original=self.mock.side_effect
+        def backend(path,*args,**kwargs):
+            if path=='/rest/v1/rpc/stock_command':return {'ok':True,'id':999}
+            return original(path,*args,**kwargs)
+        with patch.object(api,'remote',side_effect=backend) as remote:
+            for path,method,body in [
+                ('/api/products/999/movement','POST',{'kind':'entrada','amount':2}),
+                ('/api/products/999/movement','POST',{'kind':'saida','amount':1}),
+                ('/api/products/999/movement','POST',{'kind':'ajuste','new_quantity':3}),
+                ('/api/products/999/confirm','POST',{}),
+                ('/api/photos/99/review','POST',{'status':'pendente'}),
+                ('/api/products/999','DELETE',None),
+            ]:
+                with self.subTest(path=path,body=body):
+                    data=json.dumps(body).encode() if body is not None else None
+                    status,_,result=self.request(path,method,{'Authorization':'Bearer '+jwt(),'Content-Type':'application/json'},data)
+                    self.assertEqual(status,200);self.assertTrue(result['ok'])
+        commands=[call.args[2]['command'] for call in remote.call_args_list if call.args[0]=='/rest/v1/rpc/stock_command']
+        self.assertEqual(commands,['movement','movement','movement','confirm','review_photo','delete'])
+    def test_authenticated_http_create_and_edit_parse_multipart(self):
+        original=self.mock.side_effect
+        def backend(path,*args,**kwargs):
+            if path=='/rest/v1/rpc/stock_command':return {'ok':True,'id':999}
+            return original(path,*args,**kwargs)
+        boundary='test-forms'
+        fields={'name':'Peça de teste','quantity':'3','min_quantity':'1'}
+        content=''.join('--'+boundary+'\r\nContent-Disposition: form-data; name="'+k+'"\r\n\r\n'+v+'\r\n' for k,v in fields.items())+'--'+boundary+'--\r\n'
+        with patch.object(api,'remote',side_effect=backend):
+            for path,expected in [('/api/products',201),('/api/products/999/update',200)]:
+                status,_,result=self.request(path,'POST',{'Authorization':'Bearer '+jwt(),'Content-Type':'multipart/form-data; boundary='+boundary},content.encode())
+                self.assertEqual(status,expected);self.assertTrue(result['ok'])
 
 class APIKeyHeaders(unittest.TestCase):
     def response(self):

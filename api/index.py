@@ -125,7 +125,7 @@ class handler(BaseHTTPRequestHandler):
             rows.extend(batch)
             if len(batch)<1000:return rows
             offset+=1000
-    def command(self,action,pid=None,payload=None):
+    def stock_command(self,action,pid=None,payload=None):
         self.request_stage='stock_command'
         return remote('/rest/v1/rpc/stock_command','POST',{'command':action,'pid':pid,'payload':payload or {}},token=self.auth_token)
     def products(self):
@@ -172,7 +172,7 @@ class handler(BaseHTTPRequestHandler):
                 return self.admin(method,path,profile)
             if method=='GET':return self.get(path,qs)
             if method=='POST':return self.post(path)
-            if method=='DELETE' and re.fullmatch(r'/api/products/\d+',path):return self.respond(self.command('delete',int(path.rsplit('/',1)[1])))
+            if method=='DELETE' and re.fullmatch(r'/api/products/\d+',path):return self.respond(self.stock_command('delete',int(path.rsplit('/',1)[1])))
             raise APIError('Rota não encontrada.',404)
         except APIError as e:self.respond({'error':e.message},e.status)
         except (ValueError,KeyError,TypeError) as e:
@@ -300,7 +300,7 @@ class handler(BaseHTTPRequestHandler):
                     uploaded='uploads/'+secrets.token_hex(24)+suffix
                     remote('/storage/v1/object/stock-photos/'+uploaded,'POST',photo['data'],token=self.auth_token,headers={'Content-Type':photo['mime']})
                     fields['photo']={k:photo[k] for k in ('filename','mime')};fields['photo']['storage_path']=uploaded
-                result=self.command('create' if path=='/api/products' else 'update',None if path=='/api/products' else int(path.split('/')[3]),fields)
+                result=self.stock_command('create' if path=='/api/products' else 'update',None if path=='/api/products' else int(path.split('/')[3]),fields)
                 return self.respond(result,201 if path=='/api/products' else 200)
             except Exception:
                 if uploaded:
@@ -308,8 +308,8 @@ class handler(BaseHTTPRequestHandler):
                     except Exception:pass
                 raise
         if re.fullmatch(r'/api/products/\d+/(movement|confirm)',path):
-            parts=path.split('/');return self.respond(self.command(parts[4],int(parts[3]),self.json_body()))
-        if re.fullmatch(r'/api/photos/\d+/review',path):return self.respond(self.command('review_photo',int(path.split('/')[3]),self.json_body()))
+            parts=path.split('/');return self.respond(self.stock_command(parts[4],int(parts[3]),self.json_body()))
+        if re.fullmatch(r'/api/photos/\d+/review',path):return self.respond(self.stock_command('review_photo',int(path.split('/')[3]),self.json_body()))
         if path=='/api/restore':raise APIError('Restauração online deve ser realizada pelo administrador com o procedimento de recuperação.',409)
         raise APIError('Rota não encontrada.',404)
     def admin(self,method,path,profile):
