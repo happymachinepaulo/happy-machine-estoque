@@ -37,6 +37,8 @@ def remote(path, method='GET', data=None, token=None, service=False, raw=False, 
             body=r.read()
             return body if raw else json.loads(body) if body else None
     except urllib.error.HTTPError as e:
+        if path.split('?')[0]=='/auth/v1/otp' and e.code>=500:
+            raise APIError('O serviço de e-mail não conseguiu enviar o código. O administrador precisa revisar o SMTP no Supabase (servidor, porta, remetente e senha de app). Aguarde 60 segundos antes de tentar novamente.',503) from None
         try: detail=json.loads(e.read())
         except Exception: detail={}
         msg=detail.get('message') or detail.get('msg') or detail.get('error_description') or 'Não foi possível concluir a operação.'

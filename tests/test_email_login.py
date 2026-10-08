@@ -57,4 +57,14 @@ class EmailLogin(unittest.TestCase):
                 with self.assertRaises(api.APIError):self.handler.email_login('/api/auth/verify',data)
         remote.assert_not_called()
 
+class SMTPFailure(unittest.TestCase):
+    def test_supabase_email_failure_has_actionable_message(self):
+        import urllib.error,os
+        error=urllib.error.HTTPError('https://test.supabase.co/auth/v1/otp',500,'Error',{},io.BytesIO(b'{"msg":"Error sending magic link email"}'))
+        with patch.dict(os.environ,{'SUPABASE_URL':'https://test.supabase.co','SUPABASE_ANON_KEY':'test-public-key'}),patch.object(api.urllib.request,'urlopen',side_effect=error):
+            with self.assertRaises(api.APIError) as result:api.remote('/auth/v1/otp','POST',{'email':'qa@example.test','create_user':False})
+        self.assertEqual(result.exception.status,503)
+        self.assertIn('SMTP',result.exception.message)
+        self.assertIn('60 segundos',result.exception.message)
+
 if __name__=='__main__':unittest.main()
