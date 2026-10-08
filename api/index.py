@@ -95,13 +95,16 @@ class handler(BaseHTTPRequestHandler):
         except Exception:return ''
         return cookie[COOKIE].value if COOKIE in cookie else ''
     def body(self):
+        self.request_stage='read_body'
         n=int(self.headers.get('Content-Length','0'))
         if n>MAX_BODY:raise APIError('Arquivo muito grande. Use uma foto com menos de 3 MB.',413)
         return self.rfile.read(n)
     def json_body(self):
+        self.request_stage='json_body'
         try:return json.loads(self.body() or b'{}')
         except (ValueError,UnicodeError):raise APIError('Requisição inválida.') from None
     def multipart(self):
+        self.request_stage='multipart'
         typ=self.headers.get('Content-Type','')
         if not typ.startswith('multipart/form-data'):raise APIError('Formulário inválido.')
         msg=BytesParser(policy=default).parsebytes(b'Content-Type: '+typ.encode()+b'\r\nMIME-Version: 1.0\r\n\r\n'+self.body())
@@ -123,6 +126,7 @@ class handler(BaseHTTPRequestHandler):
             if len(batch)<1000:return rows
             offset+=1000
     def command(self,action,pid=None,payload=None):
+        self.request_stage='stock_command'
         return remote('/rest/v1/rpc/stock_command','POST',{'command':action,'pid':pid,'payload':payload or {}},token=self.auth_token)
     def products(self):
         rows=self.rows('products',select='*',order='name.asc,id.asc')
@@ -171,7 +175,10 @@ class handler(BaseHTTPRequestHandler):
             if method=='DELETE' and re.fullmatch(r'/api/products/\d+',path):return self.respond(self.command('delete',int(path.rsplit('/',1)[1])))
             raise APIError('Rota não encontrada.',404)
         except APIError as e:self.respond({'error':e.message},e.status)
-        except (ValueError,KeyError,TypeError):self.respond({'error':'Dados inválidos. Confira os campos.'},400)
+        except (ValueError,KeyError,TypeError) as e:
+            import logging,traceback
+            logging.error('Request processing failed: %s\n%s',type(e).__name__,traceback.format_exc())
+            self.respond({'error':'Dados inválidos. Confira os campos.','code':type(e).__name__,'stage':getattr(self,'request_stage','dispatch')},400)
         except Exception:self.respond({'error':'Não foi possível concluir a operação.'},500)
     def email_login(self,path,body):
         if path=='/api/auth/login':
