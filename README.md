@@ -36,7 +36,7 @@ Esta versão foi preparada a partir do site desta pasta. `local/site` e `local/d
 
 1. Criar um projeto Supabase dedicado, região próxima a São Paulo. Nenhum plano pago é necessário para preparar o projeto; verificar limites da conta antes da criação.
 2. Executar `supabase/schema.sql` **uma única vez no projeto novo**. Ele cria tabelas, políticas, comandos transacionais e armazenamento privado.
-3. Em Authentication, desativar **Allow new users to sign up** e acesso anônimo; manter login por e-mail/senha. Configurar OTP de e-mail com 6 dígitos e validade de 600 segundos; no template Magic Link incluir `{{ .Token }}`. O arquivo `supabase/config.toml` é para desenvolvimento local; não substitui a configuração do projeto hospedado.
+3. Em Authentication, desativar **Allow new users to sign up** e acesso anônimo; manter login por e-mail/senha. Configurar OTP de e-mail com 8 dígitos e validade de 600 segundos; no template Magic Link incluir `{{ .Token }}`. O arquivo `supabase/config.toml` é para desenvolvimento local; não substitui a configuração do projeto hospedado.
 4. Copiar `.env.example` para `.env.local` e configurar URL, chave pública e chave de servidor do projeto. Nunca publicar `.env.local`.
 5. Executar `python scripts/migrate.py` para migrar um snapshot consistente do banco **atual**. A migração mantém IDs, quantidades, fotos, revisões, observações e histórico; não promove fotos pendentes nem cria peças com as sugestões de Paulo. Só aceita um destino vazio ou a retomada da própria migração. Verifica todos os campos após a importação.
 6. Executar `python scripts/bootstrap_admin.py`. Ele só cria a conta informada ou retoma o cadastro, sem trocar senha existente. Também verifica que o cadastro público está desativado.

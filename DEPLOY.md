@@ -6,7 +6,7 @@ O pacote usa o site desta pasta e um snapshot consistente do estoque atual. A ap
 
 Criar um projeto dedicado `happy-machine-estoque`, com região próxima a São Paulo. Guardar a senha do banco em local privado. Não usar um projeto que já tenha outros dados.
 
-Em **Authentication → Sign In / Providers**, desativar **Allow new users to sign up**. Desativar acesso anônimo. Manter login por e-mail e senha. No provedor Email, configurar OTP com 6 dígitos e validade de 600 segundos. Em Email Templates → Magic Link, usar o modelo de código descrito abaixo. Definir tamanho mínimo de senha de 16 caracteres. Usar apenas o provedor de e-mail/senha neste projeto.
+Em **Authentication → Sign In / Providers**, desativar **Allow new users to sign up**. Desativar acesso anônimo. Manter login por e-mail e senha. No provedor Email, configurar OTP com 8 dígitos e validade de 600 segundos. Em Email Templates → Magic Link, usar o modelo de código descrito abaixo. Definir tamanho mínimo de senha de 16 caracteres. Usar apenas o provedor de e-mail/senha neste projeto.
 
 No SQL Editor, executar nesta ordem:
 

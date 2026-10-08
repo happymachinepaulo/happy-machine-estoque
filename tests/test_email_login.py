@@ -51,9 +51,13 @@ class EmailLogin(unittest.TestCase):
         grant=remote.call_args_list[-1].args[2]
         self.assertEqual(grant,{'action':'complete','secret_hash':hashlib.sha256(self.challenge.encode()).hexdigest(),'uid':UID,'sid':SID})
         self.assertEqual(result['access_token'],token())
+    def test_eight_digit_code_is_forwarded_without_truncation(self):
+        with patch.object(api,'remote',side_effect=[{'user_id':UID,'email':'qa@example.test'},self.session,{'id':UID},{'ok':True}]) as remote:
+            self.handler.email_login('/api/auth/verify',{'challenge':self.challenge,'code':'01234567'})
+        self.assertEqual(remote.call_args_list[1].args[2]['token'],'01234567')
     def test_malformed_code_or_challenge_never_calls_supabase(self):
         with patch.object(api,'remote') as remote:
-            for data in ({'challenge':'short','code':'123456'},{'challenge':self.challenge,'code':'abc'},{'challenge':[],'code':'123456'}):
+            for data in ({'challenge':'short','code':'123456'},{'challenge':self.challenge,'code':'abc'},{'challenge':[],'code':'123456'},{'challenge':self.challenge,'code':'1234567'},{'challenge':self.challenge,'code':'123456789'}):
                 with self.assertRaises(api.APIError):self.handler.email_login('/api/auth/verify',data)
         remote.assert_not_called()
 

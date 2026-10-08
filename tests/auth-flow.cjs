@@ -16,7 +16,7 @@ const jwt=aal=>encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:uid,email:'qa@exa
   const json=(body,status=200)=>route.fulfill({status,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify(body)});
   if(req.method()==='OPTIONS')return json({});
   if(p==='/api/auth/login')return json({challenge:'isolated-challenge',expiresIn:600});
-  if(p==='/api/auth/verify'){if(req.postDataJSON().code!=='123456')return json({error:'Código inválido'},400);verified=true;return json(session('aal1'));}
+  if(p==='/api/auth/verify'){if(req.postDataJSON().code!=='12345678')return json({error:'Código inválido'},400);verified=true;return json(session('aal1'));}
   if(p==='/api/config')return json({supabaseUrl:'https://hm-isolated-test.supabase.co',supabaseAnonKey:'isolated-public-key'});
   if(url.hostname==='hm-isolated-test.supabase.co'){
    if(p==='/auth/v1/token')return json(session('aal1'));
@@ -42,9 +42,9 @@ const jwt=aal=>encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:uid,email:'qa@exa
   check('No QR code enrollment',await page.locator('#mfaQr').count()===0);
   check('Password alone conceals stock',!await page.locator('.topbar').isVisible());
   await page.screenshot({path:path.join(__dirname,'email-code.png')});
-  await page.locator('#authCode').fill('000000');await page.locator('#mfaCodeForm button').click();
+  await page.locator('#authCode').fill('00000000');await page.locator('#mfaCodeForm button').click();
   await page.locator('#authMessage.error').waitFor();check('Wrong code still locks stock',!await page.locator('.topbar').isVisible());
-  await page.locator('#authCode').fill('123456');await page.locator('#mfaCodeForm button').click();
+  await page.locator('#authCode').fill('12345678');await page.locator('#mfaCodeForm button').click();
   await page.locator('.topbar').waitFor({state:'visible'});await page.locator('#products[aria-busy="false"]').waitFor({state:'attached'});
   check('Verified admin gets user management',await page.locator('#usersNav').isVisible());
   await page.locator('#usersNav').click();await page.locator('#view-users.active').waitFor();

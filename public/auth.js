@@ -44,11 +44,11 @@
   let data;try{data=await authPost('/api/auth/login',{email:q('#authEmail').value.trim(),password:q('#authPassword').value});}finally{q('#authPassword').value='';}
   challenge=data.challenge;screen('mfa');q('#mfaCodeForm').reset();
   q('#mfaTitle').textContent='Confira seu e-mail';
-  q('#mfaDescription').textContent='Enviamos um código de 6 dígitos para '+q('#authEmail').value.trim()+'. Ele vale por 10 minutos. Confira também a pasta de spam.';
+  q('#mfaDescription').textContent='Enviamos um código para '+q('#authEmail').value.trim()+'. Digite todos os dígitos recebidos. Confira também a pasta de spam.';
   message('');q('#authCode').focus();
  });});
  q('#mfaCodeForm').addEventListener('submit',e=>{e.preventDefault();busy(e.target,async()=>{
-  const code=q('#authCode').value.trim();if(!/^\d{6}$/.test(code))throw Error('Digite os 6 dígitos enviados ao e-mail.');
+  const code=q('#authCode').value.trim();if(!/^(?:[0-9]{6}|[0-9]{8})$/.test(code))throw Error('Digite o código completo enviado ao e-mail (6 ou 8 dígitos).');
   const session=await authPost('/api/auth/verify',{challenge,code});
   const {error}=await client.auth.setSession(session);if(error)throw error;
   await unlock();

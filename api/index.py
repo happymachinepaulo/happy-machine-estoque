@@ -194,8 +194,8 @@ class handler(BaseHTTPRequestHandler):
             except APIError:pass
             return self.respond({'challenge':challenge,'expiresIn':600})
         challenge=body.get('challenge','');code=body.get('code','')
-        if not isinstance(challenge,str) or not re.fullmatch(r'[A-Za-z0-9_-]{43}',challenge) or not isinstance(code,str) or not re.fullmatch(r'\d{6}',code):
-            raise APIError('Informe o código de 6 dígitos enviado ao e-mail.')
+        if not isinstance(challenge,str) or not re.fullmatch(r'[A-Za-z0-9_-]{43}',challenge) or not isinstance(code,str) or not re.fullmatch(r'(?:[0-9]{6}|[0-9]{8})',code):
+            raise APIError('Informe o código completo enviado ao e-mail (6 ou 8 dígitos).')
         digest=hashlib.sha256(challenge.encode()).hexdigest()
         attempt=remote('/rest/v1/rpc/email_login_command','POST',{'action':'attempt','secret_hash':digest},service=True)
         try:session=remote('/auth/v1/verify','POST',{'email':attempt['email'],'token':code,'type':'email'})
