@@ -10,4 +10,4 @@ for table in ['products','photos','movements','profiles','audit_log']:
         raise
     assert not result,f'Tabela {table} expõe dados para acesso anônimo'
 print('Cadastro público desativado; bucket privado; tabelas inacessíveis para anônimos.')
-print('Concluir teste real de senha + TOTP e permissões do operador antes de usar em produção.')
+print('Concluir teste real de senha + código por e-mail e permissões do operador antes de usar em produção.')

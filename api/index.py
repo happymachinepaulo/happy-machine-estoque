@@ -1,5 +1,5 @@
-"""Vercel API. Supabase validates every token; RLS and RPC enforce MFA too."""
-import os, json, io, csv, re, base64, secrets, urllib.request, urllib.parse, urllib.error
+"""Vercel API. Supabase validates every token; RLS and RPC enforce password + email confirmation too."""
+import os, json, io, csv, re, base64, secrets, hashlib, urllib.request, urllib.parse, urllib.error
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
 from http.cookies import SimpleCookie
@@ -55,8 +55,10 @@ def validate_session(token, admin=False):
     # Decode only AFTER Supabase verifies signature, issuer, expiry and user existence.
     user=remote('/auth/v1/user',token=token)
     jwt=claims(token)
-    if jwt.get('sub')!=user.get('id') or jwt.get('aal')!='aal2':
+    if jwt.get('sub')!=user.get('id') or not jwt.get('session_id'):
         raise APIError('Valide o código de dois fatores para continuar.',403)
+    if remote('/rest/v1/rpc/stock_access','POST',{'admin_only':False},token=token) is not True:
+        raise APIError('Confirme o código enviado ao seu e-mail para continuar.',403)
     rows=remote('/rest/v1/profiles?'+urllib.parse.urlencode({'id':'eq.'+user['id'],'select':'id,email,name,role,active'}),token=token)
     if not rows or not rows[0]['active']: raise APIError('Conta sem acesso ao estoque.',403)
     if admin and rows[0]['role']!='admin': raise APIError('Somente o administrador pode gerenciar usuários.',403)
@@ -142,7 +144,16 @@ class handler(BaseHTTPRequestHandler):
                 if not self.headers.get('Authorization','').startswith('Bearer ') and not origin:
                     raise APIError('Origem obrigatória.',403)
             if path=='/api/auth/logout' and method=='POST':
+                try:
+                    logout_token=self.token()
+                    _,logout_jwt=validate_session(logout_token)
+                    remote('/rest/v1/email_login_sessions?'+urllib.parse.urlencode({'session_id':'eq.'+logout_jwt['session_id'],'user_id':'eq.'+logout_jwt['sub']}),'DELETE',service=True)
+                except APIError: pass
                 return self.respond({'ok':True},extra={'Set-Cookie':f'{COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0'})
+            if path in ('/api/auth/login','/api/auth/verify') and method=='POST':
+                if self.headers.get('Origin') not in (expected,request_origin):
+                    raise APIError('Origem obrigatória.',403)
+                return self.email_login(path,self.json_body())
             self.auth_token=self.token();profile,jwt=validate_session(self.auth_token)
             if path=='/api/auth/session' and method=='POST':
                 ttl=max(0,min(3600,int(jwt['exp'])-int(datetime.now(timezone.utc).timestamp())))
@@ -158,6 +169,43 @@ class handler(BaseHTTPRequestHandler):
         except APIError as e:self.respond({'error':e.message},e.status)
         except (ValueError,KeyError,TypeError):self.respond({'error':'Dados inválidos. Confira os campos.'},400)
         except Exception:self.respond({'error':'Não foi possível concluir a operação.'},500)
+    def email_login(self,path,body):
+        if path=='/api/auth/login':
+            email=str(body.get('email','')).strip().lower()
+            password=body.get('password','')
+            if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',email) or not isinstance(password,str) or not password or len(password)>1024:
+                raise APIError('E-mail ou senha inválidos.',401)
+            try: session=remote('/auth/v1/token?grant_type=password','POST',{'email':email,'password':password})
+            except APIError as e:
+                if e.status in (400,401,403,422):raise APIError('E-mail ou senha inválidos.',401) from None
+                raise
+            user=session['user']
+            profiles=remote('/rest/v1/profiles?'+urllib.parse.urlencode({'id':'eq.'+user['id'],'select':'id,email,active'}),service=True)
+            if not profiles or not profiles[0]['active']:raise APIError('Conta sem acesso ao estoque.',403)
+            email=user['email']
+            challenge=secrets.token_urlsafe(32)
+            digest=hashlib.sha256(challenge.encode()).hexdigest()
+            remote('/rest/v1/rpc/email_login_command','POST',{'action':'begin','secret_hash':digest,'uid':user['id'],'email_address':email},service=True)
+            # Não cria usuários. A senha foi verificada antes de qualquer envio.
+            remote('/auth/v1/otp','POST',{'email':email,'create_user':False})
+            try:remote('/auth/v1/logout?scope=local','POST',token=session['access_token'])
+            except APIError:pass
+            return self.respond({'challenge':challenge,'expiresIn':600})
+        challenge=body.get('challenge','');code=body.get('code','')
+        if not isinstance(challenge,str) or not re.fullmatch(r'[A-Za-z0-9_-]{43}',challenge) or not isinstance(code,str) or not re.fullmatch(r'\d{6}',code):
+            raise APIError('Informe o código de 6 dígitos enviado ao e-mail.')
+        digest=hashlib.sha256(challenge.encode()).hexdigest()
+        attempt=remote('/rest/v1/rpc/email_login_command','POST',{'action':'attempt','secret_hash':digest},service=True)
+        try:session=remote('/auth/v1/verify','POST',{'email':attempt['email'],'token':code,'type':'email'})
+        except APIError as e:
+            if e.status in (400,401,403,422):raise APIError('Código inválido ou expirado. Confira seu e-mail.') from None
+            raise
+        user=remote('/auth/v1/user',token=session['access_token'])
+        jwt=claims(session['access_token'])
+        if user['id']!=attempt['user_id'] or jwt.get('sub')!=user['id'] or not jwt.get('session_id'):
+            raise APIError('Sessão inválida.',403)
+        remote('/rest/v1/rpc/email_login_command','POST',{'action':'complete','secret_hash':digest,'uid':user['id'],'sid':jwt['session_id']},service=True)
+        return self.respond({'access_token':session['access_token'],'refresh_token':session['refresh_token']})
     def get(self,path,qs):
         if path=='/api/health':return self.respond({'ok':True,'storage':'supabase','mfa':True})
         if path=='/api/photo-review':

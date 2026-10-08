@@ -6,7 +6,7 @@ O pacote usa o site desta pasta e um snapshot consistente do estoque atual. A ap
 
 Criar um projeto dedicado `happy-machine-estoque`, com região próxima a São Paulo. Guardar a senha do banco em local privado. Não usar um projeto que já tenha outros dados.
 
-Em **Authentication → Sign In / Providers**, desativar **Allow new users to sign up**. Desativar acesso anônimo. Manter login por e-mail e senha. Em MFA, habilitar cadastro e verificação de TOTP. Definir tamanho mínimo de senha de 16 caracteres. Usar apenas o provedor de e-mail/senha neste projeto.
+Em **Authentication → Sign In / Providers**, desativar **Allow new users to sign up**. Desativar acesso anônimo. Manter login por e-mail e senha. No provedor Email, configurar OTP com 6 dígitos e validade de 600 segundos. Em Email Templates → Magic Link, usar o modelo de código descrito abaixo. Definir tamanho mínimo de senha de 16 caracteres. Usar apenas o provedor de e-mail/senha neste projeto.
 
 No SQL Editor, executar nesta ordem:
 
@@ -69,17 +69,17 @@ O ZIP de entrega contém SQL e fotos para a preparação, mas **não deve ser se
 
 ## 5. Primeiro acesso e validação
 
-Entrar na URL publicada com o administrador. No primeiro acesso, escanear pessoalmente o QR code no aplicativo autenticador, guardar seu backup pessoal e digitar o código atual. Nenhum estoque será liberado enquanto esse código não for validado.
+Entrar na URL publicada com a senha do administrador e digitar o código recebido por e-mail. Cada novo login exige as duas etapas. O código vale por 10 minutos; há no máximo 5 tentativas por desafio e um novo envio exige intervalo de 60 segundos. A autorização da sessão expira após 8 horas e é revogada ao sair. Nenhum estoque será liberado antes da confirmação.
 
 Validar:
 
 - sem login: APIs de produtos, fotos, usuários e backup recusam acesso;
-- só senha, sem TOTP: API e banco recusam acesso;
+- só senha, sem código de e-mail: API e banco recusam acesso;
 - signup direto do Supabase: recusado;
 - bucket `stock-photos`: privado;
 - operador: usa estoque, mas não cria usuários nem altera permissões;
 - administrador: cria e desativa operadores em Usuários;
-- operador novo: precisa ativar o próprio autenticador;
+- operador novo: precisa confirmar o código enviado ao próprio e-mail;
 - comparar registros e contagens com `migration/manifest.json`;
 - fazer uma entrada e uma saída de teste em uma peça de teste e verificar o histórico.
 
@@ -89,6 +89,24 @@ Executar `python scripts/check_cloud.py` para verificar cadastro fechado, bucket
 
 A exportação JSON da interface contém dados e referências das fotos; não contém os arquivos de imagem. Manter também backup dos objetos privados do Storage e do PostgreSQL. O SQLite original e o snapshot privado preservam as imagens anteriores à migração.
 
-## Quando perder o autenticador
+## Quando não receber o e-mail
 
-Não existe atalho para pular 2FA na aplicação. O proprietário do projeto deve recuperar o fator no painel Supabase após confirmar a identidade. O próximo login exigirá configurar um novo autenticador.
+Verifique spam e a configuração SMTP do Supabase. Aguarde 60 segundos e use Voltar / solicitar outro código para entrar novamente. Se perder acesso ao e-mail, o proprietário deve confirmar sua identidade antes de atualizar a conta pelo dashboard. Não há atalho para pular a confirmação.
+
+## Atualização para senha + código por e-mail
+
+Em um projeto que já recebeu o SQL anterior, execute somente `supabase/004_email_login.sql` no SQL Editor. Ele troca a proteção TOTP pela confirmação de senha + e-mail, sem alterar o estoque. Em um projeto novo, `supabase/schema.sql` já inclui essa estrutura; não é necessário executar 004 de novo.
+
+Em Authentication → Email Templates → Magic Link, substitua o link por:
+
+```html
+<h2>Happy Machine</h2>
+<p>Seu código de acesso é <strong>{{ .Token }}</strong>.</p>
+<p>Válido por 10 minutos. Se não solicitou o acesso, ignore este e-mail.</p>
+```
+
+Configure um **SMTP próprio** em Authentication → SMTP Settings para enviar aos operadores. O serviço padrão do Supabase tem restrições de destinatários e limites baixos; não serve como entrega de produção para toda a equipe. Use remetente autorizado pelo seu provedor. Segredos SMTP ficam no Supabase, nunca no repositório.
+
+O script opcional `scripts/configure_auth.py` configura o template e a expiração quando houver token da Management API; não instala nem configura um provedor SMTP automaticamente. As tabelas `email_login_challenges` e `email_login_sessions` não podem ser acessadas nem alteradas pelo navegador. Entrar diretamente pelo OTP nativo, sem a senha validada pela API, não libera o estoque.
+
+Referências: https://supabase.com/docs/guides/auth/auth-email-passwordless e https://supabase.com/docs/guides/auth/auth-smtp.

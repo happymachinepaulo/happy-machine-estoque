@@ -15,16 +15,12 @@ const jwt=aal=>encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:uid,email:'qa@exa
   const req=route.request(),url=new URL(req.url()),p=url.pathname;
   const json=(body,status=200)=>route.fulfill({status,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify(body)});
   if(req.method()==='OPTIONS')return json({});
+  if(p==='/api/auth/login')return json({challenge:'isolated-challenge',expiresIn:600});
+  if(p==='/api/auth/verify'){if(req.postDataJSON().code!=='123456')return json({error:'Código inválido'},400);verified=true;return json(session('aal1'));}
   if(p==='/api/config')return json({supabaseUrl:'https://hm-isolated-test.supabase.co',supabaseAnonKey:'isolated-public-key'});
   if(url.hostname==='hm-isolated-test.supabase.co'){
    if(p==='/auth/v1/token')return json(session('aal1'));
    if(p==='/auth/v1/user')return json(user());
-   if(p==='/auth/v1/factors')return json({id:'factor-test',type:'totp',friendly_name:'Test',totp:{qr_code:'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="black"/></svg>',secret:'ISOLATEDTESTSECRET',uri:'otpauth://totp/TEST?secret=ISOLATEDTESTSECRET'}});
-   if(p.endsWith('/challenge'))return json({id:'challenge-test',expires_at:Math.floor(Date.now()/1000)+300});
-   if(p.endsWith('/verify')){
-    if(req.postDataJSON().code!=='123456')return json({msg:'Invalid TOTP',code:'mfa_verification_failed'},400);
-    verified=true;return json(session('aal2'));
-   }
    throw Error('Unexpected isolated Auth request: '+p);
   }
   if(p.startsWith('/api/')){
@@ -42,9 +38,10 @@ const jwt=aal=>encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:uid,email:'qa@exa
   check('Login conceals application',!await page.locator('.topbar').isVisible());
   await page.locator('#authEmail').fill('qa@example.test');await page.locator('#authPassword').fill('Unused-Isolated-Test-Password9!');
   await page.locator('#loginForm button').click();await page.locator('#mfaStep').waitFor({state:'visible'});
-  check('Mandatory enrollment visible',await page.locator('#mfaSetup').isVisible());
+  check('Email instructions visible',(await page.locator('#mfaDescription').textContent()).includes('qa@example.test'));
+  check('No QR code enrollment',await page.locator('#mfaQr').count()===0);
   check('Password alone conceals stock',!await page.locator('.topbar').isVisible());
-  await page.screenshot({path:path.join(__dirname,'mfa-enrollment.png')});
+  await page.screenshot({path:path.join(__dirname,'email-code.png')});
   await page.locator('#authCode').fill('000000');await page.locator('#mfaCodeForm button').click();
   await page.locator('#authMessage.error').waitFor();check('Wrong code still locks stock',!await page.locator('.topbar').isVisible());
   await page.locator('#authCode').fill('123456');await page.locator('#mfaCodeForm button').click();
@@ -55,7 +52,7 @@ const jwt=aal=>encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:uid,email:'qa@exa
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(__dirname,'users-mobile.png')});
   check('Mobile page has no overflow',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   check('No private request before MFA',!privateEarly);check('No JS error',!errors.length);
-  fs.writeFileSync(path.join(__dirname,'auth-flow.json'),JSON.stringify({passed:true,realSDK:true,backend:'isolated mocks',wrongCodeRejected:true,mfaRequired:true,privateEarly,errors},null,2));
-  console.log('OK: SDK real, configuração TOTP, código errado mantém bloqueio, código correto libera interface e painel de usuários.');
+  fs.writeFileSync(path.join(__dirname,'auth-flow.json'),JSON.stringify({passed:true,realSDK:true,backend:'isolated mocks',wrongCodeRejected:true,emailCodeRequired:true,privateEarly,errors},null,2));
+  console.log('OK: SDK real, senha + código por e-mail, código errado mantém bloqueio, código correto libera interface e painel de usuários.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

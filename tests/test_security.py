@@ -6,8 +6,9 @@ from http.server import ThreadingHTTPServer
 spec=importlib.util.spec_from_file_location('online_api',Path(__file__).resolve().parents[1]/'api/index.py')
 api=importlib.util.module_from_spec(spec);spec.loader.exec_module(api)
 UID='11111111-1111-4111-8111-111111111111'
-def jwt(aal='aal2',sub=UID):
-    value={'sub':sub,'aal':aal,'exp':4102444800}
+def jwt(aal='aal2',sub=UID,verified=None):
+    if verified is None:verified=aal!='aal1'
+    value={'sub':sub,'aal':aal,'exp':4102444800,'session_id':'email-verified-session' if verified else 'password-only-session'}
     return 'header.'+base64.urlsafe_b64encode(json.dumps(value).encode()).decode().rstrip('=')+'.signature'
 
 class Security(unittest.TestCase):
@@ -17,6 +18,7 @@ class Security(unittest.TestCase):
         def remote(path,*args,**kwargs):
             self.calls.append(path)
             if path=='/auth/v1/user':return {'id':UID}
+            if path=='/rest/v1/rpc/stock_access':return api.claims(kwargs['token'])['session_id']=='email-verified-session'
             if path.startswith('/rest/v1/profiles'):return [self.profile]
             if path.startswith('/rest/v1/products'):return []
             if path.startswith('/rest/v1/photos'):return []
@@ -29,14 +31,14 @@ class Security(unittest.TestCase):
         self.assertEqual(self.denied(''),401);self.assertEqual(self.calls,[])
     def test_password_alone_never_unlocks_inventory(self):
         self.assertEqual(self.denied(jwt('aal1')),403)
-        self.assertEqual(self.calls,['/auth/v1/user'])
+        self.assertEqual(self.calls,['/auth/v1/user','/rest/v1/rpc/stock_access'])
     def test_mfa_claims_are_not_trusted_before_supabase_validation(self):
         with patch.object(api,'remote',side_effect=api.APIError('Invalid JWT',401)):
             self.assertEqual(self.denied(jwt()),401)
     def test_forged_identity_rejected(self):
         self.assertEqual(self.denied(jwt(sub='22222222-2222-4222-8222-222222222222')),403)
     def test_user_without_profile_denied(self):
-        with patch.object(api,'remote',side_effect=[{'id':UID},[]]):self.assertEqual(self.denied(jwt()),403)
+        with patch.object(api,'remote',side_effect=[{'id':UID},True,[]]):self.assertEqual(self.denied(jwt()),403)
     def test_disabled_user_denied_even_with_valid_mfa(self):
         self.profile['active']=False;self.assertEqual(self.denied(jwt()),403)
     def test_operator_cannot_administer_users(self):self.assertEqual(self.denied(jwt(),True),403)
@@ -44,6 +46,13 @@ class Security(unittest.TestCase):
         self.profile['role']='admin';self.assertEqual(self.denied(jwt('aal1'),True),403)
     def test_active_mfa_operator_can_access_inventory(self):
         self.assertEqual(api.validate_session(jwt())[0]['id'],UID)
+    def test_direct_email_otp_without_password_challenge_is_denied(self):
+        self.assertEqual(self.denied(jwt(verified=False)),403)
+    def test_native_aal2_without_email_grant_is_denied(self):
+        self.assertEqual(self.denied(jwt('aal2',verified=False)),403)
+    def test_validated_email_session_can_use_aal1(self):
+        token=jwt('aal1',verified=True)
+        self.assertEqual(api.validate_session(token)[0]['id'],UID)
     def test_quantity_cannot_be_negative_fractional_or_boolean(self):
         for value in [-1,1.2,True,'abc','']:
             with self.subTest(value=value),self.assertRaises(api.APIError):api.integer(value)

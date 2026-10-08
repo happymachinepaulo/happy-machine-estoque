@@ -10,4 +10,4 @@ else:
     user=remote('/auth/v1/admin/users','POST',{'email':email,'password':credentials['password'],'email_confirm':True,'user_metadata':{'name':'Paulo — Happy Machine'}})
     uid=user['id']
 remote('/rest/v1/profiles?on_conflict=id','POST',{'id':uid,'email':email,'name':'Paulo','role':'admin','active':True},headers={'Prefer':'resolution=merge-duplicates,return=minimal'})
-print('Administrador configurado. Senha no arquivo privado local; 2FA obrigatório no primeiro login. Nenhuma senha existente foi alterada.')
+print('Administrador configurado. Senha no arquivo privado local; senha + código por e-mail obrigatórios em cada novo login. Nenhuma senha existente foi alterada.')

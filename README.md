@@ -25,10 +25,10 @@ Esta versão foi preparada a partir do site desta pasta. `local/site` e `local/d
 ## Arquitetura
 
 - Vercel: arquivos estáticos em `public` e API Python serverless em `api/index.py`.
-- Supabase: Auth com senha e TOTP, PostgreSQL e bucket **privado** `stock-photos`.
+- Supabase: Auth com senha e código por e-mail, PostgreSQL e bucket **privado** `stock-photos`.
 - Administrador inicial: `happymachinepaulo@gmail.com`. A senha aleatória está em `.private/administrador-online.json`, fora do pacote público.
 - Usuários adicionais são operadores, criados somente pelo administrador autenticado com 2FA na tela Usuários. Podem ser desativados, sem excluir histórico. Nenhuma atribuição de permissão vem de metadados editáveis pelo usuário.
-- Sem sessão autenticada em nível `aal2`, a API, as políticas RLS e as operações SQL negam acesso. Uma conta Auth sem perfil ativo não tem acesso ao estoque.
+- Sem confirmação de senha e código por e-mail vinculada à sessão pelo servidor, a API, as políticas RLS e as operações SQL negam acesso. O OTP de e-mail é nativo do Supabase, mas não recebe `aal2`; por isso o banco exige uma autorização privada em `email_login_sessions`. Uma conta Auth sem perfil ativo não tem acesso ao estoque.
 - Movimentações são transacionais, com bloqueio da linha para impedir perda de contagens por uso simultâneo.
 - Cookies de fotos/downloads são `HttpOnly`, `Secure`, `SameSite=Strict`; APIs também aceitam Bearer validado. Chave administrativa fica exclusivamente no servidor.
 
@@ -36,13 +36,13 @@ Esta versão foi preparada a partir do site desta pasta. `local/site` e `local/d
 
 1. Criar um projeto Supabase dedicado, região próxima a São Paulo. Nenhum plano pago é necessário para preparar o projeto; verificar limites da conta antes da criação.
 2. Executar `supabase/schema.sql` **uma única vez no projeto novo**. Ele cria tabelas, políticas, comandos transacionais e armazenamento privado.
-3. Em Authentication, desativar **Allow new users to sign up** e acesso anônimo; manter login por e-mail/senha. Habilitar TOTP para cadastro e verificação. O arquivo `supabase/config.toml` é para desenvolvimento local; não substitui a configuração do projeto hospedado.
+3. Em Authentication, desativar **Allow new users to sign up** e acesso anônimo; manter login por e-mail/senha. Configurar OTP de e-mail com 6 dígitos e validade de 600 segundos; no template Magic Link incluir `{{ .Token }}`. O arquivo `supabase/config.toml` é para desenvolvimento local; não substitui a configuração do projeto hospedado.
 4. Copiar `.env.example` para `.env.local` e configurar URL, chave pública e chave de servidor do projeto. Nunca publicar `.env.local`.
 5. Executar `python scripts/migrate.py` para migrar um snapshot consistente do banco **atual**. A migração mantém IDs, quantidades, fotos, revisões, observações e histórico; não promove fotos pendentes nem cria peças com as sugestões de Paulo. Só aceita um destino vazio ou a retomada da própria migração. Verifica todos os campos após a importação.
 6. Executar `python scripts/bootstrap_admin.py`. Ele só cria a conta informada ou retoma o cadastro, sem trocar senha existente. Também verifica que o cadastro público está desativado.
 7. Criar o projeto Vercel com a raiz `estoque_site_local` como raiz, framework Other, output `public`, configuração em `vercel.json`. Configurar `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` e `APP_ORIGIN` como variáveis do projeto. Não disponibilizar a chave de servidor como variável pública.
-8. Publicar; definir `APP_ORIGIN` e Site URL do Supabase para a URL HTTPS final. O administrador entra usando a senha gerada e escaneia pessoalmente o QR code no autenticador. O sistema só libera o estoque depois da confirmação do código.
-9. Verificar no ambiente real: cadastro público recusado; senha sem TOTP não libera API nem imagens; operador não cria usuários; administrador cria e desativa operadores; contagens e fotos correspondem ao snapshot.
+8. Publicar; definir `APP_ORIGIN` e Site URL do Supabase para a URL HTTPS final. O administrador entra usando a senha gerada e recebe o código no próprio e-mail. O sistema só libera o estoque depois da confirmação do código.
+9. Verificar no ambiente real: cadastro público recusado; senha sem código de e-mail não libera API nem imagens; operador não cria usuários; administrador cria e desativa operadores; contagens e fotos correspondem ao snapshot.
 
 ## Verificações locais
 
@@ -56,15 +56,33 @@ As verificações unitárias e de HTTP usam o verificador Supabase simulado. **N
 
 A exportação online JSON inclui catálogo, metadados de fotos, histórico e auditoria. **Não contém os binários das fotos**. A recuperação completa exige também uma cópia dos objetos privados `stock-photos` e backup PostgreSQL. A cópia SQLite local e o snapshot da migração preservam as fotos originais. A restauração direta de SQLite foi retirada da interface online para não substituir PostgreSQL por engano. Restaurar em projeto de recuperação, validar banco e objetos, então apontar as variáveis para o destino recuperado.
 
-## Recuperação do 2FA
+## Recuperação do acesso
 
-O aplicativo não fornece um botão para pular ou desativar 2FA. Se o administrador perder o autenticador, o proprietário do projeto precisa validar sua identidade e recuperar o fator pelo dashboard Supabase; no acesso seguinte, um novo fator será obrigatório. Guardar o autenticador com seu backup pessoal.
+Se perder acesso ao e-mail, o proprietário deve validar sua identidade antes de atualizar a conta pelo dashboard Supabase. Não há botão para ignorar o código. Falhas de entrega exigem verificar SMTP, spam e limites do provedor.
 
 ## Referências
 
-- https://supabase.com/docs/guides/auth/auth-mfa
+- https://supabase.com/docs/guides/auth/auth-email-passwordless
 - https://supabase.com/docs/guides/auth/general-configuration
 - https://supabase.com/docs/guides/database/postgres/row-level-security
 - https://vercel.com/docs/functions/runtimes/python
 
 SDK local: `@supabase/supabase-js` 2.117.3, obtido do pacote oficial publicado no npm via jsDelivr. O site não precisa carregar código externo para autenticar.
+
+## Atualização para senha + código por e-mail
+
+Em um projeto que já recebeu o SQL anterior, execute somente `supabase/004_email_login.sql` no SQL Editor. Ele troca a proteção TOTP pela confirmação de senha + e-mail, sem alterar o estoque. Em um projeto novo, `supabase/schema.sql` já inclui essa estrutura; não é necessário executar 004 de novo.
+
+Em Authentication → Email Templates → Magic Link, substitua o link por:
+
+```html
+<h2>Happy Machine</h2>
+<p>Seu código de acesso é <strong>{{ .Token }}</strong>.</p>
+<p>Válido por 10 minutos. Se não solicitou o acesso, ignore este e-mail.</p>
+```
+
+Configure um **SMTP próprio** em Authentication → SMTP Settings para enviar aos operadores. O serviço padrão do Supabase tem restrições de destinatários e limites baixos; não serve como entrega de produção para toda a equipe. Use remetente autorizado pelo seu provedor. Segredos SMTP ficam no Supabase, nunca no repositório.
+
+O script opcional `scripts/configure_auth.py` configura o template e a expiração quando houver token da Management API; não instala nem configura um provedor SMTP automaticamente. As tabelas `email_login_challenges` e `email_login_sessions` não podem ser acessadas nem alteradas pelo navegador. Entrar diretamente pelo OTP nativo, sem a senha validada pela API, não libera o estoque.
+
+Referências: https://supabase.com/docs/guides/auth/auth-email-passwordless e https://supabase.com/docs/guides/auth/auth-smtp.
