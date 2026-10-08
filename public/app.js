@@ -19,7 +19,51 @@ let photoPage=0;
 const photoPageSize=24;
 const saving=new Set();
 const photoLinks=new Map();
-const photoSource=id=>photoLinks.get(Number(id))?.url||`/api/photos/${id}`;
+const photoBlobs=new Map();
+const photoPlaceholder='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#f1f3f5"/></svg>');
+const photoSource=id=>photoBlobs.get(Number(id))||photoPlaceholder;
+const photoDownloads=new Map();
+const photoQueue=[];
+let photoWorkers=0;
+async function downloadPhoto(id){
+  id=Number(id);
+  if(photoBlobs.has(id))return photoBlobs.get(id);
+  if(photoDownloads.has(id))return photoDownloads.get(id);
+  const pending=(async()=>{
+    let response;
+    const link=photoLinks.get(id);
+    if(link&&link.expires>Date.now()){
+      try{response=await fetch(link.url,{credentials:'omit',referrerPolicy:'no-referrer'});}catch(e){}
+    }
+    if(!response?.ok)response=await window.HMAuth.request(`/api/photos/${id}`);
+    if(!response.ok||!response.headers.get('Content-Type')?.startsWith('image/'))throw Error('Não foi possível carregar a foto.');
+    const url=URL.createObjectURL(await response.blob());photoBlobs.set(id,url);return url;
+  })();
+  photoDownloads.set(id,pending);
+  try{return await pending;}finally{photoDownloads.delete(id);}
+}
+function drainPhotos(){
+  while(photoWorkers<4&&photoQueue.length){
+    const img=photoQueue.shift(),id=img.dataset.privatePhoto;
+    if(!img.isConnected)continue;
+    photoWorkers++;
+    downloadPhoto(id).then(url=>{if(img.isConnected&&img.dataset.privatePhoto===id){img.src=url;img.classList.remove('photoFailed');}})
+      .catch(()=>{img.classList.add('photoFailed');img.alt='Foto indisponível. Atualize a página para tentar novamente.';})
+      .finally(()=>{photoWorkers--;drainPhotos();});
+  }
+}
+const photoObserver=new IntersectionObserver(entries=>{
+  for(const entry of entries)if(entry.isIntersecting){photoObserver.unobserve(entry.target);photoQueue.push(entry.target);}
+  drainPhotos();
+},{rootMargin:'250px'});
+function observePhotos(node){
+  if(node.nodeType!==1)return;
+  if(node.matches('img[data-private-photo]'))photoObserver.observe(node);
+  node.querySelectorAll('img[data-private-photo]').forEach(img=>photoObserver.observe(img));
+}
+new MutationObserver(records=>{for(const record of records){if(record.type==='attributes')observePhotos(record.target);else record.addedNodes.forEach(observePhotos);}})
+ .observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['data-private-photo']});
+window.addEventListener('pagehide',()=>{for(const url of photoBlobs.values())URL.revokeObjectURL(url);photoBlobs.clear();});
 async function preparePhotoLinks(data,url){
   const ids=[];
   if(url.startsWith('/api/products')){
@@ -60,6 +104,7 @@ function animateNumber(element, value){
   element._frame=requestAnimationFrame(tick);
 }
 function replacePreview(source){
+  delete $('#photoPreview').dataset.privatePhoto;
   if(previewObjectURL){URL.revokeObjectURL(previewObjectURL);previewObjectURL=null;}
   if(source instanceof Blob){previewObjectURL=URL.createObjectURL(source);$('#photoPreview').src=previewObjectURL;}
   else if(source)$('#photoPreview').src=source;
@@ -151,7 +196,7 @@ async function loadProducts(){
     el.innerHTML=rows.map(x=>{
       const pending=x.review_status==='pendente',unknown=isUnknown(x),low=!pending&&x.min_quantity>0&&x.quantity<=x.min_quantity;
       const amountLabel=unknown?'quantidade a contar':`${x.quantity} unidades${pending?', contagem a conferir':''}`;
-      return `<article class="productCard ${pending?'needsReview':''}" data-id="${x.id}" tabindex="0" role="button" aria-label="Abrir ${esc(x.name)}, ${amountLabel}"><div class="productPhoto">${x.photo_id?`<img loading="lazy" decoding="async" src="${esc(photoSource(x.photo_id))}" alt="${esc(x.name)}">`:`<div class="noPhoto productPhotoPlaceholder">${icon('photo')}<small>Foto a adicionar</small></div>`}${pending?'<span class="statusLabel pending">A conferir</span>':low?`<span class="lowBadge">${icon('warning')} Estoque baixo</span>`:''}${x.photo_count>1?`<span class="photoCountBadge">${icon('photo')} ${x.photo_count}</span>`:''}<span class="cardPhotoAction" aria-hidden="true">${icon('arrow')}</span></div><div class="productBody"><div class="category"><span>${esc(x.category||'Sem categoria')}</span><span class="itemCode">#${String(x.id).padStart(3,'0')}</span></div><h3>${esc(x.name)}</h3><div class="cardBottom"><div class="stock ${unknown?'isUnknown':''}"><strong>${unknown?'A contar':displayNumber(x.quantity)}</strong><span class="stockUnit">${unknown?'quantidade pendente':pending?'unid. · a conferir':x.quantity===1?'unidade':'unidades'}</span></div><span class="cardOpen" aria-hidden="true">Ver peça ${icon('arrow')}</span></div></div></article>`;
+      return `<article class="productCard ${pending?'needsReview':''}" data-id="${x.id}" tabindex="0" role="button" aria-label="Abrir ${esc(x.name)}, ${amountLabel}"><div class="productPhoto">${x.photo_id?`<img loading="lazy" decoding="async" src="${esc(photoSource(x.photo_id))}" data-private-photo="${x.photo_id}" alt="${esc(x.name)}">`:`<div class="noPhoto productPhotoPlaceholder">${icon('photo')}<small>Foto a adicionar</small></div>`}${pending?'<span class="statusLabel pending">A conferir</span>':low?`<span class="lowBadge">${icon('warning')} Estoque baixo</span>`:''}${x.photo_count>1?`<span class="photoCountBadge">${icon('photo')} ${x.photo_count}</span>`:''}<span class="cardPhotoAction" aria-hidden="true">${icon('arrow')}</span></div><div class="productBody"><div class="category"><span>${esc(x.category||'Sem categoria')}</span><span class="itemCode">#${String(x.id).padStart(3,'0')}</span></div><h3>${esc(x.name)}</h3><div class="cardBottom"><div class="stock ${unknown?'isUnknown':''}"><strong>${unknown?'A contar':displayNumber(x.quantity)}</strong><span class="stockUnit">${unknown?'quantidade pendente':pending?'unid. · a conferir':x.quantity===1?'unidade':'unidades'}</span></div><span class="cardOpen" aria-hidden="true">Ver peça ${icon('arrow')}</span></div></div></article>`;
     }).join('');
     $$('.productCard').forEach((p,i)=>p.style.setProperty('--order',Math.min(i,8)));
     $$('.productCard').forEach(card=>{
@@ -206,7 +251,7 @@ function createFromReviewPhoto(photo){
   resetProductForm();reviewPhotoForCreation=photo.id;
   $('#productTitle').textContent='Criar peça com esta foto';
   $('#productSubtitle').textContent='Identifique a peça da imagem e informe a quantidade contada.';
-  $('#quantity').value='';replacePreview(photoSource(photo.id));
+  $('#quantity').value='';replacePreview(photoSource(photo.id));$('#photoPreview').dataset.privatePhoto=String(photo.id);
   const suggestion=photoSuggestion(photo);
   if(suggestion.name){$('#name').value=suggestion.name;$('#category').value=suggestion.category;$('#notes').value=photo.review_note;$('#productSubtitle').textContent='Nome sugerido pela análise. Confira a identificação e informe a quantidade contada.';}
   $('#photoPreviewWrap').classList.remove('hidden');
@@ -214,7 +259,7 @@ function createFromReviewPhoto(photo){
   showDialog($('#productDialog'));$('#name').focus();
 }
 
-function enlargePhoto(id,caption){$('#fullImage').src=photoSource(id);$('#imageCaption').textContent=caption;$('#fullImage').alt=caption;showDialog($('#imageDialog'));}
+function enlargePhoto(id,caption){$('#fullImage').dataset.privatePhoto=String(id);$('#fullImage').src=photoSource(id);$('#imageCaption').textContent=caption;$('#fullImage').alt=caption;showDialog($('#imageDialog'));}
 $('#closeImage').onclick=()=>$('#imageDialog').close();
 async function photoAction(id,status,pid,primary=true){await api(`/api/photos/${id}/review`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,product_id:pid,primary})});}
 async function openDetail(id){ try{
@@ -222,7 +267,7 @@ async function openDetail(id){ try{
   $('#detailName').textContent=p.name; $('#detailCategory').textContent=`${p.category||'Sem categoria'} · #${String(p.id).padStart(3,'0')}`;
   $('#detailQty').textContent=isUnknown(p)?'A contar':displayNumber(p.quantity);$('#detailQty').classList.toggle('isUnknown',isUnknown(p));$('#detailReview').classList.toggle('hidden',p.review_status!=='pendente');
   $('#detailMin').textContent=p.min_quantity>0?`Estoque mínimo: ${p.min_quantity}`:'Sem estoque mínimo definido'; $('#detailNotes').textContent=p.notes||'Sem observações.';
-  $('#detailPhotos').innerHTML=p.photos.length?p.photos.map(ph=>`<figure class="photoTile"><button class="photoZoom" data-photo="${ph.id}" aria-label="Ampliar foto de ${esc(p.name)}"><img loading="lazy" decoding="async" src="${esc(photoSource(ph.id))}" alt="${esc(p.name)}"><span class="zoomHint">${icon('search')} Ampliar</span></button><figcaption>${ph.is_primary?`<span class="photoTag">${icon('check')} Principal</span>`:`<button class="textBtn setPrimary" data-photo="${ph.id}">Usar como principal</button>`}<button class="textBtn reviewPhoto" data-photo="${ph.id}">Revisar vínculo</button></figcaption></figure>`).join(''):`<div class="emptyPhoto">${icon('photo')}<p>Esta peça ainda não tem foto</p><button id="detailAddPhoto" class="btn">${icon('plus')} Adicionar foto</button></div>`;
+  $('#detailPhotos').innerHTML=p.photos.length?p.photos.map(ph=>`<figure class="photoTile"><button class="photoZoom" data-photo="${ph.id}" aria-label="Ampliar foto de ${esc(p.name)}"><img loading="lazy" decoding="async" src="${esc(photoSource(ph.id))}" data-private-photo="${ph.id}" alt="${esc(p.name)}"><span class="zoomHint">${icon('search')} Ampliar</span></button><figcaption>${ph.is_primary?`<span class="photoTag">${icon('check')} Principal</span>`:`<button class="textBtn setPrimary" data-photo="${ph.id}">Usar como principal</button>`}<button class="textBtn reviewPhoto" data-photo="${ph.id}">Revisar vínculo</button></figcaption></figure>`).join(''):`<div class="emptyPhoto">${icon('photo')}<p>Esta peça ainda não tem foto</p><button id="detailAddPhoto" class="btn">${icon('plus')} Adicionar foto</button></div>`;
   $$('.photoZoom').forEach(b=>b.onclick=()=>enlargePhoto(b.dataset.photo,p.name));
   $$('.setPrimary').forEach(b=>b.onclick=async()=>{try{await photoAction(b.dataset.photo,'confirmada',p.id);await openDetail(p.id);await refresh()}catch(e){toast(e.message,true)}});
   $$('.reviewPhoto').forEach(b=>b.onclick=async()=>{try{await photoAction(b.dataset.photo,'pendente',p.id,false);await openDetail(p.id);await refresh();toast('Foto enviada para revisão')}catch(e){toast(e.message,true)}});
@@ -279,7 +324,7 @@ function renderReview(){
   $('#photoCount').textContent=`${displayNumber(rows.length)} ${rows.length===1?'foto':'fotos'}`;updateReviewSummary(rows.length);
   const pages=Math.max(1,Math.ceil(rows.length/photoPageSize));photoPage=Math.min(photoPage,pages-1);
   $('#photoPagination').classList.toggle('hidden',pages<=1);$('#photoPrev').disabled=photoPage===0;$('#photoNext').disabled=photoPage===pages-1;$('#photoPageLabel').textContent=`Página ${photoPage+1} de ${pages}`;
-  $('#photoReview').innerHTML=rows.slice(photoPage*photoPageSize,(photoPage+1)*photoPageSize).map((p,index)=>`<article class="reviewCard" data-photo="${p.id}" style="--order:${Math.min(index,5)}"><button class="reviewZoom" data-photo="${p.id}" aria-label="Ampliar ${esc(p.filename)}"><img loading="lazy" decoding="async" src="${esc(photoSource(p.id))}" alt="${esc(p.product_name||'Foto sem identificação')}"/><span class="zoomHint">${icon('search')} Ampliar foto</span></button><div class="reviewBody"><div class="reviewCardTop"><span class="photoTag ${p.review_status}">${({confirmada:'Associada',pendente:'Para revisar',oculta:'Oculta'})[p.review_status]||'Para revisar'}</span><span class="reviewPhotoIndex">FOTO ${String(p.id).padStart(3,'0')}</span></div><h3>${esc(p.product_name||photoSuggestion(p).name||'Qual é esta peça?')}</h3><p class="photoFilename" title="${esc(p.filename)}">${esc(p.filename)}</p>${photoSuggestion(p).count?`<div class="suggestionCount"><strong>${photoSuggestion(p).selected?'Foto de exemplo selecionada':'Sugestão para conferir'}</strong><span>${esc(photoSuggestion(p).count)}</span></div>`:''}<details class="reviewContext"><summary>Contexto da identificação</summary><p>${esc(p.review_note||'Identifique a peça e confirme a imagem no catálogo.')}</p></details><label class="field"><span>Vincular a uma peça existente</span><input class="photoAssignment" list="photoProductList" placeholder="Busque pelo nome ou código…" value="${p.product_id?`${p.product_id} · ${esc(p.product_name||'')}`:''}" aria-label="Peça da foto ${p.id}"></label><div class="reviewActions"><button type="button" class="btn primary assignPhoto">${icon('check')} Confirmar vínculo</button><button type="button" class="btn hidePhoto">${p.review_status==='oculta'?'Revisar':'Ocultar'}</button></div>${p.review_status!=='confirmada'?`<button type="button" class="btn createFromPhoto">${icon('plus')} Criar peça com esta foto</button>`:''}</div></article>`).join('')||`<div class="empty">${icon('photo')}<strong>${$('#photoStatus').value==='pendente'&&!q?'Todas as fotos foram revisadas':'Nenhuma foto nesta seleção'}</strong><p>${q?'Experimente outro nome ou código.':'Escolha outra situação para consultar as imagens.'}</p></div>`;
+  $('#photoReview').innerHTML=rows.slice(photoPage*photoPageSize,(photoPage+1)*photoPageSize).map((p,index)=>`<article class="reviewCard" data-photo="${p.id}" style="--order:${Math.min(index,5)}"><button class="reviewZoom" data-photo="${p.id}" aria-label="Ampliar ${esc(p.filename)}"><img loading="lazy" decoding="async" src="${esc(photoSource(p.id))}" data-private-photo="${p.id}" alt="${esc(p.product_name||'Foto sem identificação')}"/><span class="zoomHint">${icon('search')} Ampliar foto</span></button><div class="reviewBody"><div class="reviewCardTop"><span class="photoTag ${p.review_status}">${({confirmada:'Associada',pendente:'Para revisar',oculta:'Oculta'})[p.review_status]||'Para revisar'}</span><span class="reviewPhotoIndex">FOTO ${String(p.id).padStart(3,'0')}</span></div><h3>${esc(p.product_name||photoSuggestion(p).name||'Qual é esta peça?')}</h3><p class="photoFilename" title="${esc(p.filename)}">${esc(p.filename)}</p>${photoSuggestion(p).count?`<div class="suggestionCount"><strong>${photoSuggestion(p).selected?'Foto de exemplo selecionada':'Sugestão para conferir'}</strong><span>${esc(photoSuggestion(p).count)}</span></div>`:''}<details class="reviewContext"><summary>Contexto da identificação</summary><p>${esc(p.review_note||'Identifique a peça e confirme a imagem no catálogo.')}</p></details><label class="field"><span>Vincular a uma peça existente</span><input class="photoAssignment" list="photoProductList" placeholder="Busque pelo nome ou código…" value="${p.product_id?`${p.product_id} · ${esc(p.product_name||'')}`:''}" aria-label="Peça da foto ${p.id}"></label><div class="reviewActions"><button type="button" class="btn primary assignPhoto">${icon('check')} Confirmar vínculo</button><button type="button" class="btn hidePhoto">${p.review_status==='oculta'?'Revisar':'Ocultar'}</button></div>${p.review_status!=='confirmada'?`<button type="button" class="btn createFromPhoto">${icon('plus')} Criar peça com esta foto</button>`:''}</div></article>`).join('')||`<div class="empty">${icon('photo')}<strong>${$('#photoStatus').value==='pendente'&&!q?'Todas as fotos foram revisadas':'Nenhuma foto nesta seleção'}</strong><p>${q?'Experimente outro nome ou código.':'Escolha outra situação para consultar as imagens.'}</p></div>`;
   $$('.reviewZoom').forEach(b=>b.onclick=()=>enlargePhoto(b.dataset.photo,reviewRows.find(p=>p.id==b.dataset.photo)?.filename||'Foto'));
   $$('.reviewCard').forEach(card=>{
     const photo=reviewRows.find(p=>p.id==card.dataset.photo);

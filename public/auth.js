@@ -31,7 +31,7 @@
   document.body.dataset.auth='ready';message('');
   q('#authCode').value='';challenge=null;
   if(!appLoaded){
-   appLoaded=true;const s=document.createElement('script');s.src='/app.js?v=online-1';document.body.append(s);
+   appLoaded=true;const s=document.createElement('script');s.src='/app.js?v=photos-blob-20261008';document.body.append(s);
   }else if(typeof window.refresh==='function')await window.refresh();
  }
  async function authPost(path,body){
