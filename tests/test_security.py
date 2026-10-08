@@ -98,7 +98,7 @@ class HttpSecurity(Security):
         status,_,_=self.request('/api/signup','POST',data=b'{}')
         self.assertIn(status,(401,403,404))
     def test_authenticated_http_mutations_dispatch_stock_rpc(self):
-        original=self.mock.side_effect
+        original=api.remote.side_effect
         def backend(path,*args,**kwargs):
             if path=='/rest/v1/rpc/stock_command':return {'ok':True,'id':999}
             return original(path,*args,**kwargs)
@@ -118,7 +118,7 @@ class HttpSecurity(Security):
         commands=[call.args[2]['command'] for call in remote.call_args_list if call.args[0]=='/rest/v1/rpc/stock_command']
         self.assertEqual(commands,['movement','movement','movement','confirm','review_photo','delete'])
     def test_authenticated_http_create_and_edit_parse_multipart(self):
-        original=self.mock.side_effect
+        original=api.remote.side_effect
         def backend(path,*args,**kwargs):
             if path=='/rest/v1/rpc/stock_command':return {'ok':True,'id':999}
             return original(path,*args,**kwargs)
