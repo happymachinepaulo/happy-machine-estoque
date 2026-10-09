@@ -1,6 +1,6 @@
 import * as THREE from './assets/vendor/three/three.module.min.js';
 
-const host=document.querySelector('.bearWrap'),reduced=matchMedia('(prefers-reduced-motion: reduce)');
+const host=document.querySelector('.bearWrap'),motion=()=>window.HMPresentationMotion?.enabled!==false;
 let renderer;
 try {
  renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power'});
@@ -75,13 +75,13 @@ try {
  let target={x:0,y:0},smooth={x:0,y:0},raf=0,waveUntil=0,visible=true,last=0,available=true;
  function request(){if(!raf&&visible&&available&&!document.hidden)raf=requestAnimationFrame(draw);}
  function draw(t){raf=0;const a=1-Math.pow(.86,Math.min(3,(t-last)/16||1));last=t;smooth.x+=(target.x-smooth.x)*a;smooth.y+=(target.y-smooth.y)*a;
-  const hero=document.querySelector('.hero'),scroll=THREE.MathUtils.clamp(scrollY/Math.max(1,hero.offsetHeight-innerHeight),0,1),idle=reduced.matches?0:Math.sin(t*.0014)*.02;
+  const hero=document.querySelector('.hero'),scroll=THREE.MathUtils.clamp(scrollY/Math.max(1,hero.offsetHeight-innerHeight),0,1),idle=motion()?Math.sin(t*.0014)*.02:0;
   bear.rotation.y=-.1+smooth.x*.34+scroll*.36;bear.rotation.x=smooth.y*.04;bear.rotation.z=idle*.3;
   head.rotation.y=smooth.x*.17;head.rotation.x=smooth.y*.12+idle*.4;
   eyes.forEach(e=>{e.rotation.y=smooth.x*.13;e.rotation.x=smooth.y*.09;});
   const waving=t<waveUntil;arms[1].rotation.z=waving?1.85+Math.sin(t*.012)*.24:.15;head.rotation.z=waving?-.06:idle*.5;
   bear.position.y=idle*.3;renderer.render(scene,camera);host.dataset.turn=bear.rotation.y.toFixed(3);
-  if(!reduced.matches||waving||Math.abs(target.x-smooth.x)+Math.abs(target.y-smooth.y)>.001)request();
+  if(motion()||waving||Math.abs(target.x-smooth.x)+Math.abs(target.y-smooth.y)>.001)request();
  }
  addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;target.x=THREE.MathUtils.clamp(e.clientX/innerWidth*2-1,-1,1);target.y=THREE.MathUtils.clamp(e.clientY/innerHeight*2-1,-1,1);request();},{passive:true});
  document.addEventListener('pointerleave',()=>{target={x:0,y:0};request();});
@@ -90,5 +90,5 @@ try {
  new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;if(visible)request();else{cancelAnimationFrame(raf);raf=0;}},{rootMargin:'50px'}).observe(host);
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();available=false;cancelAnimationFrame(raf);raf=0;host.classList.remove('has3d');host.dataset.renderer='fallback';renderer.domElement.style.display='none';});
  renderer.domElement.addEventListener('webglcontextrestored',()=>{available=true;renderer.domElement.style.display='';host.classList.add('has3d');host.dataset.renderer='webgl';request();});
- document.addEventListener('visibilitychange',request);addEventListener('scroll',request,{passive:true});reduced.addEventListener('change',request);request();
+ document.addEventListener('visibilitychange',request);addEventListener('scroll',request,{passive:true});addEventListener('happy-motion-change',request);request();
 } catch(error) {host.dataset.renderer='fallback';host.classList.remove('has3d');host.querySelector('canvas')?.remove();renderer?.dispose();}

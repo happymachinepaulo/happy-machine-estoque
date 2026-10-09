@@ -1,7 +1,7 @@
 (()=>{
  'use strict';
  const q=s=>document.querySelector(s),qa=s=>[...document.querySelectorAll(s)];
- const reduced=matchMedia('(prefers-reduced-motion: reduce)'),clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
+ const motion=()=>window.HMPresentationMotion?.enabled!==false,clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
  const ease=n=>n*n*(3-2*n),mix=(a,b,t)=>a+(b-a)*t;
  const sections=qa('.scrollScene'),hero=q('.hero'),header=q('.presentationHeader');
  let targetScroll=scrollY,smoothedScroll=scrollY,raf=0,last=0,pointer={x:0,y:0},cursor={x:0,y:0};
@@ -16,7 +16,7 @@
   const paper=active===0||active===2||active===4;header.classList.toggle('onPaper',paper);q('.chapterRail').classList.toggle('atHero',active<0);
   q('#currentChapter').textContent=active<0?'POR DENTRO DO SISTEMA':sections[active].dataset.chapter;q('#railNumber').textContent=active<0?'00':String(active+1).padStart(2,'0');
   const bear=q('.bearWrap');bear.style.setProperty('--bear-turn',cursor.x*10+'deg');bear.style.setProperty('--bear-tilt',-cursor.y*5+'deg');
-  if(!reduced.matches){
+  if(motion()){
    const h=clamp(smoothedScroll/Math.max(1,hero.offsetHeight-innerHeight));
    transform(q('.heroCopy'),0,-h*(mobile?45:90),0,0,1-h*.035,1-h*.8);
    transform(q('.heroPlayground'),0,-h*60,0,0,1+h*.08,1-h*.35);
@@ -62,5 +62,8 @@
  addEventListener('scroll',()=>{targetScroll=scrollY;request();},{passive:true});addEventListener('resize',()=>{targetScroll=scrollY;request();},{passive:true});
  addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;pointer={x:clamp(e.clientX/innerWidth*2-1,-1,1),y:clamp(e.clientY/innerHeight*2-1,-1,1)};request();},{passive:true});
  document.addEventListener('pointerleave',()=>{pointer={x:0,y:0};request();});document.addEventListener('visibilitychange',request);
- reduced.addEventListener('change',()=>location.reload());request();
+ addEventListener('happy-motion-change',()=>{
+  if(!motion())document.querySelectorAll('main [style]').forEach(el=>{el.style.removeProperty('transform');el.style.removeProperty('opacity');el.style.removeProperty('margin-left');});
+  targetScroll=scrollY;smoothedScroll=scrollY;request();
+ });request();
 })();

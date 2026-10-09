@@ -6,13 +6,16 @@
  <meta name="description" content="Conheça o estoque Happy Machine. Um lugar para encontrar peças, conferir fotos e acompanhar cada movimento.">
  <meta name="theme-color" content="#141419">
  <link rel="icon" href="/assets/happy-machine-logo.png">
- <link rel="stylesheet" href="/aprs.css?v=studio-3">
- <script src="/aprs.js?v=studio-3" defer></script>
- <script src="/aprs-bear.js?v=studio-3" type="module"></script>
+ <link rel="stylesheet" href="/aprs.css?v=motion-4">
+ <script src="/assets/vendor/gsap/gsap.min.js" defer></script>
+ <script src="/assets/vendor/gsap/ScrollTrigger.min.js" defer></script>
+ <script src="/aprs-motion.js?v=motion-4" defer></script>
+ <script src="/aprs.js?v=motion-4" defer></script>
+ <script src="/aprs-bear.js?v=motion-4" type="module"></script>
 </head>
 <body>
  <div class="scrollProgress" aria-hidden="true"></div>
- <header class="presentationHeader"><img src="/assets/happy-machine-logo-transparent.png" alt="Happy Machine"><span class="headerWord">ESTOQUE &amp; MANUTENÇÃO</span><div class="headerChapter"><span id="currentChapter">POR DENTRO DO SISTEMA</span><span class="headerArrow" aria-hidden="true">↘</span></div></header>
+ <header class="presentationHeader"><img src="/assets/happy-machine-logo-transparent.png" alt="Happy Machine"><span class="headerWord">ESTOQUE &amp; MANUTENÇÃO</span><div class="headerChapter"><span id="currentChapter">POR DENTRO DO SISTEMA</span><button id="motionToggle" class="motionToggle" type="button" aria-pressed="true" aria-label="Reduzir animações"><span aria-hidden="true">Ⅱ</span><span class="motionLabel">Reduzir movimento</span></button><span class="headerArrow" aria-hidden="true">↘</span></div></header>
  <main>
   <section class="hero" data-chapter="HAPPY MACHINE" aria-labelledby="heroTitle">
    <div class="heroGrid">
