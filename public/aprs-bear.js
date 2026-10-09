@@ -1,65 +1,94 @@
 import * as THREE from './assets/vendor/three/three.module.min.js';
 
-// A local, articulated mesh: the head, eyes and shoulder rotate independently.
-const host=document.querySelector('.bearWrap');
-const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+const host=document.querySelector('.bearWrap'),reduced=matchMedia('(prefers-reduced-motion: reduce)');
+let renderer;
 try {
- const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power'});
- renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));
- renderer.outputColorSpace=THREE.SRGBColorSpace;
- renderer.toneMapping=THREE.ACESFilmicToneMapping;
- renderer.toneMappingExposure=1.35;
- renderer.domElement.setAttribute('aria-label','Urso Happy em 3D, com cabeça e olhos que acompanham o mouse');
- host.append(renderer.domElement);
- const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(32,1,.1,100);
- camera.position.set(0,1.6,7.6);camera.lookAt(0,1.5,0);
- scene.add(new THREE.HemisphereLight(0xfff5e2,0x9b5269,2.2));
- const light=new THREE.DirectionalLight(0xfff4df,3.2);light.position.set(-3,6,5);scene.add(light);
- const rim=new THREE.DirectionalLight(0x91b8ff,2);rim.position.set(4,3,-3);scene.add(rim);
- const grain=document.createElement('canvas');grain.width=grain.height=128;
- const ctx=grain.getContext('2d'),data=ctx.createImageData(128,128);
- let seed=12;for(let i=0;i<data.data.length;i+=4){seed=(seed*1664525+1013904223)>>>0;const v=120+(seed>>>27)*3;data.data.set([v,v,v,255],i);}ctx.putImageData(data,0,0);
- const texture=new THREE.CanvasTexture(grain);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(8,8);
- const mat=(color,roughness=.86)=>new THREE.MeshStandardMaterial({color,roughness,bumpMap:texture,bumpScale:.014});
- const red=mat('#ed2146'),cream=mat('#fff0de'),yellow=mat('#ffdc3b'),dark=mat('#271822',.32),white=mat('#ffffff',.2);
+ renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power'});
+ renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;
+ renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.92;
+ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.domElement.setAttribute('aria-label','Mascote Happy em pelúcia 3D, com cabeça e olhos articulados');host.append(renderer.domElement);
+ const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(31,1,.1,30);
+ camera.position.set(.16,1.38,6.8);camera.lookAt(0,1.21,0);
+ scene.add(new THREE.HemisphereLight(0xffe9dc,0x633b48,1.8));
+ const key=new THREE.DirectionalLight(0xfff0df,3.1);key.position.set(-3,5,5);key.castShadow=true;
+ key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-2;key.shadow.camera.right=2;key.shadow.camera.top=4;key.shadow.camera.bottom=-1;key.shadow.camera.near=.1;key.shadow.camera.far=15;key.shadow.normalBias=.025;key.shadow.radius=5;scene.add(key);
+ const rim=new THREE.DirectionalLight(0xb8c9ff,1.6);rim.position.set(3,3,-3);scene.add(rim);
+ const fill=new THREE.DirectionalLight(0xff647b,.5);fill.position.set(2,1,4);scene.add(fill);
+ let seed=7342;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+ const grain=document.createElement('canvas');grain.width=grain.height=128;const ctx=grain.getContext('2d'),pixels=ctx.createImageData(128,128);
+ for(let i=0;i<pixels.data.length;i+=4){const v=80+random()*130;pixels.data.set([v,v,v,255],i);}ctx.putImageData(pixels,0,0);
+ const texture=new THREE.CanvasTexture(grain);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(5,5);
+ const plush=color=>new THREE.MeshStandardMaterial({color,roughness:.97,bumpMap:texture,bumpScale:.0035});
+ const red=plush('#be1035'),cream=plush('#f9ead9'),yellow=plush('#f1ce34');
+ const dark=new THREE.MeshPhysicalMaterial({color:'#21161a',roughness:.25,clearcoat:.6,clearcoatRoughness:.3});
+ const glint=new THREE.MeshBasicMaterial({color:0xfff4e8});
  const sphere=new THREE.SphereGeometry(1,48,32),bear=new THREE.Group();scene.add(bear);
- function ball(parent,material,x,y,z,sx,sy,sz){const m=new THREE.Mesh(sphere,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);parent.add(m);return m;}
- ball(bear,red,0,.8,0,.77,.96,.57);ball(bear,cream,0,.78,.5,.48,.65,.13);
- for(const side of [-1,1]){ball(bear,red,side*.55,-.04,.24,.43,.3,.49);ball(bear,cream,side*.55,-.09,.72,.27,.19,.12);}
- const arms=[];for(const side of [-1,1]){const arm=new THREE.Group();arm.position.set(side*.7,1.32,0);arm.rotation.z=side*.24;bear.add(arm);ball(arm,red,side*.16,-.43,0,.3,.62,.32);ball(arm,cream,side*.2,-.84,.2,.21,.19,.17);arms.push(arm);}
- const head=new THREE.Group();head.position.set(0,2.05,0);bear.add(head);
- ball(head,red,0,0,0,.94,.83,.68);
- for(const side of [-1,1]){ball(head,red,side*.74,.64,-.05,.35,.35,.24);ball(head,cream,side*.74,.66,.16,.21,.22,.06);ball(head,yellow,side*.64,-.22,.56,.12,.12,.045);}
- ball(head,cream,0,-.27,.63,.34,.4,.18);ball(head,dark,0,-.02,.8,.115,.095,.08);
- const eyes=[];for(const side of [-1,1]){const eye=new THREE.Group();eye.position.set(side*.37,.12,.61);head.add(eye);ball(eye,dark,0,0,0,.105,.125,.07);ball(eye,white,-.023,.037,.063,.028,.033,.014);eyes.push(eye);}
- function curve(points){const path=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));head.add(new THREE.Mesh(new THREE.TubeGeometry(path,24,.021,8,false),dark));}
- curve([[0,-.1,.82],[0,-.25,.823]]);curve([[-.17,-.3,.79],[-.13,-.41,.80],[-.055,-.43,.82],[0,-.34,.83],[.055,-.43,.82],[.13,-.41,.80],[.17,-.3,.79]]);
- // Sewn label follows the belly instead of floating as a flat image.
- const label=document.createElement('canvas');label.width=512;label.height=160;const lc=label.getContext('2d');lc.fillStyle='#ffdc3b';lc.fillRect(0,0,512,160);lc.strokeStyle='#b58a24';lc.lineWidth=5;lc.setLineDash([7,9]);lc.strokeRect(12,12,488,136);lc.fillStyle='#ad1334';lc.font='900 92px Arial';lc.textAlign='center';lc.fillText('HAPPY',256,115);
- const badge=new THREE.Mesh(new THREE.PlaneGeometry(.79,.25),new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(label),roughness:1,side:THREE.DoubleSide}));badge.position.set(0,.88,.65);badge.rotation.z=.08;bear.add(badge);
- const floor=new THREE.Mesh(new THREE.CircleGeometry(1.15,64),new THREE.MeshBasicMaterial({color:0xd6a7b0,transparent:true,opacity:.35}));floor.rotation.x=-Math.PI/2;floor.position.set(0,-.36,0);scene.add(floor);
+ const hairGeometry=new THREE.ConeGeometry(.0014,.008,4),hairMaterial=new THREE.MeshBasicMaterial({color:'#ee4867',transparent:true,opacity:.18,depthWrite:false,side:THREE.DoubleSide});
+ const dummy=new THREE.Object3D(),up=new THREE.Vector3(0,1,0);
+ // Short fibres follow the surface normals of each sewn plush volume.
+ function fibres(parent,position,scale,count){
+  const hairs=new THREE.InstancedMesh(hairGeometry,hairMaterial,count);hairs.frustumCulled=false;
+  for(let i=0;i<count;i++){const y=random()*2-1,angle=random()*Math.PI*2,r=Math.sqrt(1-y*y),x=Math.cos(angle)*r,z=Math.sin(angle)*r;
+   const normal=new THREE.Vector3(x/scale[0],y/scale[1],z/scale[2]).normalize();
+   dummy.position.set(position[0]+x*scale[0],position[1]+y*scale[1],position[2]+z*scale[2]);dummy.position.addScaledVector(normal,.003);
+   dummy.quaternion.setFromUnitVectors(up,normal);dummy.scale.setScalar(.7+random()*.6);dummy.updateMatrix();hairs.setMatrixAt(i,dummy.matrix);
+  }parent.add(hairs);
+ }
+ function ball(parent,material,x,y,z,sx,sy,sz,fur=0){const mesh=new THREE.Mesh(sphere,material);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);if(fur)fibres(parent,[x,y,z],[sx,sy,sz],fur);return mesh;}
+ // Compact seated silhouette, rounded shoulders and a broad, logo-like head.
+ ball(bear,red,0,.64,0,.64,.7,.49,1200);
+ ball(bear,cream,0,.61,.445,.39,.46,.105);
+ for(const side of [-1,1]){
+  ball(bear,red,side*.46,.02,.32,.34,.27,.41,550);
+  const sole=ball(bear,cream,side*.46,-.015,.71,.22,.15,.055);sole.rotation.z=side*.12;
+ }
+ const arms=[];
+ for(const side of [-1,1]){const arm=new THREE.Group();arm.position.set(side*.6,.99,.03);arm.rotation.z=side*.15;bear.add(arm);
+  ball(arm,red,side*.075,-.28,.035,.245,.405,.26,600);
+  ball(arm,cream,side*.095,-.51,.225,.155,.145,.052);arms.push(arm);
+ }
+ const head=new THREE.Group();head.position.set(0,1.66,.015);bear.add(head);
+ ball(head,red,0,0,0,.88,.77,.64,2500);
+ for(const side of [-1,1]){
+  ball(head,red,side*.66,.6,-.035,.29,.3,.24,350);
+  ball(head,cream,side*.66,.615,.187,.176,.18,.037);
+  ball(head,yellow,side*.59,-.19,.47,.105,.105,.041);
+ }
+ ball(head,cream,0,-.25,.568,.295,.345,.12);
+ const nose=ball(head,dark,0,-.067,.684,.091,.073,.052);
+ nose.rotation.z=.06;
+ const eyes=[];
+ for(const side of [-1,1]){const eye=new THREE.Group();eye.position.set(side*.33,.106,.565);head.add(eye);ball(eye,dark,0,0,0,.063,.069,.041);ball(eye,glint,-.015,.022,.037,.012,.013,.007);eyes.push(eye);}
+ function stitch(points,radius=.013){const curve=new THREE.CatmullRomCurve3(points.map(v=>new THREE.Vector3(...v)));head.add(new THREE.Mesh(new THREE.TubeGeometry(curve,32,radius,7,false),dark));}
+ stitch([[0,-.134,.701],[0,-.215,.701]]);
+ stitch([[-.135,-.257,.678],[-.098,-.332,.689],[-.049,-.324,.697],[0,-.247,.704],[.049,-.324,.697],[.098,-.332,.689],[.135,-.257,.678]]);
+ // Fabric label is wrapped over the belly's curvature to avoid a floating badge.
+ const label=document.createElement('canvas');label.width=512;label.height=160;const lc=label.getContext('2d');lc.fillStyle='#f5d846';lc.fillRect(0,0,512,160);lc.strokeStyle='#c1a23d';lc.lineWidth=4;lc.setLineDash([5,8]);lc.strokeRect(10,10,492,140);lc.fillStyle='#ad1736';lc.textAlign='center';lc.font='800 85px Arial';lc.fillText('HAPPY',256,113);
+ const badgeGeometry=new THREE.PlaneGeometry(.52,.16,24,4),pos=badgeGeometry.attributes.position;
+ for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i)+.65;pos.setZ(i,.445+.105*Math.sqrt(Math.max(0,1-(x/.39)**2-((y-.61)/.46)**2))+.008);}badgeGeometry.computeVertexNormals();
+ const badge=new THREE.Mesh(badgeGeometry,new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(label),roughness:1,bumpMap:texture,bumpScale:.003}));badge.position.y=.65;bear.add(badge);
+ const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=128;const sc=shadowCanvas.getContext('2d'),grad=sc.createRadialGradient(64,64,5,64,64,64);grad.addColorStop(0,'rgba(0,0,0,.48)');grad.addColorStop(1,'rgba(0,0,0,0)');sc.fillStyle=grad;sc.fillRect(0,0,128,128);
+ const shadow=new THREE.Mesh(new THREE.PlaneGeometry(2.5,1.65),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.set(0,-.265,.08);scene.add(shadow);
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(8,8),new THREE.ShadowMaterial({opacity:.17}));ground.rotation.x=-Math.PI/2;ground.position.y=-.267;ground.receiveShadow=true;scene.add(ground);
  host.classList.add('has3d');host.dataset.renderer='webgl';
- let target={x:0,y:0},smooth={x:0,y:0},raf=0,waveUntil=0,visible=true,last=0;
- function request(){if(!raf&&visible&&!document.hidden)raf=requestAnimationFrame(draw);}
- function draw(t){raf=0;const dt=Math.min(3,(t-last)/16||1);last=t;const a=1-Math.pow(.83,dt);smooth.x+=(target.x-smooth.x)*a;smooth.y+=(target.y-smooth.y)*a;
-  const scroll=Math.min(1,Math.max(0,-document.querySelector('.hero').getBoundingClientRect().top/innerHeight));
-  bear.rotation.y=smooth.x*.48+scroll*.3;bear.rotation.x=smooth.y*.1;head.rotation.y=smooth.x*.24;head.rotation.x=smooth.y*.16;
-  eyes.forEach(e=>{e.rotation.y=smooth.x*.17;e.rotation.x=smooth.y*.13;});
-  const waving=t<waveUntil;arms[1].rotation.z=waving?-1.9+Math.sin(t*.013)*.3:.24;
-  bear.position.y=reduced.matches?0:Math.sin(t*.0017)*.035;bear.rotation.z=waving?Math.sin(t*.005)*.035:0;
-  renderer.render(scene,camera);host.dataset.turn=bear.rotation.y.toFixed(3);
+ let target={x:0,y:0},smooth={x:0,y:0},raf=0,waveUntil=0,visible=true,last=0,available=true;
+ function request(){if(!raf&&visible&&available&&!document.hidden)raf=requestAnimationFrame(draw);}
+ function draw(t){raf=0;const a=1-Math.pow(.86,Math.min(3,(t-last)/16||1));last=t;smooth.x+=(target.x-smooth.x)*a;smooth.y+=(target.y-smooth.y)*a;
+  const hero=document.querySelector('.hero'),scroll=THREE.MathUtils.clamp(scrollY/Math.max(1,hero.offsetHeight-innerHeight),0,1),idle=reduced.matches?0:Math.sin(t*.0014)*.02;
+  bear.rotation.y=-.1+smooth.x*.34+scroll*.36;bear.rotation.x=smooth.y*.04;bear.rotation.z=idle*.3;
+  head.rotation.y=smooth.x*.17;head.rotation.x=smooth.y*.12+idle*.4;
+  eyes.forEach(e=>{e.rotation.y=smooth.x*.13;e.rotation.x=smooth.y*.09;});
+  const waving=t<waveUntil;arms[1].rotation.z=waving?1.85+Math.sin(t*.012)*.24:.15;head.rotation.z=waving?-.06:idle*.5;
+  bear.position.y=idle*.3;renderer.render(scene,camera);host.dataset.turn=bear.rotation.y.toFixed(3);
   if(!reduced.matches||waving||Math.abs(target.x-smooth.x)+Math.abs(target.y-smooth.y)>.001)request();
  }
- addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const r=host.getBoundingClientRect();target.x=THREE.MathUtils.clamp((e.clientX-r.left-r.width/2)/(innerWidth*.38),-1,1);target.y=THREE.MathUtils.clamp((e.clientY-r.top-r.height/2)/(innerHeight*.5),-1,1);request();},{passive:true});
- host.addEventListener('pointermove',e=>{if(e.pointerType==='touch'){const r=host.getBoundingClientRect();target.x=(e.clientX-r.left)/r.width*2-1;request();}});
+ addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;target.x=THREE.MathUtils.clamp(e.clientX/innerWidth*2-1,-1,1);target.y=THREE.MathUtils.clamp(e.clientY/innerHeight*2-1,-1,1);request();},{passive:true});
  document.addEventListener('pointerleave',()=>{target={x:0,y:0};request();});
- host.addEventListener('click',()=>{waveUntil=performance.now()+2000;request();});
- host.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){waveUntil=performance.now()+2000;request();}});
- const resize=new ResizeObserver(()=>{const width=host.clientWidth;renderer.setSize(width,width*1.11,false);camera.aspect=1/1.11;camera.updateProjectionMatrix();request();});resize.observe(host);
- new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;if(visible)request();else{cancelAnimationFrame(raf);raf=0;}},{rootMargin:'80px'}).observe(host);
+ function greet(){waveUntil=performance.now()+1800;request();}host.addEventListener('click',greet);host.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();greet();}});
+ const resize=new ResizeObserver(()=>{const w=host.clientWidth;renderer.setSize(w,w*1.11,false);camera.aspect=1/1.11;camera.updateProjectionMatrix();request();});resize.observe(host);
+ new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;if(visible)request();else{cancelAnimationFrame(raf);raf=0;}},{rootMargin:'50px'}).observe(host);
+ renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();available=false;cancelAnimationFrame(raf);raf=0;host.classList.remove('has3d');host.dataset.renderer='fallback';renderer.domElement.style.display='none';});
+ renderer.domElement.addEventListener('webglcontextrestored',()=>{available=true;renderer.domElement.style.display='';host.classList.add('has3d');host.dataset.renderer='webgl';request();});
  document.addEventListener('visibilitychange',request);addEventListener('scroll',request,{passive:true});reduced.addEventListener('change',request);request();
-} catch(error) {
- host.dataset.renderer='fallback';
- // The existing illustration stays available when WebGL is disabled.
- const canvas=host.querySelector('canvas');if(canvas)canvas.remove();
-}
+} catch(error) {host.dataset.renderer='fallback';host.classList.remove('has3d');host.querySelector('canvas')?.remove();renderer?.dispose();}
