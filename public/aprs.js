@@ -5,6 +5,13 @@
  const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
  const ease=n=>n*n*(3-2*n);
  const mix=(a,b,n)=>a+(b-a)*n;
+ const chapters=qa('.reviewStory,.repairPresentation,.teamStory,.closing');
+ chapters.forEach(section=>{
+  const interior=document.createElement('div');interior.className='sceneInterior';
+  while(section.firstChild)interior.append(section.firstChild);
+  section.append(interior);section.classList.add('continuousScene');
+  section.querySelectorAll('.reveal').forEach(el=>el.classList.remove('reveal'));
+ });
  const hero=q('.hero'),bear=q('.bearWrap'),scene=q('.inventoryStory'),move=q('.movementStory');
  const cards=qa('.pieceCard'),entry=q('.entryNote'),exit=q('.exitNote'),receipt=q('.historySlip');
  let pointer={x:0,y:0},smooth={x:0,y:0},frame=null,dirty=true,last=0;
@@ -15,7 +22,7 @@
   const t=clamp((time-last)/16,0,3);last=time;
   const amount=1-Math.pow(.86,t||1);
   smooth.x=mix(smooth.x,pointer.x,amount);smooth.y=mix(smooth.y,pointer.y,amount);
-  if(!reduced.matches&&hero.getBoundingClientRect().bottom>0){
+  if(hero.getBoundingClientRect().bottom>0){
    bear.style.setProperty('--bear-turn',smooth.x*13+'deg');bear.style.setProperty('--bear-tilt',-smooth.y*8+'deg');
    bear.style.setProperty('--head-x',smooth.x*8+'px');bear.style.setProperty('--head-y',smooth.y*5+'px');bear.style.setProperty('--head-turn',smooth.x*5+'deg');
    bear.style.setProperty('--eye-x',smooth.x*5+'px');bear.style.setProperty('--eye-y',smooth.y*4+'px');
@@ -27,6 +34,29 @@
    dirty=false;
    document.documentElement.style.setProperty('--progress',clamp(scrollY/Math.max(1,document.documentElement.scrollHeight-innerHeight)));
    if(!reduced.matches){
+    const h=clamp(-hero.getBoundingClientRect().top/innerHeight);
+    q('.heroCopy').style.transform=`translateY(${-h*110}px) scale(${1-h*.08})`;
+    q('.heroCopy').style.opacity=1-h*.85;
+    q('.brandRibbon>div').style.transform=`translateX(${-scrollY*.38}px)`;
+    qa('.orbit').forEach((el,i)=>el.style.rotate=(scrollY*.035*(i%2?-1:1))+'deg');
+    chapters.forEach((section,index)=>{
+     const p=progress(section),enter=ease(clamp(p/.22)),leave=ease(clamp((p-.82)/.18));
+     section.style.setProperty('--scene-progress',p);
+     const copy=section.querySelector('h2');copy.style.transform=`translate3d(0,${(1-enter)*65-leave*70}px,0) scale(${.96+enter*.04-leave*.04})`;copy.style.opacity=.3+enter*.7-leave*.65;
+     let items;
+     if(index===0)items=[...section.querySelectorAll('.polaroid,.reviewDecision,.reviewSteps>div')];
+     if(index===1)items=[...section.querySelectorAll('.benchCard')];
+     if(index===2)items=[...section.querySelectorAll('.accessCard')];
+     if(index===3)items=[...section.querySelectorAll('.closingBrand,.closingStar,.closing p')];
+     items.forEach((el,i)=>{
+      const a=ease(clamp((p-i*.065)/.32)),b=ease(clamp((p-.8-i*.018)/.15)),direction=i%2?1:-1;
+      let rotate=(1-a)*direction*18+b*direction*15;
+      if(el.classList.contains('polaroid'))rotate+=el.classList.contains('polaroidFront')?8:-12;
+      el.style.transform=`translate3d(${(1-a)*direction*(innerWidth<700?70:180)+b*direction*90}px,${(1-a)*110-b*110}px,0) rotate(${rotate}deg) scale(${.88+a*.12-b*.08})`;
+      el.style.opacity=clamp(a*2)*(1-b*.85);
+     });
+     const orbit=section.querySelector('.closingOrbit');if(orbit)orbit.style.transform=`scale(${.7+p*.7}) rotate(${p*80}deg)`;
+    });
     const p=progress(scene),mobile=innerWidth<=700;
     cards.forEach((card,i)=>{
      const enter=ease(clamp((p-i*.12)/.34)),leave=ease(clamp((p-.84)/.16));
@@ -47,7 +77,7 @@
  }
  addEventListener('scroll',request,{passive:true});addEventListener('resize',request,{passive:true});
  addEventListener('pointermove',e=>{
-  if(reduced.matches||e.pointerType==='touch')return;
+  if(e.pointerType==='touch')return;
   const rect=q('.heroPlayground').getBoundingClientRect();
   pointer.x=clamp((e.clientX-rect.left-rect.width/2)/(rect.width/2),-1,1);
   pointer.y=clamp((e.clientY-rect.top-rect.height/2)/(rect.height/2),-1,1);request();
