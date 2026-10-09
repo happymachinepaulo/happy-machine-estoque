@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+ <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Por dentro do estoque — Happy Machine</title>
+ <meta name="description" content="Uma apresentação interativa do sistema de estoque da Happy Machine. Peças, fotos, movimentos e equipe, no mesmo lugar.">
+ <meta name="theme-color" content="#f6f1e8">
+ <link rel="icon" href="/assets/happy-machine-logo.png"><link rel="stylesheet" href="/aprs.css?v=1">
+ <script src="/aprs.js?v=1" defer></script>
+</head>
+<body>
+ <div class="scrollProgress" aria-hidden="true"></div>
+ <header class="presentationHeader"><img src="/assets/happy-machine-logo-transparent.png" alt="Happy Machine"><span>ESTOQUE, DO JEITO HAPPY.</span><span class="edition">UMA VISITA POR DENTRO <i>↘</i></span></header>
+ <main>
+  <section class="hero chapter" id="inicio" aria-labelledby="heroTitle">
+   <div class="heroCopy"><div class="overline"><span class="tinyStar">✳</span> CADA PEÇA TEM UMA HISTÓRIA.</div><h1 id="heroTitle">Peças no lugar.<br><span>Happy</span><br>no comando<span class="titleDot">.</span></h1><p>Do motor da garra ao último LED.<br>Um estoque feito para quem mantém<br>a diversão funcionando.</p><div class="scrollPrompt"><span class="scrollMouse" aria-hidden="true"></span><span>Role para ver as peças se encaixarem.</span></div></div>
+   <div class="heroPlayground" aria-label="Mascote Happy que acompanha o movimento do mouse">
+    <div class="orbit orbitOne"></div><div class="orbit orbitTwo"></div><div class="orbit orbitThree"></div>
+    <span class="heroSticker stickerYellow">SEM PEÇA PERDIDA.</span><span class="heroSticker stickerBlue">SEM CONTAGEM NO ACHISMO.</span>
+    <div class="bearWrap" tabindex="0" role="button" aria-label="Cumprimentar o urso Happy. Pressione Enter."><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 620" role="img" aria-label="Urso Happy Machine de pelúcia vermelha com detalhes amarelos">
+<defs>
+ <radialGradient id="fur" cx="32%" cy="22%" r="80%"><stop stop-color="#ff6879"/><stop offset=".48" stop-color="#ef2147"/><stop offset="1" stop-color="#a80830"/></radialGradient>
+ <radialGradient id="paw" cx="35%" cy="25%"><stop stop-color="#ff526b"/><stop offset="1" stop-color="#b90935"/></radialGradient>
+ <radialGradient id="cream"><stop stop-color="#fffaf0"/><stop offset="1" stop-color="#e5c9bd"/></radialGradient>
+ <radialGradient id="shine"><stop stop-color="#49303a"/><stop offset="1" stop-color="#1e1823"/></radialGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="8"/></filter>
+ <filter id="plush" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="3" seed="12" result="texture"/><feColorMatrix in="texture" type="saturate" values="0" result="grayTexture"/><feComponentTransfer in="grayTexture" result="faintTexture"><feFuncA type="linear" slope=".15"/></feComponentTransfer><feComposite in="faintTexture" in2="SourceGraphic" operator="in" result="inside"/><feBlend in="SourceGraphic" in2="inside" mode="multiply"/></filter>
+</defs>
+<ellipse cx="283" cy="577" rx="149" ry="18" fill="#75142c" opacity=".15" filter="url(#soft)"/>
+<g id="bearBody">
+ <ellipse cx="277" cy="403" rx="119" ry="139" fill="url(#fur)"/>
+ <ellipse cx="278" cy="418" rx="80" ry="96" fill="url(#cream)"/>
+ <path d="M244 349 Q278 368 312 349" fill="none" stroke="#b99487" stroke-width="3" stroke-dasharray="2 5"/>
+ <g id="bearLeftArm"><ellipse cx="154" cy="394" rx="50" ry="91" transform="rotate(25 154 394)" fill="url(#paw)"/><ellipse cx="124" cy="455" rx="39" ry="37" fill="url(#cream)"/><path d="M103 450l3 17m12-21 2 21m12-19-1 19" stroke="#d4aca1" stroke-width="3" stroke-linecap="round"/></g>
+ <g id="bearRightArm"><ellipse cx="403" cy="394" rx="50" ry="91" transform="rotate(-25 403 394)" fill="url(#paw)"/><ellipse cx="433" cy="455" rx="39" ry="37" fill="url(#cream)"/><path d="M411 450l3 17m12-21 2 21m12-19-1 19" stroke="#d4aca1" stroke-width="3" stroke-linecap="round"/></g>
+ <ellipse cx="202" cy="532" rx="65" ry="51" transform="rotate(-12 202 532)" fill="url(#paw)"/><ellipse cx="202" cy="545" rx="43" ry="27" transform="rotate(-12 202 545)" fill="url(#cream)"/>
+ <ellipse cx="355" cy="532" rx="65" ry="51" transform="rotate(12 355 532)" fill="url(#paw)"/><ellipse cx="355" cy="545" rx="43" ry="27" transform="rotate(12 355 545)" fill="url(#cream)"/>
+ <g transform="rotate(-7 280 410)"><rect x="215" y="386" width="128" height="47" rx="13" fill="#ffd638"/><rect x="220" y="391" width="118" height="37" rx="10" fill="none" stroke="#c4a128" stroke-dasharray="2 4"/><text x="279" y="418" text-anchor="middle" font-family="Arial,sans-serif" font-size="25" font-weight="900" fill="#b01134">HAPPY</text></g>
+</g>
+<g id="bearHead">
+ <circle cx="164" cy="122" r="66" fill="url(#paw)"/><circle cx="164" cy="123" r="39" fill="url(#cream)"/>
+ <circle cx="395" cy="116" r="66" fill="url(#paw)"/><circle cx="395" cy="117" r="39" fill="url(#cream)"/>
+ <path d="M120 203C118 107 184 89 276 91c97-1 163 19 166 107 2 98-51 161-162 162-112 0-166-55-160-157" fill="url(#fur)" filter="url(#plush)"/>
+ <path d="M166 153c28-25 74-34 111-32" fill="none" stroke="#ff91a1" stroke-width="8" stroke-linecap="round" opacity=".35"/>
+ <ellipse cx="280" cy="273" rx="68" ry="72" fill="url(#cream)"/>
+ <ellipse cx="280" cy="222" rx="19" ry="16" fill="url(#shine)"/><ellipse cx="275" cy="218" rx="6" ry="3" fill="white" opacity=".25"/>
+ <path d="M280 239v15m-25 4c3 29 23 20 25 5 4 17 22 25 26-5" fill="none" stroke="#54313d" stroke-width="6" stroke-linecap="round"/>
+ <circle cx="173" cy="257" r="18" fill="#ffe03e" stroke="#cc9b24" stroke-width="4"/><circle cx="387" cy="257" r="18" fill="#ffe03e" stroke="#cc9b24" stroke-width="4"/>
+ <g id="bearEyes"><ellipse cx="212" cy="194" rx="15" ry="19" fill="url(#shine)"/><ellipse cx="349" cy="191" rx="15" ry="19" fill="url(#shine)"/><g id="bearPupils"><circle cx="208" cy="189" r="5" fill="#fff"/><circle cx="345" cy="186" r="5" fill="#fff"/></g></g>
+ <path d="M272 110q12-8 24 0m-22 231 3-7m8 7-2-7" fill="none" stroke="#a80b32" stroke-width="2" stroke-dasharray="2 3" opacity=".5"/>
+</g>
+</svg>
+</div>
+    <div class="bearPedestal"></div><span class="bearTag"><i>↖</i> Mexa o mouse.<br>Ele está de olho.</span>
+    <div class="miniTicket"><span>HAPPY / MANUTENÇÃO</span><strong>Pequenas peças.<br>Grandes histórias.</strong><div class="ticketBarcode" aria-hidden="true"></div></div>
+    <span class="spark sparkA">✳</span><span class="spark sparkB">✦</span><span class="spark sparkC">+</span>
+   </div>
+   <div class="heroBottom"><span>PEÇA POR PEÇA. MOVIMENTO POR MOVIMENTO.</span><span>01 — 05</span></div>
+  </section>
+  <div class="brandRibbon" aria-hidden="true"><div>HAPPY É SABER ONDE ESTÁ <span>✳</span> HAPPY É SABER QUANTO TEM <span>✳</span> HAPPY É SABER ONDE ESTÁ <span>✳</span> HAPPY É SABER QUANTO TEM <span>✳</span></div></div>
+  <section class="inventoryStory scrollScene" aria-labelledby="inventoryTitle">
+   <div class="storySticky">
+    <div class="storyCopy"><span class="chapterLabel">01 / ENCONTRE SUA PEÇA</span><h2 id="inventoryTitle">A gaveta inteira.<br><em>Na palma<br>da mão.</em></h2><p>Nome, categoria, foto e contagem.<br>O que antes estava espalhado ganha<br>um lugar — e uma identidade.</p><span class="sceneHint">Continue rolando. O catálogo toma forma. ↓</span></div>
+    <div class="catalogueStage" aria-hidden="true">
+     <div class="catalogueBack"><span>HAPPY MACHINE</span><span>CATÁLOGO DE PEÇAS ↗</span><div class="catalogueSearch">⌕ &nbsp; Qual peça você precisa?</div><div class="catalogueGrid"></div></div>
+     <article class="pieceCard pieceMotor"><div class="pieceArt motorArt"><div class="motorShaft"></div><div class="motorBody"></div><div class="motorCap"></div><span class="artLabel">MECÂNICA</span></div><div class="pieceInfo"><span>MOTORES &amp; MECANISMOS <i>#032</i></span><h3>Motor da garra</h3><strong>12 <small>unidades</small></strong></div></article>
+     <article class="pieceCard pieceLed"><div class="pieceArt ledArt"><div class="ledStrip"></div><div class="ledStrip second"></div><span class="artLabel">ILUMINAÇÃO</span></div><div class="pieceInfo"><span>LED &amp; ILUMINAÇÃO <i>#018</i></span><h3>Barra de LED</h3><strong>24 <small>unidades</small></strong></div></article>
+     <article class="pieceCard pieceButton"><div class="pieceArt buttonArt"><div class="arcadeButton"></div><span class="artLabel">COMANDOS</span></div><div class="pieceInfo"><span>BOTÕES &amp; CONTATOS <i>#047</i></span><h3>Botão de painel</h3><strong>8 <small>unidades</small></strong></div></article>
+     <div class="catalogueCaption"><span>← FOTO QUE IDENTIFICA.</span><span>CONTAGEM QUE ORIENTA. →</span></div>
+    </div>
+   </div>
+  </section>
+  <section class="movementStory scrollScene" aria-labelledby="movementTitle">
+   <div class="movementSticky">
+    <div class="movementHeading"><span class="chapterLabel">02 / ACOMPANHE CADA MOVIMENTO</span><h2 id="movementTitle">Entrou. Saiu.<br><span>Ficou registrado.</span></h2><p>Quem movimentou, quando aconteceu, por quê.<br>A quantidade muda. A história fica.</p></div>
+    <div class="movementTrack" aria-hidden="true">
+     <div class="trackLine"></div><span class="trackEndpoint">PRATELEIRA</span><span class="trackEndpoint right">MANUTENÇÃO</span>
+     <div class="movementNote entryNote"><span>↙ ENTRADA</span><strong>+ 3</strong><p>Reposição recebida.</p><i>O saldo acompanha.</i></div>
+     <div class="balanceMachine"><span>MOTOR DA GARRA / #032</span><div class="balanceDisplay"><strong id="demoBalance">12</strong><i>UNIDADES</i></div><div class="machineControls"><span></span><span></span><span></span></div><small>ESTOQUE CONFIRMADO</small></div>
+     <div class="movementNote exitNote"><span>↗ SAÍDA</span><strong>− 2</strong><p>Peça para manutenção.</p><i>Sem perder o histórico.</i></div>
+     <div class="historySlip"><div>HISTÓRICO DA PEÇA <span>↗</span></div><p><b>ENTRADA</b><span>12 → 15</span><i>Reposição</i></p><p><b>SAÍDA</b><span>15 → 13</span><i>Manutenção</i></p><span class="slipFoot">DEMONSTRAÇÃO · DADOS ILUSTRATIVOS</span></div>
+    </div>
+   </div>
+  </section>
+  <section class="reviewStory chapter" aria-labelledby="reviewTitle">
+   <div class="reviewVisual reveal"><span class="handwritten">Uma foto é o começo.<br>As marcas são a pista.</span><div class="polaroid polaroidBack"><div class="abstractParts"><span></span><span></span><span></span></div><p>Temos uma pista.</p></div><div class="polaroid polaroidFront"><div class="abstractParts"><span></span><span></span><span></span></div><p>Qual é esta peça?</p><span class="reviewStamp">A CONFERIR</span></div><div class="reviewDecision"><span>FOTO → REVISÃO → CONFIRMAÇÃO</span><strong>Uma sugestão não vira<br>estoque sozinha.</strong><i>Conferir primeiro. Confirmar depois.</i></div></div>
+   <div class="reviewCopy reveal"><span class="chapterLabel">03 / CONFIRA ANTES DE CONTAR</span><h2 id="reviewTitle">A foto ajuda.<br><em>Você confirma.</em></h2><p>A foto sugere uma contagem e mostra as marcas. Corrija o que ficou de fora, dê nome à peça e confirme a quantidade antes de salvar.</p><div class="reviewSteps"><div><span>01</span><p>Olhe a imagem.<small>Veja o contexto e as marcações.</small></p></div><div><span>02</span><p>Encontre a peça.<small>Vincule ou crie na mesma tela.</small></p></div><div><span>03</span><p>Confirme a contagem.<small>Corrija a sugestão antes de salvar.</small></p></div></div></div>
+  </section>
+  <section class="repairPresentation chapter" aria-labelledby="repairPresentationTitle">
+   <div class="repairPresentationCopy reveal"><span class="chapterLabel">04 / DA PEÇA QUEBRADA À BANCADA</span><h2 id="repairPresentationTitle">Quebrou?<br><em>Tem lugar<br>na bancada.</em></h2><p>Foto, defeito e quantidade. As peças para conserto ganham uma fila própria, sem se misturar ao que está disponível para uso.</p><span class="repairPresentationNote">Consertou? Confira a peça e registre a entrada.</span></div>
+   <div class="workbench"><div class="benchLine"></div><article class="benchCard reveal"><span class="benchLabel">01 / CHEGOU À BANCADA</span><i>↻</i><h3>Motor da garra</h3><p>Não gira. Cabo a conferir.</p><strong>Aguardando conserto</strong></article><article class="benchCard benchYellow reveal"><span class="benchLabel">02 / MÃOS À OBRA</span><i>⚙</i><h3>Diagnóstico anotado.</h3><p>O defeito tem nome. O serviço tem uma etapa.</p><strong>Em conserto</strong></article><article class="benchCard benchCream reveal"><span class="benchLabel">03 / MAIS UMA CHANCE</span><i>✓</i><h3>Pronta para conferir.</h3><p>Testar antes de voltar para a máquina.</p><strong>Consertada</strong></article></div>
+  </section>
+
+  <section class="teamStory chapter" aria-labelledby="teamTitle">
+   <div class="teamTop reveal"><span class="chapterLabel">04 / CADA PESSOA, SEU ACESSO</span><h2 id="teamTitle">O estoque é da equipe.<br><span>A chave é de cada um.</span></h2></div>
+   <div class="accessCards"><article class="accessCard reveal"><span class="accessNumber">01</span><div class="keyGraphic" aria-hidden="true">✳</div><h3>Acesso reservado.</h3><p>O administrador cria as contas. Nada de cadastro aberto ou usuário chegando sem convite.</p><span class="accessBottom">ADMINISTRADOR → EQUIPE</span></article><article class="accessCard reveal"><span class="accessNumber">02</span><div class="codeGraphic" aria-hidden="true"><span>2</span><span>1</span><span>8</span><span>7</span><span>0</span><span>4</span><span>3</span><span>6</span></div><h3>Senha. Depois, código.</h3><p>A confirmação chega ao e-mail. As duas etapas precisam estar certas para abrir o estoque.</p><span class="accessBottom">SENHA + E-MAIL</span></article><article class="accessCard reveal"><span class="accessNumber">03</span><div class="lockGraphic" aria-hidden="true"><div></div></div><h3>As fotos têm endereço.<br>E proteção.</h3><p>Catálogo, imagens e histórico ficam reservados à equipe com acesso autorizado.</p><span class="accessBottom">FOTOS EM ARMAZENAMENTO PRIVADO</span></article></div>
+  </section>
+  <section class="closing chapter" aria-labelledby="closingTitle"><div class="closingOrbit" aria-hidden="true"></div><span class="chapterLabel">05 / FEITO PARA A HAPPY MACHINE</span><h2 id="closingTitle">A diversão<br>não pode<br><span>ficar sem peça.</span></h2><p>Menos tempo procurando.<br>Mais máquinas funcionando.</p><div class="closingBrand"><img src="/assets/happy-machine-logo-transparent.png" alt="Happy Machine"><span>PEÇA POR PEÇA.<br>DO JEITO HAPPY.</span></div><span class="closingStar" aria-hidden="true">✳</span></section>
+ </main>
+ <footer><span>HAPPY MACHINE / ESTOQUE &amp; MANUTENÇÃO</span><span>Apresentação do sistema · exemplos ilustrativos</span><span>FIM DA VISITA. INÍCIO DA ORGANIZAÇÃO. ↗</span></footer>
+</body>
+</html>

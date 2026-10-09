@@ -1,0 +1,36 @@
+(()=>{
+ 'use strict';
+ let api,esc,toast,showDialog,fmtDate,rows=[],request=0,counter,photoURL,photoObserver;
+ const blobs=new Set();const $=s=>document.querySelector(s);
+ const labels={aguardando:'Aguardando conserto',em_conserto:'Em conserto',consertada:'Consertada',sem_conserto:'Sem conserto'};
+ const options=status=>Object.entries(labels).map(([k,v])=>`<option value="${k}" ${k===status?'selected':''}>${v}</option>`).join('');
+ function render(){
+  const term=$('#repairSearch').value.trim().toLocaleLowerCase('pt-BR'),status=$('#repairFilter').value;
+  const visible=rows.filter(r=>(!status||r.status===status)&&(!term||`${r.name} ${r.category} ${r.defect} ${r.notes}`.toLocaleLowerCase('pt-BR').includes(term)));
+  $('#repairSummary').innerHTML=['aguardando','em_conserto','consertada','sem_conserto'].map(s=>`<div class="repairStat ${s}"><span>${labels[s]}</span><strong>${rows.filter(r=>r.status===s).reduce((a,r)=>a+r.quantity,0)}</strong><small>unidades quebradas registradas</small></div>`).join('');
+  $('#repairCount').textContent=`${visible.length} registro(s)`;
+  $('#repairCards').innerHTML=visible.map(r=>`<article class="repairCard"><div class="repairCardTop"><span class="repairStatus ${r.status}">${labels[r.status]}</span><small>#C${String(r.id).padStart(3,'0')}</small></div><div class="repairIdentity">${r.photo_path?`<img data-repair-photo="${r.id}" alt="Foto de ${esc(r.name)}" loading="lazy">`:'<div class="repairNoPhoto" aria-hidden="true">↻</div>'}<div><small>${esc(r.category||'Sem categoria')}</small><h2>${esc(r.name)}</h2><span><strong>${r.quantity}</strong> unidade(s)</span></div></div><div class="repairDefect"><span>Defeito relatado</span><p>${esc(r.defect)}</p></div>${r.notes?`<p class="repairNotes">${esc(r.notes)}</p>`:''}<label class="field"><span>Etapa do conserto</span><select data-repair-status="${r.id}" aria-label="Situação de ${esc(r.name)}">${options(r.status)}</select></label><div class="repairCardFoot"><small>${fmtDate(r.updated_at)}</small><button type="button" class="textBtn" data-repair-edit="${r.id}">Editar</button><button type="button" class="textBtn" data-repair-archive="${r.id}">Arquivar</button></div></article>`).join('')||'<div class="empty"><strong>Nenhuma peça nesta seleção.</strong><p>Cadastre as peças quebradas que aguardam manutenção.</p></div>';
+  $('#repairCards').querySelectorAll('[data-repair-edit]').forEach(b=>b.onclick=()=>open(rows.find(r=>r.id===Number(b.dataset.repairEdit))));
+  $('#repairCards').querySelectorAll('[data-repair-status]').forEach(s=>s.onchange=async()=>{const r=rows.find(r=>r.id===Number(s.dataset.repairStatus));const status=s.value;s.disabled=true;try{await save({...r,status});toast('Etapa do conserto atualizada');await load();}catch(error){s.value=r.status;s.disabled=false;toast(error.message,true);}});
+  $('#repairCards').querySelectorAll('[data-repair-archive]').forEach(b=>b.onclick=async()=>{const r=rows.find(r=>r.id===Number(b.dataset.repairArchive));if(!confirm(`Arquivar o registro de conserto de ${r.name}? O registro ficará preservado no backup.`))return;try{await api(`/api/repairs/${r.id}/archive`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({updated_at:r.updated_at})});toast('Registro arquivado');await load();}catch(e){toast(e.message,true);}});
+  photoObserver?.disconnect();photoObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{if(!entry.isIntersecting)return;const img=entry.target;photoObserver.unobserve(img);window.HMAuth.request(`/api/repairs/${img.dataset.repairPhoto}/photo`).then(async r=>{if(!r.ok)throw Error();const blob=await r.blob();if(!img.isConnected)return;const url=URL.createObjectURL(blob);blobs.add(url);img.src=url;}).catch(()=>{img.alt='Foto indisponível';});}),{rootMargin:'150px'});
+  $('#repairCards').querySelectorAll('[data-repair-photo]').forEach(img=>photoObserver.observe(img));
+ }
+ async function load(){const id=++request;$('#repairCards').setAttribute('aria-busy','true');$('#repairCards').querySelectorAll('button,select').forEach(el=>el.disabled=true);try{const data=await api('/api/repairs');if(id!==request)return;for(const u of blobs)URL.revokeObjectURL(u);blobs.clear();rows=data;render();}catch(e){toast('Não foi possível carregar os consertos: '+e.message,true);$('#repairCards').textContent='Não foi possível carregar. Use Atualizar para tentar novamente.';}finally{if(id===request)$('#repairCards').setAttribute('aria-busy','false');}}
+ function open(r){
+  $('#repairForm').reset();$('#repairId').value=r?.id||'';$('#repairUpdated').value=r?.updated_at||'';$('#repairTitle').textContent=r?'Editar peça para conserto':'Registrar peça quebrada';
+  for(const k of ['name','category','quantity','defect','notes','status'])$('#repair-'+k).value=r?.[k]??(k==='quantity'?1:k==='status'?'aguardando':'');
+  counter.clear();if(photoURL)URL.revokeObjectURL(photoURL);photoURL=null;$('#repairPhotoPreview').hidden=true;
+  if(r?.photo_path){const id=r.id;window.HMAuth.request(`/api/repairs/${id}/photo`).then(async response=>{if(!response.ok)return;const blob=await response.blob();if($('#repairId').value!==String(id)||!$('#repairDialog').open)return;photoURL=URL.createObjectURL(blob);$('#repairPhotoPreview').src=photoURL;$('#repairPhotoPreview').hidden=false;}).catch(()=>{});}
+  showDialog($('#repairDialog'));$('#repair-name').focus();
+ }
+ async function save(r,photo){const fd=new FormData();for(const k of ['name','category','quantity','defect','notes','status','updated_at'])if(r[k]!==undefined)fd.set(k,r[k]);if(photo)fd.set('photo',photo);return api(r.id?`/api/repairs/${r.id}/update`:'/api/repairs',{method:'POST',body:fd});}
+ function init(deps){
+  ({api,esc,toast,showDialog,fmtDate}=deps);counter=new window.HMPhotoCounter($('#repairCounter'),$('#repair-quantity'));
+  $('#btnRepairNew').onclick=()=>open();$('#btnRepairRefresh').onclick=load;$('#repairSearch').oninput=render;$('#repairFilter').onchange=render;
+  document.querySelectorAll('.closeRepair').forEach(b=>b.onclick=()=>$('#repairDialog').close());$('#repairDialog').addEventListener('close',()=>{counter.clear();if(photoURL)URL.revokeObjectURL(photoURL);photoURL=null;});
+  $('#repair-photo').onchange=e=>{const file=e.target.files[0];if(!file){counter.clear();return;}if(photoURL)URL.revokeObjectURL(photoURL);photoURL=URL.createObjectURL(file);$('#repairPhotoPreview').src=photoURL;$('#repairPhotoPreview').hidden=false;counter.load(file);};
+  $('#repairForm').onsubmit=async e=>{e.preventDefault();const button=$('#repairSave');button.disabled=true;try{const r={id:$('#repairId').value||null};for(const k of ['name','category','quantity','defect','notes','status'])r[k]=$('#repair-'+k).value;if(r.id)r.updated_at=$('#repairUpdated').value;await save(r,$('#repair-photo').files[0]);$('#repairDialog').close();toast('Peça registrada nos consertos');await load();}catch(error){toast(error.message,true);}finally{button.disabled=false;}};
+ }
+ window.HMRepairs={init,load};window.addEventListener('pagehide',()=>{for(const u of blobs)URL.revokeObjectURL(u);counter?.clear();});
+})();

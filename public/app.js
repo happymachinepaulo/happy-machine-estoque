@@ -212,16 +212,18 @@ function showView(name){
   const changed=!view.classList.contains('active');
   $$('.view').forEach(section=>section.classList.toggle('active',section===view));
   $$('.nav').forEach(button=>{const active=button.dataset.view===name;button.classList.toggle('active',active);if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
-  $('#workspaceTitle').textContent=({estoque:'Estoque',fotos:'Revisão de fotos',historico:'Movimentações',dados:'Backup e dados',users:'Usuários'})[name];
+  $('#workspaceTitle').textContent=({estoque:'Estoque',fotos:'Revisão de fotos',historico:'Movimentações',consertos:'Consertos',dados:'Backup e dados',users:'Usuários'})[name];
   if(changed){animateIn(view,14);window.scrollTo({top:0,behavior:'instant'});}
-  if(name==='historico')loadHistory();if(name==='fotos')loadReview();
+  if(name==='consertos')window.HMRepairs.load();if(name==='historico')loadHistory();if(name==='fotos')loadReview();
 }
 $$('.nav').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
 
-function resetProductForm(){ reviewPhotoForCreation=null; $('#productForm .photoActions').classList.remove('hidden'); $('#productForm').reset(); $('#productId').value=''; $('#quantity').value='0'; $('#min_quantity').value='0'; $('#qtyField').classList.remove('hidden'); $('#productTitle').textContent='Nova peça'; $('#productSubtitle').textContent='Foto, nome e quantidade.'; $('#photoName').textContent='Nenhuma nova foto selecionada'; $('#photoPreviewWrap').classList.add('hidden'); replacePreview(null); cameraBlob=null; }
+const productCounter=new window.HMPhotoCounter($('#productCounter'),$('#quantity'));
+$('#productDialog').addEventListener('close',()=>productCounter.clear());
+function resetProductForm(){ productCounter.clear(); reviewPhotoForCreation=null; $('#productForm .photoActions').classList.remove('hidden'); $('#productForm').reset(); $('#productId').value=''; $('#quantity').value='0'; $('#min_quantity').value='0'; $('#qtyField').classList.remove('hidden'); $('#productTitle').textContent='Nova peça'; $('#productSubtitle').textContent='Foto, nome e quantidade.'; $('#photoName').textContent='Nenhuma nova foto selecionada'; $('#photoPreviewWrap').classList.add('hidden'); replacePreview(null); cameraBlob=null; }
 $('#btnNovo').addEventListener('click',()=>{resetProductForm();showDialog($('#productDialog'));$('#name').focus();});
 $$('.closeDialog').forEach(b=>b.addEventListener('click',()=>$('#productDialog').close()));
-$('#photo').addEventListener('change',e=>{const file=e.target.files[0];cameraBlob=null;if(!file)return;$('#photoName').textContent=file.name;replacePreview(file);$('#photoPreviewWrap').classList.remove('hidden');});
+$('#photo').addEventListener('change',e=>{const file=e.target.files[0];cameraBlob=null;if(!file)return;$('#photoName').textContent=file.name;replacePreview(file);if(!$('#productId').value)productCounter.load(file);$('#photoPreviewWrap').classList.remove('hidden');});
 $('#productForm').addEventListener('submit',async e=>{
   e.preventDefault();
   try {
@@ -257,6 +259,7 @@ function createFromReviewPhoto(photo){
   $('#photoPreviewWrap').classList.remove('hidden');
   $('#productForm .photoActions').classList.add('hidden');
   showDialog($('#productDialog'));$('#name').focus();
+  productCounter.load(async()=>{const response=await window.HMAuth.request(`/api/photos/${photo.id}`);if(!response.ok)throw Error('Foto indisponível');return response.blob();});
 }
 
 function enlargePhoto(id,caption){$('#fullImage').dataset.privatePhoto=String(id);$('#fullImage').src=photoSource(id);$('#imageCaption').textContent=caption;$('#fullImage').alt=caption;showDialog($('#imageDialog'));}
@@ -363,6 +366,7 @@ $('#btnCamera').addEventListener('click',async()=>{ try{cameraStream=await navig
 function stopCamera(){ if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;} $('#cameraDialog').close(); }
 $$('.closeCamera').forEach(b=>b.addEventListener('click',stopCamera));
 $('#cameraDialog').addEventListener('cancel',stopCamera);
-$('#capturePhoto').addEventListener('click',()=>{const v=$('#cameraVideo'),c=$('#cameraCanvas'); if(!v.videoWidth)return; const max=1600,scale=Math.min(1,max/v.videoWidth);c.width=Math.round(v.videoWidth*scale);c.height=Math.round(v.videoHeight*scale);c.getContext('2d').drawImage(v,0,0,c.width,c.height);c.toBlob(blob=>{cameraBlob=blob;$('#photo').value='';$('#photoName').textContent='Foto tirada pela câmera';replacePreview(blob);$('#photoPreviewWrap').classList.remove('hidden');stopCamera();},'image/jpeg',.88);});
+$('#capturePhoto').addEventListener('click',()=>{const v=$('#cameraVideo'),c=$('#cameraCanvas'); if(!v.videoWidth)return; const max=1600,scale=Math.min(1,max/v.videoWidth);c.width=Math.round(v.videoWidth*scale);c.height=Math.round(v.videoHeight*scale);c.getContext('2d').drawImage(v,0,0,c.width,c.height);c.toBlob(blob=>{cameraBlob=blob;$('#photo').value='';$('#photoName').textContent='Foto tirada pela câmera';replacePreview(blob);if(!$('#productId').value)productCounter.load(blob);$('#photoPreviewWrap').classList.remove('hidden');stopCamera();},'image/jpeg',.88);});
 
+window.HMRepairs.init({api,esc,toast,showDialog,fmtDate});
 refresh();

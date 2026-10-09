@@ -9,7 +9,7 @@ files=[]
 for p in root.rglob('*'):
     if not p.is_file():continue
     relative=p.relative_to(root)
-    if relative.parts[0] not in ('public','api','scripts','supabase','tests','migration') and str(relative) not in ('vercel.json','.gitignore','.gitattributes','.vercelignore','.env.example','README.md','DEPLOY.md'):continue
+    if relative.parts[0] not in ('public','api','scripts','supabase','tests','migration') and str(relative) not in ('vercel.json','.gitignore','.gitattributes','.vercelignore','.env.example','README.md','DEPLOY.md','COUNTER.md'):continue
     if p.name=='package_report.json':continue
     if any(part in ('__pycache__','_deps','.vercel') for part in relative.parts):continue
     if relative.parts[0]=='tests' and p.suffix not in ('.py','.cjs'):continue

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Happy Machine • Estoque</title>
   <link rel="stylesheet" href="/style.css?v=20261008-2">
-  <link rel="stylesheet" href="/brand.css?v=20261008-2"><link rel="stylesheet" href="/auth.css">
+  <link rel="stylesheet" href="/brand.css?v=20261008-2"><link rel="stylesheet" href="/auth.css"><link rel="stylesheet" href="/maintenance.css?v=1"><script src="/counter.js?v=1" defer></script><script src="/repairs.js?v=1" defer></script>
   <link rel="icon" href="/assets/happy-machine-logo.png" type="image/png">
   <meta name="theme-color" content="#f5f5f3">
 </head>
@@ -34,6 +34,7 @@
   <div class="brand"><div class="logoCard"><img class="brandLogo" src="/assets/happy-machine-logo-transparent.png" alt="Happy Machine"></div><div class="brandText"><strong>Happy Machine</strong><small>Estoque &amp; manutenção</small></div></div>
   <nav aria-label="Navegação principal">
     <button class="nav active" data-view="estoque" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg> Estoque</button>
+    <button class="nav" data-view="consertos"><svg class="icon" aria-hidden="true"><use href="#i-box"/></svg> Consertos</button>
     <button class="nav" data-view="fotos"><svg class="icon" aria-hidden="true"><use href="#i-photo"/></svg> Revisar fotos <small id="photoBadge"></small></button>
     <button class="nav" data-view="historico"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg> Movimentações</button>
     <button class="nav" data-view="dados"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg> Backup e dados</button>
@@ -64,6 +65,14 @@
     <div class="catalogueFoot"><span>Itens para conferir aparecem sinalizados e ficam fora do total de unidades.</span><span id="lastSync" role="status"></span></div>
   </section>
 
+  <section id="view-consertos" class="view">
+    <div class="pagehead"><div><h1>Peças para conserto<span class="titlePeriod">.</span></h1><p>O que quebrou, o que está na bancada e o que já foi recuperado.</p></div><button id="btnRepairNew" class="btn primary" type="button">+ Registrar peça quebrada</button></div>
+    <p class="repairInfo">As peças desta aba ficam separadas do estoque disponível. Marcar como consertada não adiciona unidades ao estoque; registre a entrada depois de conferir a peça.</p>
+    <div id="repairSummary" class="repairSummary"></div>
+    <div class="panel toolbar"><label class="search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="repairSearch" type="search" placeholder="Buscar peça ou defeito…" aria-label="Buscar consertos"></label><select id="repairFilter" aria-label="Filtrar situação dos consertos"><option value="">Todas as situações</option><option value="aguardando">Aguardando conserto</option><option value="em_conserto">Em conserto</option><option value="consertada">Consertada</option><option value="sem_conserto">Sem conserto</option></select><button id="btnRepairRefresh" type="button" class="btn">Atualizar</button><span id="repairCount" class="muted" aria-live="polite"></span></div>
+    <div id="repairCards" class="repairCards" aria-busy="false"></div>
+  </section>
+
   <section id="view-fotos" class="view">
     <div class="pagehead"><div><h1>Revisão de fotos<span class="titlePeriod">.</span></h1><p>Identifique, associe ou cadastre uma peça a partir da imagem.</p></div><div class="sectionEmblem"><svg class="icon" aria-hidden="true"><use href="#i-photo"/></svg></div></div>
     <div id="reviewSummary" class="reviewSummary"></div>
@@ -91,6 +100,23 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+<dialog id="repairDialog" class="dialog" aria-labelledby="repairTitle">
+ <form id="repairForm">
+  <div class="dialogHead"><div><h2 id="repairTitle">Registrar peça quebrada</h2><p>Registre o defeito e acompanhe a manutenção.</p></div><button type="button" class="iconBtn closeRepair" aria-label="Fechar formulário de conserto">×</button></div>
+  <input id="repairId" type="hidden"><input id="repairUpdated" type="hidden">
+  <div class="formGrid">
+   <label class="field span2"><span>Nome da peça *</span><input id="repair-name" required maxlength="160" placeholder="Ex.: Motor da garra Mega"></label>
+   <label class="field"><span>Categoria</span><input id="repair-category" maxlength="100" list="categoryList"></label>
+   <label class="field"><span>Quantidade quebrada *</span><input id="repair-quantity" type="number" min="1" max="1000000" step="1" value="1" required></label>
+   <label class="field span2"><span>Defeito relatado *</span><textarea id="repair-defect" rows="3" maxlength="2000" required placeholder="Ex.: Não gira; cabo rompido próximo ao conector"></textarea></label>
+   <label class="field"><span>Situação</span><select id="repair-status"><option value="aguardando">Aguardando conserto</option><option value="em_conserto">Em conserto</option><option value="consertada">Consertada</option><option value="sem_conserto">Sem conserto</option></select></label>
+   <label class="field span2"><span>Observações</span><textarea id="repair-notes" rows="2" maxlength="4000" placeholder="Localização, responsável, diagnóstico ou serviço realizado"></textarea></label>
+   <div class="field span2"><span>Foto da peça quebrada</span><label class="btn fileBtn">Escolher foto<input id="repair-photo" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden></label><img id="repairPhotoPreview" class="repairPreview" alt="Foto da peça para conserto" hidden><div id="repairCounter"></div></div>
+  </div>
+  <div class="dialogActions"><button type="button" class="btn closeRepair">Cancelar</button><button id="repairSave" class="btn primary" type="submit">Salvar nos consertos</button></div>
+ </form>
+</dialog>
+
 <dialog id="productDialog" class="dialog" aria-labelledby="productTitle" aria-describedby="productSubtitle">
   <form id="productForm" method="dialog">
     <div class="dialogHead"><div><h2 id="productTitle">Nova peça</h2><p id="productSubtitle">Foto, nome e quantidade.</p></div><button type="button" class="iconBtn closeDialog" aria-label="Fechar formulário">×</button></div>
@@ -101,7 +127,7 @@
       <label id="qtyField" class="field"><span>Quantidade inicial</span><input id="quantity" name="quantity" type="number" min="0" step="1" value="0" required></label>
       <label class="field"><span>Estoque mínimo</span><input id="min_quantity" name="min_quantity" type="number" min="0" step="1" value="0"></label>
       <label class="field span2"><span>Observações</span><textarea id="notes" name="notes" rows="3" placeholder="Modelo, aplicação, localização, condição..."></textarea></label>
-      <div class="field span2"><span>Foto</span><div class="photoActions"><label class="btn fileBtn">Escolher foto<input id="photo" name="photo" type="file" accept="image/*" hidden></label><button id="btnCamera" class="btn" type="button">Usar câmera</button><span id="photoName" class="muted">Nenhuma nova foto selecionada</span></div><div id="photoPreviewWrap" class="photoPreviewWrap hidden"><img id="photoPreview" alt="Prévia da foto"></div></div>
+      <div class="field span2"><span>Foto</span><div class="photoActions"><label class="btn fileBtn">Escolher foto<input id="photo" name="photo" type="file" accept="image/*" hidden></label><button id="btnCamera" class="btn" type="button">Usar câmera</button><span id="photoName" class="muted">Nenhuma nova foto selecionada</span></div><div id="photoPreviewWrap" class="photoPreviewWrap hidden"><img id="photoPreview" alt="Prévia da foto"></div><div id="productCounter"></div></div>
     </div>
     <div class="dialogActions"><button type="button" class="btn closeDialog">Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
   </form>

@@ -116,3 +116,7 @@ Configure um **SMTP próprio** em Authentication → SMTP Settings para enviar a
 O script opcional `scripts/configure_auth.py` configura o template e a expiração quando houver token da Management API; não instala nem configura um provedor SMTP automaticamente. As tabelas `email_login_challenges` e `email_login_sessions` não podem ser acessadas nem alteradas pelo navegador. Entrar diretamente pelo OTP nativo, sem a senha validada pela API, não libera o estoque.
 
 Referências: https://supabase.com/docs/guides/auth/auth-email-passwordless e https://supabase.com/docs/guides/auth/auth-smtp.
+
+## Atualização: consertos e contagem por foto
+
+Em projeto existente execute `supabase/007_repairs.sql` antes de publicar a versão com a aba Consertos. Em projeto novo, o schema completo já inclui a tabela e a RPC. Consertos não alteram o estoque, e fotos continuam privadas. A contagem é processada no navegador; consulte COUNTER.md para o funcionamento e seus limites.

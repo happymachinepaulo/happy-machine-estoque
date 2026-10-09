@@ -218,6 +218,14 @@ class handler(BaseHTTPRequestHandler):
         remote('/rest/v1/rpc/email_login_command','POST',{'action':'complete','secret_hash':digest,'uid':user['id'],'sid':jwt['session_id']},service=True)
         return self.respond({'access_token':session['access_token'],'refresh_token':session['refresh_token']})
     def get(self,path,qs):
+        if path=='/api/repairs':
+            return self.respond(self.rows('repairs',select='id,name,category,quantity,defect,notes,status,photo_path,created_at,updated_at',archived_at='is.null',order='created_at.desc,id.desc'))
+        if re.fullmatch(r'/api/repairs/\d+/photo',path):
+            rows=self.rows('repairs',select='photo_path,photo_mime',id='eq.'+path.split('/')[3],archived_at='is.null')
+            if not rows or not rows[0]['photo_path']:raise APIError('Foto não encontrada.',404)
+            ph=rows[0]
+            data=remote('/storage/v1/object/authenticated/stock-photos/'+urllib.parse.quote(ph['photo_path'],safe='/'),token=self.auth_token,raw=True)
+            return self.respond(data,ctype=ph['photo_mime'])
         if path=='/api/health':return self.respond({'ok':True,'storage':'supabase','mfa':True})
         if path=='/api/photo-review':
             status=qs.get('status',['pendente'])[0]
@@ -266,11 +274,37 @@ class handler(BaseHTTPRequestHandler):
             return self.respond(data,ctype=ph['mime'])
         if path=='/api/backup':
             # Metadata backup is private. Original photo objects are referenced, not exposed as public URLs.
-            tables={t:self.rows(t,select='*') for t in ['products','photos','movements','audit_log']}
+            tables={t:self.rows(t,select='*') for t in ['products','photos','movements','audit_log','repairs']}
             content={'format':'happy-machine-online-v1','created_at':datetime.now(timezone.utc).isoformat(),'tables':tables}
             return self.respond(json.dumps(content,ensure_ascii=False).encode(),ctype='application/json',extra={'Content-Disposition':'attachment; filename="estoque_online.json"'})
         raise APIError('Rota não encontrada.',404)
     def post(self,path):
+        if path=='/api/repairs' or re.fullmatch(r'/api/repairs/\d+/(update|archive)',path):
+            archived=path.endswith('/archive')
+            fields,photo=(self.json_body(),None) if archived else self.multipart()
+            payload={k:fields[k] for k in ('name','category','quantity','defect','notes','status','updated_at') if k in fields}
+            if not archived:
+                payload['quantity']=integer(payload.get('quantity',0),1)
+                if payload['quantity']>1000000:raise APIError('Quantidade muito grande.')
+                if not str(payload.get('name','')).strip() or len(payload['name'])>160:raise APIError('Informe o nome da peça.')
+                if not str(payload.get('defect','')).strip() or len(payload['defect'])>2000:raise APIError('Descreva o defeito em até 2000 caracteres.')
+                if payload.get('status','aguardando') not in ('aguardando','em_conserto','consertada','sem_conserto'):raise APIError('Situação inválida.')
+            action='create' if path=='/api/repairs' else 'archive' if archived else 'update'
+            pid=None if action=='create' else integer(path.split('/')[3],1)
+            uploaded=None
+            try:
+                if photo:
+                    suffix={'image/jpeg':'.jpg','image/png':'.png','image/webp':'.webp','image/gif':'.gif'}[photo['mime']]
+                    uploaded='repairs/'+secrets.token_hex(24)+suffix
+                    remote('/storage/v1/object/stock-photos/'+uploaded,'POST',photo['data'],service=True,headers={'Content-Type':photo['mime']})
+                    payload.update(photo_path=uploaded,photo_mime=photo['mime'])
+                result=remote('/rest/v1/rpc/repair_command','POST',{'command':action,'pid':pid,'payload':payload},token=self.auth_token)
+            except Exception:
+                if uploaded:
+                    try:remote('/storage/v1/object/stock-photos','DELETE',{'prefixes':[uploaded]},service=True)
+                    except APIError:pass
+                raise
+            return self.respond(result,201 if action=='create' else 200)
         if path=='/api/photos/urls':
             ids=self.json_body().get('ids',[])
             if not isinstance(ids,list) or len(ids)>500:raise APIError('Lista de fotos inválida.')
