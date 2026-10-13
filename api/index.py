@@ -75,6 +75,11 @@ def fold(s):
     import unicodedata
     return ''.join(c for c in unicodedata.normalize('NFD',str(s or '').lower()) if not unicodedata.combining(c))
 
+def product_name_key(name):
+    words=re.findall(r'[a-z0-9]+',fold(name))
+    if words and words[0]=='chaves':words[0]='chave'
+    return ' '.join(words)
+
 def integer(value, minimum=0):
     if isinstance(value,bool) or not str(value).isdigit() or int(value)<minimum:
         raise APIError('Informe uma quantidade inteira válida.')
@@ -331,6 +336,11 @@ class handler(BaseHTTPRequestHandler):
                 if k in fields:fields[k]=integer(fields[k],1 if k=='existing_photo_id' else 0)
             if not str(fields.get('name','')).strip() or len(fields['name'])>160:raise APIError('Informe um nome de até 160 caracteres.')
             if fields.get('existing_photo_id') and photo:raise APIError('Escolha apenas uma foto.')
+            if path=='/api/products':
+                key=product_name_key(fields['name'])
+                existing=remote('/rest/v1/products?select=id,name',token=self.auth_token)
+                match=next((p for p in existing if product_name_key(p['name'])==key),None)
+                if match:raise APIError(f'Esta peça já está cadastrada: {match["name"]} (#{match["id"]}). Abra o cadastro existente e use Entrada ou Ajustar para atualizar a quantidade.',409)
             try:
                 if photo:
                     suffix={'image/jpeg':'.jpg','image/png':'.png','image/webp':'.webp','image/gif':'.gif'}[photo['mime']]

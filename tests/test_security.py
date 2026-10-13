@@ -145,6 +145,20 @@ class HttpSecurity(Security):
                 status,_,result=self.request(path,'POST',{'Authorization':'Bearer '+jwt(),'Content-Type':'multipart/form-data; boundary='+boundary},content.encode())
                 self.assertEqual(status,expected);self.assertTrue(result['ok'])
 
+    def test_duplicate_create_is_rejected_before_upload_or_stock_write(self):
+        original=api.remote.side_effect
+        def backend(path,*args,**kwargs):
+            if path.startswith('/rest/v1/products'):return [{'id':78,'name':'Chave HR6666'}]
+            return original(path,*args,**kwargs)
+        boundary='duplicate-form'
+        body=('--'+boundary+'\r\nContent-Disposition: form-data; name="name"\r\n\r\n CHÁVES   hr6666 \r\n--'+boundary+'\r\nContent-Disposition: form-data; name="quantity"\r\n\r\n50\r\n--'+boundary+'--\r\n').encode()
+        with patch.object(api,'remote',side_effect=backend) as backend_mock:
+            status,_,result=self.request('/api/products','POST',{'Authorization':'Bearer '+jwt(),'Content-Type':'multipart/form-data; boundary='+boundary},body)
+        self.assertEqual(status,409)
+        self.assertIn('#78',result['error'])
+        self.assertFalse(any(c.args[0].startswith('/storage/') or c.args[0]=='/rest/v1/rpc/stock_command' for c in backend_mock.call_args_list))
+        self.assertNotEqual(api.product_name_key('Chave HR6666'),api.product_name_key('Chave HR8888'))
+
 class APIKeyHeaders(unittest.TestCase):
     def response(self):
         mock=unittest.mock.MagicMock();mock.__enter__.return_value.read.return_value=b'{}';return mock
