@@ -17,3 +17,6 @@ __pycache__/
 tests/_deps/
 tests/*.png
 tests/*.json
+
+output/
+tmp/

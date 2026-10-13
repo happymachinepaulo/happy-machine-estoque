@@ -70,6 +70,21 @@ class HttpSecurity(Security):
         try:r=urllib.request.urlopen(req)
         except urllib.error.HTTPError as e:r=e
         return r.status,dict(r.headers),json.loads(r.read())
+    def test_stats_keep_meters_separate_from_units_and_exclude_pending_counts(self):
+        original=api.remote.side_effect
+        def backend(path,*args,**kwargs):
+            if path.startswith('/rest/v1/products'):
+                return [{'id':1,'name':'Motor','quantity':4,'min_quantity':0,'notes':'','review_status':'confirmado'},
+                        {'id':2,'name':'Fio LED','quantity':300,'min_quantity':0,'notes':'Unidade de medida: metros.','review_status':'confirmado'},
+                        {'id':3,'name':'Modelo a conferir','quantity':10,'min_quantity':0,'notes':'','review_status':'pendente'}]
+            return original(path,*args,**kwargs)
+        with patch.object(api,'remote',side_effect=backend):
+            status,_,body=self.request('/api/stats',headers={'Authorization':'Bearer '+jwt()})
+        self.assertEqual(status,200)
+        self.assertEqual(body['units'],4)
+        self.assertEqual(body['meters'],300)
+        self.assertEqual(body['pending'],1)
+
     def test_photos_backup_and_inventory_require_login(self):
         for path in ['/api/products','/api/photos/1','/api/backup','/api/admin/users']:
             with self.subTest(path=path):self.assertEqual(self.request(path)[0],401)

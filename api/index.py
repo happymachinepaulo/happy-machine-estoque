@@ -13,6 +13,9 @@ class APIError(Exception):
     def __init__(self, message, status=400):
         self.message, self.status = message, status
 
+def quantity_unit(product):
+    return 'm' if 'unidade de medida: metros.' in str(product.get('notes', '')).casefold() else 'un'
+
 def settings():
     url = os.environ.get('SUPABASE_URL','').rstrip('/')
     key = os.environ.get('SUPABASE_ANON_KEY','')
@@ -133,7 +136,7 @@ class handler(BaseHTTPRequestHandler):
         photos=self.rows('photos',select='id,product_id,is_primary',review_status='eq.confirmada',order='is_primary.desc,id.asc')
         by={}
         for ph in photos:by.setdefault(ph['product_id'],[]).append(ph['id'])
-        for p in rows:p.update(photo_id=(by.get(p['id']) or [None])[0],photo_count=len(by.get(p['id'],[])))
+        for p in rows:p.update(photo_id=(by.get(p['id']) or [None])[0],photo_count=len(by.get(p['id'],[])),quantity_unit=quantity_unit(p))
         return rows
     def do_GET(self):self.dispatch('GET')
     def do_POST(self):self.dispatch('POST')
@@ -250,7 +253,7 @@ class handler(BaseHTTPRequestHandler):
             if path=='/api/stats':
                 good=[p for p in rows if p['review_status']=='confirmado']
                 pending=self.rows('photos',select='id',review_status='eq.pendente')
-                return self.respond({'products':len(good),'units':sum(p['quantity'] for p in good),'low':sum(p['min_quantity']>0 and p['quantity']<=p['min_quantity'] for p in good),'no_photo':sum(not p['photo_id'] for p in good),'pending':len(rows)-len(good),'review_photos':len(pending)})
+                return self.respond({'products':len(good),'units':sum(p['quantity'] for p in good if quantity_unit(p)=='un'),'meters':sum(p['quantity'] for p in good if quantity_unit(p)=='m'),'low':sum(p['min_quantity']>0 and p['quantity']<=p['min_quantity'] for p in good),'no_photo':sum(not p['photo_id'] for p in good),'pending':len(rows)-len(good),'review_photos':len(pending)})
             if path=='/api/export.csv':
                 out=io.StringIO();w=csv.writer(out,delimiter=';');w.writerow(['ID','Nome','Categoria','Quantidade','Estoque mínimo','Observações','Atualizado em','Conferência'])
                 for p in rows:
