@@ -76,13 +76,15 @@ class HttpSecurity(Security):
             if path.startswith('/rest/v1/products'):
                 return [{'id':1,'name':'Motor','quantity':4,'min_quantity':0,'notes':'','review_status':'confirmado'},
                         {'id':2,'name':'Fio LED','quantity':300,'min_quantity':0,'notes':'Unidade de medida: metros.','review_status':'confirmado'},
-                        {'id':3,'name':'Modelo a conferir','quantity':10,'min_quantity':0,'notes':'','review_status':'pendente'}]
+                        {'id':3,'name':'Modelo a conferir','quantity':10,'min_quantity':0,'notes':'','review_status':'pendente'},
+                        {'id':4,'name':'Lote de cabos','quantity':2,'min_quantity':0,'notes':'Unidade de medida: lote.','review_status':'confirmado'}]
             return original(path,*args,**kwargs)
         with patch.object(api,'remote',side_effect=backend):
             status,_,body=self.request('/api/stats',headers={'Authorization':'Bearer '+jwt()})
         self.assertEqual(status,200)
         self.assertEqual(body['units'],4)
         self.assertEqual(body['meters'],300)
+        self.assertEqual(body['lots'],2)
         self.assertEqual(body['pending'],1)
 
     def test_photos_backup_and_inventory_require_login(self):
@@ -151,13 +153,47 @@ class HttpSecurity(Security):
             if path.startswith('/rest/v1/products'):return [{'id':78,'name':'Chave HR6666'}]
             return original(path,*args,**kwargs)
         boundary='duplicate-form'
-        body=('--'+boundary+'\r\nContent-Disposition: form-data; name="name"\r\n\r\n CHÁVES   hr6666 \r\n--'+boundary+'\r\nContent-Disposition: form-data; name="quantity"\r\n\r\n50\r\n--'+boundary+'--\r\n').encode()
+        body=('--'+boundary+'\r\nContent-Disposition: form-data; name="name"\r\n\r\n CHÁVES   hr-6666 \r\n--'+boundary+'\r\nContent-Disposition: form-data; name="quantity"\r\n\r\n50\r\n--'+boundary+'--\r\n').encode()
         with patch.object(api,'remote',side_effect=backend) as backend_mock:
             status,_,result=self.request('/api/products','POST',{'Authorization':'Bearer '+jwt(),'Content-Type':'multipart/form-data; boundary='+boundary},body)
         self.assertEqual(status,409)
         self.assertIn('#78',result['error'])
         self.assertFalse(any(c.args[0].startswith('/storage/') or c.args[0]=='/rest/v1/rpc/stock_command' for c in backend_mock.call_args_list))
         self.assertNotEqual(api.product_name_key('Chave HR6666'),api.product_name_key('Chave HR8888'))
+
+    def test_duplicate_create_checks_products_after_first_thousand(self):
+        original=api.remote.side_effect
+        def backend(path,*args,**kwargs):
+            if path.startswith('/rest/v1/products'):
+                offset=int(urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)['offset'][0])
+                return [{'id':i,'name':'Peça '+str(i)} for i in range(1,1001)] if offset==0 else [{'id':1001,'name':'Chave HR6666'}]
+            return original(path,*args,**kwargs)
+        boundary='duplicate-pagination'
+        body=('--'+boundary+'\r\nContent-Disposition: form-data; name="name"\r\n\r\nChave HR6666\r\n--'+boundary+'--\r\n').encode()
+        with patch.object(api,'remote',side_effect=backend) as backend_mock:
+            status,_,result=self.request('/api/products','POST',{'Authorization':'Bearer '+jwt(),'Content-Type':'multipart/form-data; boundary='+boundary},body)
+        self.assertEqual(status,409)
+        self.assertIn('#1001',result['error'])
+        queries=[urllib.parse.parse_qs(urllib.parse.urlsplit(c.args[0]).query) for c in backend_mock.call_args_list if c.args[0].startswith('/rest/v1/products')]
+        self.assertEqual([q['offset'][0] for q in queries],['0','1000'])
+        self.assertFalse(any(c.args[0]=='/rest/v1/rpc/stock_command' for c in backend_mock.call_args_list))
+
+    def test_edit_cannot_rename_into_another_product_but_keeps_own_name(self):
+        original=api.remote.side_effect
+        def backend(path,*args,**kwargs):
+            if path.startswith('/rest/v1/products'):return [{'id':78,'name':'Chave HR6666'}]
+            if path=='/rest/v1/rpc/stock_command':return {'ok':True}
+            return original(path,*args,**kwargs)
+        boundary='duplicate-edit'
+        body=('--'+boundary+'\r\nContent-Disposition: form-data; name="name"\r\n\r\nChaves HR 6666\r\n--'+boundary+'--\r\n').encode()
+        with patch.object(api,'remote',side_effect=backend) as backend_mock:
+            status,_,result=self.request('/api/products/99/update','POST',{'Authorization':'Bearer '+jwt(),'Content-Type':'multipart/form-data; boundary='+boundary},body)
+            self.assertEqual(status,409)
+            self.assertIn('#78',result['error'])
+            self.assertFalse(any(c.args[0]=='/rest/v1/rpc/stock_command' for c in backend_mock.call_args_list))
+            status,_,result=self.request('/api/products/78/update','POST',{'Authorization':'Bearer '+jwt(),'Content-Type':'multipart/form-data; boundary='+boundary},body)
+            self.assertEqual(status,200)
+            self.assertTrue(result['ok'])
 
 class APIKeyHeaders(unittest.TestCase):
     def response(self):

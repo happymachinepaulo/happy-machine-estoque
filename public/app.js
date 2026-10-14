@@ -84,7 +84,13 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const numberFormat = new Intl.NumberFormat('pt-BR');
 const displayNumber = value => numberFormat.format(Number(value) || 0);
 const isBrokenReference = product => String(product.notes || '').includes('Este cadastro tem ZERO unidades disponíveis');
-const quantityUnit = product => product.quantity_unit === 'm' || String(product.notes || '').toLocaleLowerCase('pt-BR').includes('unidade de medida: metros.') ? 'm' : 'un';
+const quantityUnit = product => {
+  const note=String(product.notes||'').toLocaleLowerCase('pt-BR');
+  if(product.quantity_unit==='m'||note.includes('unidade de medida: metros.'))return 'm';
+  if(product.quantity_unit==='lote'||note.includes('unidade de medida: lote.'))return 'lote';
+  return 'un';
+};
+const quantityLabel = product => quantityUnit(product)==='m'?'metros':quantityUnit(product)==='lote'?(product.quantity===1?'lote':'lotes'):(product.quantity===1?'unidade':'unidades');
 const isUnknown = product => product.review_status === 'pendente' && Number(product.quantity) === 0 && !isBrokenReference(product);
 
 function animateIn(element, distance=12){
@@ -197,8 +203,8 @@ async function loadProducts(){
     $('#emptyProducts').classList.toggle('hidden',rows.length!==0);
     el.innerHTML=rows.map(x=>{
       const pending=x.review_status==='pendente',unknown=isUnknown(x),low=!pending&&x.min_quantity>0&&x.quantity<=x.min_quantity;
-      const amountLabel=unknown?'quantidade a contar':`${x.quantity} ${quantityUnit(x)==='m'?'metros':'unidades'}${pending?', contagem a conferir':''}`;
-      return `<article class="productCard ${pending?'needsReview':''}" data-id="${x.id}" tabindex="0" role="button" aria-label="Abrir ${esc(x.name)}, ${amountLabel}"><div class="productPhoto">${x.photo_id?`<img loading="lazy" decoding="async" src="${esc(photoSource(x.photo_id))}" data-private-photo="${x.photo_id}" alt="${esc(x.name)}">`:`<div class="noPhoto productPhotoPlaceholder">${icon('photo')}<small>Foto a adicionar</small></div>`}${pending?'<span class="statusLabel pending">A conferir</span>':low?`<span class="lowBadge">${icon('warning')} Estoque baixo</span>`:''}${x.photo_count>1?`<span class="photoCountBadge">${icon('photo')} ${x.photo_count}</span>`:''}<span class="cardPhotoAction" aria-hidden="true">${icon('arrow')}</span></div><div class="productBody"><div class="category"><span>${esc(x.category||'Sem categoria')}</span><span class="itemCode">#${String(x.id).padStart(3,'0')}</span></div><h3>${esc(x.name)}</h3><div class="cardBottom"><div class="stock ${unknown?'isUnknown':''}"><strong>${unknown?'A contar':displayNumber(x.quantity)}</strong><span class="stockUnit">${unknown?'quantidade pendente':isBrokenReference(x)?'disponíveis · modelo quebrado':quantityUnit(x)==='m'?'metros':pending?'unid. · a conferir':x.quantity===1?'unidade':'unidades'}</span></div><span class="cardOpen" aria-hidden="true">Ver peça ${icon('arrow')}</span></div></div></article>`;
+      const amountLabel=unknown?'quantidade a contar':`${x.quantity} ${quantityLabel(x)}${pending?', contagem a conferir':''}`;
+      return `<article class="productCard ${pending?'needsReview':''}" data-id="${x.id}" tabindex="0" role="button" aria-label="Abrir ${esc(x.name)}, ${amountLabel}"><div class="productPhoto">${x.photo_id?`<img loading="lazy" decoding="async" src="${esc(photoSource(x.photo_id))}" data-private-photo="${x.photo_id}" alt="${esc(x.name)}">`:`<div class="noPhoto productPhotoPlaceholder">${icon('photo')}<small>Foto a adicionar</small></div>`}${pending?'<span class="statusLabel pending">A conferir</span>':low?`<span class="lowBadge">${icon('warning')} Estoque baixo</span>`:''}${x.photo_count>1?`<span class="photoCountBadge">${icon('photo')} ${x.photo_count}</span>`:''}<span class="cardPhotoAction" aria-hidden="true">${icon('arrow')}</span></div><div class="productBody"><div class="category"><span>${esc(x.category||'Sem categoria')}</span><span class="itemCode">#${String(x.id).padStart(3,'0')}</span></div><h3>${esc(x.name)}</h3><div class="cardBottom"><div class="stock ${unknown?'isUnknown':''}"><strong>${unknown?'A contar':displayNumber(x.quantity)}</strong><span class="stockUnit">${unknown?'quantidade pendente':isBrokenReference(x)?'disponíveis · modelo quebrado':quantityUnit(x)==='m'?'metros':quantityUnit(x)==='lote'?quantityLabel(x)+(pending?' · a conferir':''):pending?'unid. · a conferir':quantityLabel(x)}</span></div><span class="cardOpen" aria-hidden="true">Ver peça ${icon('arrow')}</span></div></div></article>`;
     }).join('');
     $$('.productCard').forEach((p,i)=>p.style.setProperty('--order',Math.min(i,8)));
     $$('.productCard').forEach(card=>{
@@ -252,7 +258,7 @@ function photoSuggestion(photo){
   return {name:field('Nome sugerido'),category:field('Categoria sugerida'),count:field('Contagem sugerida'),selected:field('Seleção').startsWith('Melhor foto')};
 }
 function existingReviewProduct(photo){
-  const key=name=>String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().match(/[a-z0-9]+/g)?.map((word,i)=>i===0&&word==='chaves'?'chave':word).join(' ')||'';
+  const key=name=>String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().match(/[a-z0-9]+/g)?.map((word,i)=>i===0&&word==='chaves'?'chave':word).join('')||'';
   const line=String(photo.review_note||'').split('\n').find(line=>line.startsWith('Cadastros existentes da revisão:'))||'';
   const ids=new Set([photo.product_id,...[...line.matchAll(/#(\d+)/g)].map(m=>Number(m[1]))].filter(Boolean));
   const matches=catalogue.filter(p=>ids.has(p.id));
@@ -283,7 +289,7 @@ async function photoAction(id,status,pid,primary=true){await api(`/api/photos/${
 async function openDetail(id){ try{
   const request=++detailRequest,p=await api(`/api/products/${id}`);if(request!==detailRequest)return;selectedProduct=p;
   $('#detailName').textContent=p.name; $('#detailCategory').textContent=`${p.category||'Sem categoria'} · #${String(p.id).padStart(3,'0')}`;
-  $('#detailQty').textContent=isUnknown(p)?'A contar':displayNumber(p.quantity)+(quantityUnit(p)==='m'?' m':'');$('#detailQty').classList.toggle('isUnknown',isUnknown(p));$('#detailReview').classList.toggle('hidden',p.review_status!=='pendente');
+  $('#detailQty').textContent=isUnknown(p)?'A contar':displayNumber(p.quantity)+(quantityUnit(p)==='m'?' m':quantityUnit(p)==='lote'?' '+quantityLabel(p):'');$('#detailQty').classList.toggle('isUnknown',isUnknown(p));$('#detailReview').classList.toggle('hidden',p.review_status!=='pendente');
   $('#detailMin').textContent=p.min_quantity>0?`Estoque mínimo: ${p.min_quantity}`:'Sem estoque mínimo definido'; $('#detailNotes').textContent=p.notes||'Sem observações.';
   $('#detailPhotos').innerHTML=p.photos.length?p.photos.map(ph=>`<figure class="photoTile"><button class="photoZoom" data-photo="${ph.id}" aria-label="Ampliar foto de ${esc(p.name)}"><img loading="lazy" decoding="async" src="${esc(photoSource(ph.id))}" data-private-photo="${ph.id}" alt="${esc(p.name)}"><span class="zoomHint">${icon('search')} Ampliar</span></button><figcaption>${ph.is_primary?`<span class="photoTag">${icon('check')} Principal</span>`:`<button class="textBtn setPrimary" data-photo="${ph.id}">Usar como principal</button>`}<button class="textBtn reviewPhoto" data-photo="${ph.id}">Revisar vínculo</button></figcaption></figure>`).join(''):`<div class="emptyPhoto">${icon('photo')}<p>Esta peça ainda não tem foto</p><button id="detailAddPhoto" class="btn">${icon('plus')} Adicionar foto</button></div>`;
   $$('.photoZoom').forEach(b=>b.onclick=()=>enlargePhoto(b.dataset.photo,p.name));

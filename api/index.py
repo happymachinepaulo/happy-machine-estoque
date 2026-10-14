@@ -14,7 +14,10 @@ class APIError(Exception):
         self.message, self.status = message, status
 
 def quantity_unit(product):
-    return 'm' if 'unidade de medida: metros.' in str(product.get('notes', '')).casefold() else 'un'
+    note=str(product.get('notes', '')).casefold()
+    if 'unidade de medida: metros.' in note:return 'm'
+    if 'unidade de medida: lote.' in note:return 'lote'
+    return 'un'
 
 def settings():
     url = os.environ.get('SUPABASE_URL','').rstrip('/')
@@ -78,7 +81,7 @@ def fold(s):
 def product_name_key(name):
     words=re.findall(r'[a-z0-9]+',fold(name))
     if words and words[0]=='chaves':words[0]='chave'
-    return ' '.join(words)
+    return ''.join(words)
 
 def integer(value, minimum=0):
     if isinstance(value,bool) or not str(value).isdigit() or int(value)<minimum:
@@ -258,7 +261,7 @@ class handler(BaseHTTPRequestHandler):
             if path=='/api/stats':
                 good=[p for p in rows if p['review_status']=='confirmado']
                 pending=self.rows('photos',select='id',review_status='eq.pendente')
-                return self.respond({'products':len(good),'units':sum(p['quantity'] for p in good if quantity_unit(p)=='un'),'meters':sum(p['quantity'] for p in good if quantity_unit(p)=='m'),'low':sum(p['min_quantity']>0 and p['quantity']<=p['min_quantity'] for p in good),'no_photo':sum(not p['photo_id'] for p in good),'pending':len(rows)-len(good),'review_photos':len(pending)})
+                return self.respond({'products':len(good),'units':sum(p['quantity'] for p in good if quantity_unit(p)=='un'),'meters':sum(p['quantity'] for p in good if quantity_unit(p)=='m'),'lots':sum(p['quantity'] for p in good if quantity_unit(p)=='lote'),'low':sum(p['min_quantity']>0 and p['quantity']<=p['min_quantity'] for p in good),'no_photo':sum(not p['photo_id'] for p in good),'pending':len(rows)-len(good),'review_photos':len(pending)})
             if path=='/api/export.csv':
                 out=io.StringIO();w=csv.writer(out,delimiter=';');w.writerow(['ID','Nome','Categoria','Quantidade','Estoque mínimo','Observações','Atualizado em','Conferência'])
                 for p in rows:
@@ -336,10 +339,12 @@ class handler(BaseHTTPRequestHandler):
                 if k in fields:fields[k]=integer(fields[k],1 if k=='existing_photo_id' else 0)
             if not str(fields.get('name','')).strip() or len(fields['name'])>160:raise APIError('Informe um nome de até 160 caracteres.')
             if fields.get('existing_photo_id') and photo:raise APIError('Escolha apenas uma foto.')
-            if path=='/api/products':
+            if path=='/api/products' or re.fullmatch(r'/api/products/\d+/update',path):
                 key=product_name_key(fields['name'])
-                existing=remote('/rest/v1/products?select=id,name',token=self.auth_token)
-                match=next((p for p in existing if product_name_key(p['name'])==key),None)
+                if not key:raise APIError('Informe um nome com letras ou números.')
+                editing_id=None if path=='/api/products' else int(path.split('/')[3])
+                existing=self.rows('products',select='id,name',order='id.asc')
+                match=next((p for p in existing if p['id']!=editing_id and product_name_key(p['name'])==key),None)
                 if match:raise APIError(f'Esta peça já está cadastrada: {match["name"]} (#{match["id"]}). Abra o cadastro existente e use Entrada ou Ajustar para atualizar a quantidade.',409)
             try:
                 if photo:
