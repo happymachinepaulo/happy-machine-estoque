@@ -330,10 +330,18 @@ async function loadHistory(){ try{history=await api('/api/history?limit=500');re
 $('#historySearch').oninput=renderHistory;
 if($('#historyTypeFilter'))$('#historyTypeFilter').onchange=renderHistory;
 
+let countReviewRows=[];
+function renderCountReview(){
+  const q=foldText($('#photoSearch').value),rows=countReviewRows.filter(p=>foldText(`${p.name} ${p.note}`).includes(q));
+  $('#countReviewSection').classList.toggle('hidden',!countReviewRows.length);
+  $('#countReviewCount').textContent=`${displayNumber(rows.length)} contagens`;
+  $('#countReview').innerHTML=rows.map(p=>`<article class="countReviewCard"><span class="photoTag pendente">Para revisar · sem foto</span><h3>${esc(p.name)}</h3><p class="countReviewAmount"><strong>${displayNumber(p.quantity)}</strong> unidades</p><details class="reviewContext"><summary>Observação da contagem</summary><p>${esc(p.note)}</p></details><button type="button" class="btn findCountProduct" data-count="${p.id}">${icon('search')} Buscar cadastro</button></article>`).join('')||'<p class="muted">Nenhuma contagem nesta busca.</p>';
+  $$('.findCountProduct').forEach(b=>b.onclick=()=>{const row=countReviewRows.find(p=>String(p.id)===b.dataset.count);showView('estoque');$('#busca').value=row.search;$('#statusEstoque').value='todos';$('#categoria').value='';$('#semFoto').checked=false;$('#somenteBaixo').checked=false;loadProducts();});
+}
 async function loadReview(){try{
   const request=++reviewRequest;$('#photoReview').setAttribute('aria-busy','true');
-  const [photos,products]=await Promise.all([api('/api/photo-review?status='+$('#photoStatus').value),api('/api/products?status=todos')]);
-  if(request!==reviewRequest)return;reviewRows=photos;catalogue=products;
+  const [photos,products,counts]=await Promise.all([api('/api/photo-review?status='+$('#photoStatus').value),api('/api/products?status=todos'),api('/api/count-review')]);
+  if(request!==reviewRequest)return;reviewRows=photos;catalogue=products;countReviewRows=counts;
   $('#photoProductList').innerHTML=catalogue.map(p=>`<option value="${p.id} · ${esc(p.name)}"></option>`).join('');
   photoPage=0;renderReview();
 }catch(e){toast(e.message,true)}finally{$('#photoReview').setAttribute('aria-busy','false');}}
@@ -343,6 +351,7 @@ function updateReviewSummary(visibleCount){
   summary.innerHTML=`<div class="reviewMetric"><strong>${displayNumber(lastStats?.review_photos??reviewRows.filter(photo=>photo.review_status==='pendente').length)}</strong><span>fotos para revisar</span></div><div class="reviewMetric"><strong>${displayNumber(lastStats?.pending??0)}</strong><span>peças a conferir</span></div><div class="reviewMetric"><strong>${displayNumber(count)}</strong><span>fotos na seleção</span></div>`;
 }
 function renderReview(){
+  renderCountReview();
   const q=foldText($('#photoSearch').value),origin=$('#photoOrigin').value;
   const rows=reviewRows.filter(p=>(origin==='all'||p.filename.startsWith('Paulo_20261008_'))&&foldText(`${p.filename} ${p.product_name||''} ${p.review_note}`).includes(q));
   $('#photoCount').textContent=`${displayNumber(rows.length)} ${rows.length===1?'foto':'fotos'}`;updateReviewSummary(rows.length);
