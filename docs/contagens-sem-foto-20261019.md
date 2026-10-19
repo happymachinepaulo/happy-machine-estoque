@@ -1,5 +1,7 @@
 # Contagens recebidas — 19/10/2026
 
+> Histórico: esta implementação foi substituída pela conversão em peças normais descrita em pecas-normais-revisao-20261019.md. O endpoint e a lista separada foram removidos.
+
 16 contagens sem fotos registradas na seção Revisar. Nenhum produto, foto ou movimento criado; quantidades atuais preservadas. Não somar os valores aos saldos antigos: são contagens recebidas para conferir identidade e possível sobreposição entre grupos e marcas.
 
 | Descrição | Unidades |

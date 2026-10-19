@@ -74,11 +74,11 @@
   </section>
 
   <section id="view-fotos" class="view">
-    <div class="pagehead"><div><h1>Revisar<span class="titlePeriod">.</span></h1><p>Confira as contagens recebidas e identifique as peças das fotos.</p></div><div class="sectionEmblem"><svg class="icon" aria-hidden="true"><use href="#i-photo"/></svg></div></div>
+    <div class="pagehead"><div><h1>Revisar<span class="titlePeriod">.</span></h1><p>Confira as peças cadastradas e identifique as peças das fotos.</p></div><div class="sectionEmblem"><svg class="icon" aria-hidden="true"><use href="#i-photo"/></svg></div></div>
     <div id="reviewSummary" class="reviewSummary"></div>
     <datalist id="photoProductList"></datalist>
     <div class="panel toolbar"><label class="search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="photoSearch" type="search" placeholder="Buscar foto, peça ou contagem…" aria-label="Buscar fotos e contagens"></label><select id="photoStatus" aria-label="Situação das fotos"><option value="pendente">Para revisar</option><option value="confirmada">Associadas às peças</option><option value="oculta">Ocultas</option><option value="todas">Todas as fotos</option></select><select id="photoOrigin" aria-label="Origem das fotos"><option value="all">Todas as origens</option><option value="paulo-20261008">Paulo · novas fotos 08/10</option></select><span id="photoCount" class="muted" aria-live="polite"></span></div>
-    <section id="countReviewSection" class="countReviewSection hidden" aria-labelledby="countReviewTitle"><div class="countReviewHeading"><h2 id="countReviewTitle">Contagens recebidas · sem foto</h2><span id="countReviewCount" class="muted"></span></div><p class="muted">Pendentes de conferência e vínculo com o cadastro. Estes valores ainda não alteram o saldo do estoque.</p><div id="countReview" class="countReview"></div></section>
+    <section id="pendingProductReviewSection" class="pendingProductReviewSection hidden" aria-labelledby="pendingProductTitle"><div class="pendingProductHeading"><h2 id="pendingProductTitle">Peças a conferir</h2><span id="pendingProductCount" class="muted"></span></div><div id="pendingProductReview" class="products"></div></section>
     <div id="photoReview" class="photoReview"></div>
     <div id="photoPagination" class="pagination hidden"><button id="photoPrev" class="btn">← Anterior</button><span id="photoPageLabel"></span><button id="photoNext" class="btn">Próxima →</button></div>
   </section>

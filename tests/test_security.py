@@ -88,25 +88,10 @@ class HttpSecurity(Security):
         self.assertEqual(body['pending'],1)
 
     def test_photos_backup_and_inventory_require_login(self):
-        for path in ['/api/products','/api/photos/1','/api/backup','/api/admin/users','/api/count-review']:
+        for path in ['/api/products','/api/photos/1','/api/backup','/api/admin/users']:
             with self.subTest(path=path):self.assertEqual(self.request(path)[0],401)
-    def test_count_review_reads_only_pending_intake_without_stock_writes(self):
-        original=api.remote.side_effect
-        def backend(path,*args,**kwargs):
-            if path.startswith('/rest/v1/audit_log'):
-                self.assertIn('action=eq.stock_count_review',path)
-                self.assertEqual(kwargs.get('token'),jwt())
-                return [{'id':901,'created_at':'2026-10-19T12:00:00Z','after_data':json.dumps({'name':'MIDI','quantity':288,'note':'Sem foto; conferir vínculo.','search':'MIDI','internal_source':'not-exposed'})}]
-            return original(path,*args,**kwargs)
-        with patch.object(api,'remote',side_effect=backend) as mock:
-            status,_,body=self.request('/api/count-review',headers={'Authorization':'Bearer '+jwt()})
-            self.assertTrue(all(c.args[0]=='/rest/v1/rpc/stock_access' or len(c.args)<2 or c.args[1]=='GET' for c in mock.call_args_list))
-        self.assertEqual(status,200)
-        self.assertEqual(body[0]['quantity'],288)
-        self.assertEqual(body[0]['name'],'MIDI')
-        self.assertNotIn('internal_source',body[0])
     def test_password_only_cannot_access_any_private_route(self):
-        for path in ['/api/products','/api/photos/1','/api/backup','/api/count-review']:
+        for path in ['/api/products','/api/photos/1','/api/backup']:
             with self.subTest(path=path):self.assertEqual(self.request(path,headers={'Authorization':'Bearer '+jwt('aal1')})[0],403)
     def test_operator_cannot_create_users_or_promote_itself(self):
         status,_,_=self.request('/api/admin/users','POST',{'Authorization':'Bearer '+jwt(),'Content-Type':'application/json'},b'{"email":"other@example.test","role":"admin"}')

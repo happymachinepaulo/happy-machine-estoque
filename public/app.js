@@ -149,9 +149,10 @@ async function loadStats(){
   ];
   if(!$('#stats .statValue'))$('#stats').innerHTML=items.map((item,index)=>`<div class="stat ${item.tone}" style="--order:${index}"><span class="statIcon">${icon(item.icon)}</span><span class="statLabel">${item.label}</span><strong class="statValue" data-stat="${item.key}"></strong><small class="statMeta">${item.meta}</small></div>`).join('');
   items.forEach(item=>animateNumber($(`[data-stat="${item.key}"]`),stats[item.key]));
-  $('#photoBadge').textContent=stats.review_photos||'';
-  $('#photoBadge').classList.toggle('hidden',!stats.review_photos);
-  if($('#heroReviewCount'))$('#heroReviewCount').textContent=displayNumber(stats.review_photos);
+  const reviewTotal=Number(stats.review_photos||0)+Number(stats.pending||0);
+  $('#photoBadge').textContent=reviewTotal||'';
+  $('#photoBadge').classList.toggle('hidden',!reviewTotal);
+  if($('#heroReviewCount'))$('#heroReviewCount').textContent=displayNumber(reviewTotal);
   $('#reviewNotice').classList.toggle('hidden',!stats.pending);
   $('#reviewNotice').innerHTML=`<span class="noticeIcon">${icon('warning')}</span><span><strong>${displayNumber(stats.pending)} ${stats.pending===1?'peça precisa':'peças precisam'} de conferência</strong><small>Confira nomes e quantidades para incluir esses itens no total.</small></span><button id="seePending" class="btn">Conferir peças ${icon('arrow')}</button>`;
   $('#seePending').onclick=()=>{showView('estoque');$('#statusEstoque').value='pendente';loadProducts();$('#products').scrollIntoView({behavior:reducedMotion.matches?'auto':'smooth',block:'start'});};
@@ -180,6 +181,18 @@ async function loadCategories(){
   $('#categoryList').innerHTML=categoryRows.map(row=>`<option value="${esc(row.category)}"></option>`).join('');
   renderCategoryChips();
 }
+function productCardMarkup(x){
+      const pending=x.review_status==='pendente',unknown=isUnknown(x),low=!pending&&x.min_quantity>0&&x.quantity<=x.min_quantity;
+      const amountLabel=unknown?'quantidade a contar':`${x.quantity} ${quantityLabel(x)}${pending?', contagem a conferir':''}`;
+      return `<article class="productCard ${pending?'needsReview':''}" data-id="${x.id}" tabindex="0" role="button" aria-label="Abrir ${esc(x.name)}, ${amountLabel}"><div class="productPhoto">${x.photo_id?`<img loading="lazy" decoding="async" src="${esc(photoSource(x.photo_id))}" data-private-photo="${x.photo_id}" alt="${esc(x.name)}">`:`<div class="noPhoto productPhotoPlaceholder">${icon('photo')}<small>Foto a adicionar</small></div>`}${pending?'<span class="statusLabel pending">A conferir</span>':low?`<span class="lowBadge">${icon('warning')} Estoque baixo</span>`:''}${x.photo_count>1?`<span class="photoCountBadge">${icon('photo')} ${x.photo_count}</span>`:''}<span class="cardPhotoAction" aria-hidden="true">${icon('arrow')}</span></div><div class="productBody"><div class="category"><span>${esc(x.category||'Sem categoria')}</span><span class="itemCode">#${String(x.id).padStart(3,'0')}</span></div><h3>${esc(x.name)}</h3><div class="cardBottom"><div class="stock ${unknown?'isUnknown':''}"><strong>${unknown?'A contar':displayNumber(x.quantity)}</strong><span class="stockUnit">${unknown?'quantidade pendente':isBrokenReference(x)?'disponíveis · modelo quebrado':quantityUnit(x)==='m'?'metros':quantityUnit(x)==='lote'?quantityLabel(x)+(pending?' · a conferir':''):pending?'unid. · a conferir':quantityLabel(x)}</span></div><span class="cardOpen" aria-hidden="true">Ver peça ${icon('arrow')}</span></div></div></article>`;
+}
+function bindProductCards(container){
+    [...container.querySelectorAll('.productCard')].forEach((p,i)=>p.style.setProperty('--order',Math.min(i,8)));
+    [...container.querySelectorAll('.productCard')].forEach(card=>{
+      card.addEventListener('click',()=>openDetail(card.dataset.id));
+      card.addEventListener('keydown',event=>{if(event.target===card&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openDetail(card.dataset.id);}});
+    });
+}
 async function loadProducts(){
   const request=++productRequest, el=$('#products');
   if(productController)productController.abort();
@@ -201,26 +214,18 @@ async function loadProducts(){
     rows.sort((a,b)=>sort==='quantity-desc'?b.quantity-a.quantity:sort==='quantity-asc'?a.quantity-b.quantity:sort==='updated'?b.updated_at.localeCompare(a.updated_at):a.name.localeCompare(b.name,'pt-BR'));
     $('#resultCount').textContent=`${rows.length} ${rows.length===1?'peça encontrada':'peças encontradas'}`;
     $('#emptyProducts').classList.toggle('hidden',rows.length!==0);
-    el.innerHTML=rows.map(x=>{
-      const pending=x.review_status==='pendente',unknown=isUnknown(x),low=!pending&&x.min_quantity>0&&x.quantity<=x.min_quantity;
-      const amountLabel=unknown?'quantidade a contar':`${x.quantity} ${quantityLabel(x)}${pending?', contagem a conferir':''}`;
-      return `<article class="productCard ${pending?'needsReview':''}" data-id="${x.id}" tabindex="0" role="button" aria-label="Abrir ${esc(x.name)}, ${amountLabel}"><div class="productPhoto">${x.photo_id?`<img loading="lazy" decoding="async" src="${esc(photoSource(x.photo_id))}" data-private-photo="${x.photo_id}" alt="${esc(x.name)}">`:`<div class="noPhoto productPhotoPlaceholder">${icon('photo')}<small>Foto a adicionar</small></div>`}${pending?'<span class="statusLabel pending">A conferir</span>':low?`<span class="lowBadge">${icon('warning')} Estoque baixo</span>`:''}${x.photo_count>1?`<span class="photoCountBadge">${icon('photo')} ${x.photo_count}</span>`:''}<span class="cardPhotoAction" aria-hidden="true">${icon('arrow')}</span></div><div class="productBody"><div class="category"><span>${esc(x.category||'Sem categoria')}</span><span class="itemCode">#${String(x.id).padStart(3,'0')}</span></div><h3>${esc(x.name)}</h3><div class="cardBottom"><div class="stock ${unknown?'isUnknown':''}"><strong>${unknown?'A contar':displayNumber(x.quantity)}</strong><span class="stockUnit">${unknown?'quantidade pendente':isBrokenReference(x)?'disponíveis · modelo quebrado':quantityUnit(x)==='m'?'metros':quantityUnit(x)==='lote'?quantityLabel(x)+(pending?' · a conferir':''):pending?'unid. · a conferir':quantityLabel(x)}</span></div><span class="cardOpen" aria-hidden="true">Ver peça ${icon('arrow')}</span></div></div></article>`;
-    }).join('');
-    $$('.productCard').forEach((p,i)=>p.style.setProperty('--order',Math.min(i,8)));
-    $$('.productCard').forEach(card=>{
-      card.addEventListener('click',()=>openDetail(card.dataset.id));
-      card.addEventListener('keydown',event=>{if(event.target===card&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openDetail(card.dataset.id);}});
-    });
+    el.innerHTML=rows.map(productCardMarkup).join('');
+    bindProductCards(el);
   }catch(e){if(e.name!=='AbortError')toast('Não foi possível carregar as peças: '+e.message,true)}finally{clearTimeout(loadingTimer);if(request===productRequest){el.setAttribute('aria-busy','false');el.classList.remove('isLoading');el.querySelectorAll('.productSkeleton').forEach(s=>s.remove());}}
 }
-async function refresh(){const button=$('#btnRecarregar');button.classList.add('refreshing');button.disabled=true;try{await Promise.all([loadStats(),loadCategories(),loadProducts()]);$('#lastSync').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}catch(error){toast(error.message,true)}finally{button.classList.remove('refreshing');button.disabled=false;}}
+async function refresh(){const button=$('#btnRecarregar');button.classList.add('refreshing');button.disabled=true;try{await Promise.all([loadStats(),loadCategories(),loadProducts(),...($('#view-fotos').classList.contains('active')?[loadReview()]:[])]);$('#lastSync').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}catch(error){toast(error.message,true)}finally{button.classList.remove('refreshing');button.disabled=false;}}
 
 function showView(name){
   const view=$(`#view-${name}`);if(!view)return;
   const changed=!view.classList.contains('active');
   $$('.view').forEach(section=>section.classList.toggle('active',section===view));
   $$('.nav').forEach(button=>{const active=button.dataset.view===name;button.classList.toggle('active',active);if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
-  $('#workspaceTitle').textContent=({estoque:'Estoque',fotos:'Revisão de fotos',historico:'Movimentações',consertos:'Consertos',dados:'Backup e dados',users:'Usuários'})[name];
+  $('#workspaceTitle').textContent=({estoque:'Estoque',fotos:'Revisar',historico:'Movimentações',consertos:'Consertos',dados:'Backup e dados',users:'Usuários'})[name];
   if(changed){animateIn(view,14);window.scrollTo({top:0,behavior:'instant'});}
   if(name==='consertos')window.HMRepairs.load();if(name==='historico')loadHistory();if(name==='fotos')loadReview();
 }
@@ -330,18 +335,17 @@ async function loadHistory(){ try{history=await api('/api/history?limit=500');re
 $('#historySearch').oninput=renderHistory;
 if($('#historyTypeFilter'))$('#historyTypeFilter').onchange=renderHistory;
 
-let countReviewRows=[];
-function renderCountReview(){
-  const q=foldText($('#photoSearch').value),rows=countReviewRows.filter(p=>foldText(`${p.name} ${p.note}`).includes(q));
-  $('#countReviewSection').classList.toggle('hidden',!countReviewRows.length);
-  $('#countReviewCount').textContent=`${displayNumber(rows.length)} contagens`;
-  $('#countReview').innerHTML=rows.map(p=>`<article class="countReviewCard"><span class="photoTag pendente">Para revisar · sem foto</span><h3>${esc(p.name)}</h3><p class="countReviewAmount"><strong>${displayNumber(p.quantity)}</strong> unidades</p><details class="reviewContext"><summary>Observação da contagem</summary><p>${esc(p.note)}</p></details><button type="button" class="btn findCountProduct" data-count="${p.id}">${icon('search')} Buscar cadastro</button></article>`).join('')||'<p class="muted">Nenhuma contagem nesta busca.</p>';
-  $$('.findCountProduct').forEach(b=>b.onclick=()=>{const row=countReviewRows.find(p=>String(p.id)===b.dataset.count);showView('estoque');$('#busca').value=row.search;$('#statusEstoque').value='todos';$('#categoria').value='';$('#semFoto').checked=false;$('#somenteBaixo').checked=false;loadProducts();});
+function renderPendingProducts(){
+  const q=foldText($('#photoSearch').value),pending=catalogue.filter(p=>p.review_status==='pendente');
+  const rows=pending.filter(p=>foldText(`${p.name} ${p.category} ${p.notes}`).includes(q));
+  $('#pendingProductReviewSection').classList.toggle('hidden',!pending.length);
+  $('#pendingProductCount').textContent=`${displayNumber(rows.length)} peças`;
+  const container=$('#pendingProductReview');container.innerHTML=rows.map(productCardMarkup).join('')||'<p class="muted">Nenhuma peça nesta busca.</p>';bindProductCards(container);
 }
 async function loadReview(){try{
   const request=++reviewRequest;$('#photoReview').setAttribute('aria-busy','true');
-  const [photos,products,counts]=await Promise.all([api('/api/photo-review?status='+$('#photoStatus').value),api('/api/products?status=todos'),api('/api/count-review')]);
-  if(request!==reviewRequest)return;reviewRows=photos;catalogue=products;countReviewRows=counts;
+  const [photos,products]=await Promise.all([api('/api/photo-review?status='+$('#photoStatus').value),api('/api/products?status=todos')]);
+  if(request!==reviewRequest)return;reviewRows=photos;catalogue=products;
   $('#photoProductList').innerHTML=catalogue.map(p=>`<option value="${p.id} · ${esc(p.name)}"></option>`).join('');
   photoPage=0;renderReview();
 }catch(e){toast(e.message,true)}finally{$('#photoReview').setAttribute('aria-busy','false');}}
@@ -351,7 +355,7 @@ function updateReviewSummary(visibleCount){
   summary.innerHTML=`<div class="reviewMetric"><strong>${displayNumber(lastStats?.review_photos??reviewRows.filter(photo=>photo.review_status==='pendente').length)}</strong><span>fotos para revisar</span></div><div class="reviewMetric"><strong>${displayNumber(lastStats?.pending??0)}</strong><span>peças a conferir</span></div><div class="reviewMetric"><strong>${displayNumber(count)}</strong><span>fotos na seleção</span></div>`;
 }
 function renderReview(){
-  renderCountReview();
+  renderPendingProducts();
   const q=foldText($('#photoSearch').value),origin=$('#photoOrigin').value;
   const rows=reviewRows.filter(p=>(origin==='all'||p.filename.startsWith('Paulo_20261008_'))&&foldText(`${p.filename} ${p.product_name||''} ${p.review_note}`).includes(q));
   $('#photoCount').textContent=`${displayNumber(rows.length)} ${rows.length===1?'foto':'fotos'}`;updateReviewSummary(rows.length);

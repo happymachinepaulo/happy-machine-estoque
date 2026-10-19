@@ -229,13 +229,6 @@ class handler(BaseHTTPRequestHandler):
         remote('/rest/v1/rpc/email_login_command','POST',{'action':'complete','secret_hash':digest,'uid':user['id'],'sid':jwt['session_id']},service=True)
         return self.respond({'access_token':session['access_token'],'refresh_token':session['refresh_token']})
     def get(self,path,qs):
-        if path=='/api/count-review':
-            rows=self.rows('audit_log',select='id,after_data,created_at',action='eq.stock_count_review',order='id.desc')
-            counts=[]
-            for row in rows:
-                value=json.loads(row['after_data'])
-                counts.append({'id':row['id'],'name':value['name'],'quantity':value['quantity'],'note':value.get('note',''),'search':value.get('search',value['name']),'created_at':row['created_at']})
-            return self.respond(counts)
         if path=='/api/repairs':
             return self.respond(self.rows('repairs',select='id,name,category,quantity,defect,notes,status,photo_path,created_at,updated_at',archived_at='is.null',order='created_at.desc,id.desc'))
         if re.fullmatch(r'/api/repairs/\d+/photo',path):
