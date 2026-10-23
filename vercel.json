@@ -3,19 +3,11 @@
   "outputDirectory": "public",
   "functions": {
     "api/index.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{public/**,local/**,.private/**,entrega/**,scripts/**,tests/**,supabase/**,migration/**,.env*,**/__pycache__/**,**/*.db,**/*.db-wal,**/*.db-shm,**/*.zip,*.md,*.bat}"
+      "maxDuration": 30,
+      "excludeFiles": "{public/**,local/**,.private/**,scripts/**,tests/**,supabase/**,migration/**,docs/**,.env*,**/__pycache__/**,**/*.zip,*.md,*.bat}"
     }
   },
   "rewrites": [
-    {
-      "source": "/aprs",
-      "destination": "/aprs.html"
-    },
-    {
-      "source": "/aprs/",
-      "destination": "/aprs.html"
-    },
     {
       "source": "/api/:path*",
       "destination": "/api/index.py"
@@ -44,6 +36,24 @@
         {
           "key": "Content-Security-Policy",
           "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; media-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        }
+      ]
+    },
+    {
+      "source": "/(css|js)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
         }
       ]
     }
