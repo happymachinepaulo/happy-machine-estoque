@@ -16,6 +16,8 @@ class Fake:
         self.products = products or []
         self.photos = photos or []
         self.movements, self.repairs, self.calls, self.uploads = [], [], [], {}
+        self.holders = [{'id': 1, 'name': 'Bruno', 'active': True, 'created_at': ''}, {'id': 2, 'name': 'Matheus', 'active': True, 'created_at': ''}]
+        self.holder_stock = []
         self.seq = {'p': max([p['id'] for p in self.products] or [0]) + 1, 'ph': max([p['id'] for p in self.photos] or [0]) + 1, 'm': 1, 'r': 1}
 
     # ── utilidades ──
@@ -31,6 +33,7 @@ class Fake:
             op, _, val = v.partition('.')
             if op == 'eq': rows = [r for r in rows if str(r.get(k)) == val]
             elif op == 'is' and val == 'null': rows = [r for r in rows if r.get(k) is None]
+            elif op == 'gt': rows = [r for r in rows if r.get(k) is not None and r.get(k) > int(val)]
             elif op == 'in': rows = [r for r in rows if str(r.get(k)) in val.strip('()').split(',')]
         return rows
 
@@ -88,13 +91,16 @@ class Fake:
             names = {x['id']: x['name'] for x in self.products}
             rows = self._page(self._order(self._filter(self.movements, qs), qs), qs)
             return [{**r, 'products': {'name': names.get(r['product_id'], 'Peça removida')}} for r in rows]
+        if p == '/rest/v1/holders': return [dict(r) for r in self._order(self._filter(self.holders, qs), qs)]
+        if p == '/rest/v1/holder_stock': return [dict(r) for r in self._order(self._filter(self.holder_stock, qs), qs)]
         if p == '/rest/v1/repairs': return [dict(r) for r in self._page(self._order(self._filter(self.repairs, qs), qs), qs)]
         if p == '/rest/v1/rpc/stock_command': return self.stock_command(data['command'], data['pid'], data['payload'])
         if p == '/rest/v1/rpc/repair_command': return self.repair_command(data['command'], data['pid'], data['payload'])
         raise AssertionError(f'Rota não simulada: {method} {path}')
 
-    def _move(self, pid, kind, amount, before, after, note=''):
-        self.movements.append({'id': self.seq['m'], 'product_id': pid, 'kind': kind, 'amount': amount, 'before_qty': before, 'after_qty': after, 'note': note, 'created_at': '2026-10-23T12:00:00+00:00'})
+    def _move(self, pid, kind, amount, before, after, note='', holder_id=None, destination=''):
+        self.movements.append({'id': self.seq['m'], 'product_id': pid, 'kind': kind, 'amount': amount, 'before_qty': before, 'after_qty': after, 'note': note,
+                               'holder_id': holder_id, 'destination': destination, 'created_at': '2026-10-23T12:00:00+00:00'})
         self.seq['m'] += 1
 
     def stock_command(self, cmd, pid, pl):
@@ -117,13 +123,35 @@ class Fake:
                 ph.update(product_id=target, review_status=st, is_primary=1 if pl.get('primary', True) else 0)
             else: ph.update(review_status=st, is_primary=0)
             return {'ok': True}
+        if cmd == 'holder_create':
+            if any(h['name'].lower() == pl['name'].lower() for h in self.holders): raise APIError('Já existe uma pessoa com esse nome', 400)
+            h = {'id': max([x['id'] for x in self.holders] or [0]) + 1, 'name': pl['name'], 'active': True, 'created_at': ''}; self.holders.append(h); return {'ok': True, 'id': h['id']}
+        if cmd == 'holder_update':
+            h = next((x for x in self.holders if x['id'] == pid), None)
+            if not h: raise APIError('Pessoa não encontrada', 400)
+            if pl.get('active') is False and any(s['holder_id'] == pid and s['quantity'] > 0 for s in self.holder_stock): raise APIError('Esta pessoa ainda tem peças.', 400)
+            h.update({k: pl[k] for k in ('name', 'active') if k in pl}); return {'ok': True}
         p = by.get(pid)
         if not p: raise APIError('Produto não encontrado', 400)
+        hid = pl.get('holder_id'); h = next((x for x in self.holders if x['id'] == hid), None) if hid else None
+        if hid and (not h or not h['active']): raise APIError('Pessoa não encontrada', 400)
+        def slot():
+            s = next((x for x in self.holder_stock if x['holder_id'] == hid and x['product_id'] == pid), None)
+            if not s: s = {'holder_id': hid, 'product_id': pid, 'quantity': 0, 'updated_at': ''}; self.holder_stock.append(s)
+            return s
         if cmd == 'movement':
-            before = p['quantity']; k = pl['kind']
+            before = p['quantity']; k = pl['kind']; dest = pl.get('destination', '')
             after = pl['new_quantity'] if k == 'ajuste' else before + (pl['amount'] if k == 'entrada' else -pl['amount'])
             if after < 0: raise APIError('Saída maior que o estoque atual ou contagem inválida', 400)
-            p['quantity'] = after; self._move(pid, k, after - before, before, after, pl.get('note', '')); return {'ok': True, 'before': before, 'after': after}
+            if h and k in ('entrada', 'saida'):
+                s = slot()
+                if k == 'entrada' and s['quantity'] < pl['amount']: raise APIError(f"{h['name']} tem só {s['quantity']} desta peça", 400)
+                s['quantity'] += pl['amount'] if k == 'saida' else -pl['amount']; dest = h['name']
+            p['quantity'] = after; self._move(pid, k, after - before, before, after, pl.get('note', ''), hid if k != 'ajuste' else None, dest); return {'ok': True, 'before': before, 'after': after}
+        if cmd == 'holder_consume':
+            s = slot(); a = pl['amount']
+            if s['quantity'] < a: raise APIError(f"{h['name']} tem só {s['quantity']} desta peça", 400)
+            s['quantity'] -= a; self._move(pid, 'consumo', -a, s['quantity'] + a, s['quantity'], pl.get('note', ''), hid, pl['destination']); return {'ok': True}
         if cmd == 'update':
             p.update(name=pl['name'].strip(), category=pl.get('category', ''), min_quantity=pl.get('min_quantity', 0), notes=pl.get('notes', '')); self._attach(pid, pl); return {'ok': True}
         if cmd == 'confirm': p['review_status'] = 'confirmado'; return {'ok': True}

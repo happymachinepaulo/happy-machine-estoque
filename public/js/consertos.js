@@ -1,22 +1,24 @@
-import { $, esc, fold, n, icon, api, toast, open, confirmBox, prepareImage, pickPhoto, fmtDate } from './core.js';
+import { $, esc, fold, n, icon, api, toast, open, confirmBox, prepareImage, pickPhoto, fmtDate, subtabs } from './core.js';
 
 const LABEL = { aguardando: 'Aguardando', em_conserto: 'Em conserto', consertada: 'Consertada', sem_conserto: 'Sem conserto' };
 const PILL = { aguardando: 'warn', em_conserto: '', consertada: 'ok', sem_conserto: 'bad' };
-let rows = [], pick;
+let rows = [], pick, st = '';
+const ACC = { '': 'var(--ink)', aguardando: 'var(--orange)', em_conserto: 'var(--blue)', consertada: 'var(--green)', sem_conserto: 'var(--red)' };
 const notes = r => (r.notes || '').replace(/\[paulo-quebradas-20261009:\d+\]/g, '').trim();
 const options = s => Object.entries(LABEL).map(([k, v]) => `<option value="${k}" ${k === s ? 'selected' : ''}>${v}</option>`).join('');
 
 function render() {
-  const t = fold($('#rq').value.trim()), st = $('#rfilter').value;
+  const t = fold($('#rq').value.trim());
+  const qty = s => rows.filter(r => !s || r.status === s).reduce((a, r) => a + r.quantity, 0);
+  subtabs($('#repSub'), [['', 'Todas'], ...Object.entries(LABEL)].map(([k, l]) => ({ key: k, label: l, accent: ACC[k], count: qty(k) })), st, k => { st = k; render(); });
   const list = rows.filter(r => (!st || r.status === st) && (!t || fold(`${r.name} ${r.category} ${r.defect} ${r.notes}`).includes(t)));
-  $('#rstats').innerHTML = Object.keys(LABEL).map(s => `<div class="rstat"><span>${LABEL[s]}</span><b>${n(rows.filter(r => r.status === s).reduce((a, r) => a + r.quantity, 0))}</b></div>`).join('');
-  $('#rcards').innerHTML = list.map(r => `<article class="panel rcard" data-id="${r.id}">
-    <div class="top"><span class="pill ${PILL[r.status]}">${LABEL[r.status]}</span><span class="muted" style="font-size:12px">C${String(r.id).padStart(3, '0')} · ${esc(fmtDate(r.updated_at))}</span></div>
+  $('#rcards').innerHTML = list.map((r, i) => `<article class="panel rcard" data-id="${r.id}" style="--i:${i}">
+    <div class="top3"><span class="pill ${PILL[r.status]}">${LABEL[r.status]}</span><span class="muted" style="font-size:12px">C${String(r.id).padStart(3, '0')} · ${esc(fmtDate(r.updated_at))}</span></div>
     <div class="id"><div class="ph">${r.photo ? `<img src="${esc(r.photo)}" alt="" loading="lazy" decoding="async">` : `<div class="none">${icon('wrench')}</div>`}</div>
       <div><div class="muted" style="font-size:12px">${esc(r.category || 'Sem categoria')}</div><h3>${esc(r.name)}</h3><b>${n(r.quantity)}</b> <span class="muted">un.</span></div></div>
     <p class="defect">${esc(r.defect)}</p>${notes(r) ? `<p class="defect muted">${esc(notes(r))}</p>` : ''}
-    <div style="display:flex;gap:8px;align-items:center"><select class="control" data-status aria-label="Situação de ${esc(r.name)}">${options(r.status)}</select><button class="btn sm" data-edit>Editar</button><button class="btn sm ghost" data-archive>Arquivar</button></div></article>`).join('')
-    || `<div class="empty" style="grid-column:1/-1"><b>Nenhuma peça nesta seleção</b><span>Registre as peças quebradas que aguardam conserto.</span></div>`;
+    <div class="row"><select class="control" data-status aria-label="Situação de ${esc(r.name)}">${options(r.status)}</select><button class="btn sm" data-edit>Editar</button><button class="btn sm ghost" data-archive>Arquivar</button></div></article>`).join('')
+    || `<div class="empty" style="grid-column:1/-1"><span class="ill">${icon('wrench')}</span><b>Nenhuma peça nesta seleção</b><span>Registre as peças quebradas que aguardam conserto.</span></div>`;
 }
 export async function load() { try { rows = await api('/api/repairs'); render(); } catch (e) { toast(e.message, true); } }
 async function save(r, file) {
@@ -32,7 +34,7 @@ function edit(r) {
 }
 export function init() {
   pick = pickPhoto([$('#rFile'), $('#rCam')], $('#rPreview'));
-  $('#btnRepair').onclick = () => edit(); $('#rq').oninput = render; $('#rfilter').onchange = render;
+  $('#btnRepair').onclick = () => edit(); $('#rq').oninput = render;
   $('#formRepair').onsubmit = async e => {
     e.preventDefault(); const btn = e.submitter; btn.disabled = true;
     try {

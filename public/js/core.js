@@ -95,3 +95,42 @@ export function pickPhoto(inputs, preview, onFile) {
   });
   return { get file() { return current; }, clear() { current = null; inputs.forEach(i => i.value = ''); preview.classList.add('hidden'); preview.removeAttribute('src'); } };
 }
+
+/* ── abas e subabas com indicador deslizante ── */
+export function slide(container, ink, active) {
+  if (!active || !ink) return;
+  const c = container.getBoundingClientRect(), a = active.getBoundingClientRect();
+  ink.style.width = a.width + 'px';
+  ink.style.transform = `translateX(${a.left - c.left + container.scrollLeft}px)`;
+}
+/* items: [{key,label,count?,accent?,dot?,icon?,cls?}] — desenha os botões e desliza o indicador até o selecionado */
+export function subtabs(el, items, value, onPick) {
+  let ink = el.querySelector(':scope > .subInk');
+  const html = items.map(t => `<button class="sub ${t.cls || ''}" role="tab" data-key="${esc(t.key)}" aria-selected="${t.key === value}"${t.accent ? ` style="--accent:${t.accent}"` : ''}>${t.dot ? '<span class="dot"></span>' : ''}${t.icon ? icon(t.icon) : ''}${esc(t.label)}${t.count !== undefined ? `<small>${n(t.count)}</small>` : ''}</button>`).join('');
+  el.querySelectorAll(':scope > .sub').forEach(b => b.remove());
+  el.insertAdjacentHTML('afterbegin', html);
+  if (!ink) { ink = document.createElement('span'); ink.className = 'subInk'; el.append(ink); }
+  el.setAttribute('role', 'tablist');
+  const act = el.querySelector('.sub[aria-selected=true]');
+  if (act) { ink.style.background = getComputedStyle(act).getPropertyValue('--accent').trim() || ''; if (act.offsetLeft < el.scrollLeft || act.offsetLeft + act.offsetWidth > el.scrollLeft + el.clientWidth) el.scrollTo({ left: act.offsetLeft - 24, behavior: 'smooth' }); }
+  requestAnimationFrame(() => slide(el, ink, act));
+  el.onclick = e => { const b = e.target.closest('.sub'); if (b) onPick(b.dataset.key); };
+}
+addEventListener('resize', debounce(() => document.querySelectorAll('.subtabs').forEach(el => slide(el, el.querySelector('.subInk'), el.querySelector('[aria-selected=true]'))), 100));
+
+/* ── números que sobem ── */
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+export function countUp(root = document) {
+  root.querySelectorAll('[data-count]').forEach(el => {
+    const to = +el.dataset.count, from = +(el.dataset.from || 0); el.removeAttribute('data-count');
+    if (reduced || to === from) { el.textContent = n(to); return; }
+    const t0 = performance.now(), d = 700;
+    const step = t => { const k = Math.min(1, (t - t0) / d), e = 1 - Math.pow(1 - k, 3); el.textContent = n(Math.round(from + (to - from) * e)); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  });
+}
+
+/* ── pessoas: cor e iniciais ── */
+const COLORS = ['var(--blue)', 'var(--red)', 'var(--green)', 'var(--pink)', 'var(--orange)', '#7b3fe4', '#0aa5a5'];
+export const personColor = id => COLORS[(Number(id) || 0) % COLORS.length];
+export const initials = name => (String(name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('') || '?').toUpperCase();

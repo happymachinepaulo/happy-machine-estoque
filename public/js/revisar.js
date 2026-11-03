@@ -1,9 +1,11 @@
-import { $, esc, fold, n, icon, api, toast, zoom, debounce } from './core.js';
+import { $, esc, fold, n, icon, api, toast, zoom, debounce, subtabs } from './core.js';
 import { state } from './state.js';
 import { reload, newFromPhoto, openDetail } from './estoque.js';
 
 const SIZE = 24;
-let page = 0, data = { rows: [], total: 0 };
+let page = 0, data = { rows: [], total: 0 }, status = 'pendente';
+const STATUS = [['pendente', 'Para revisar', 'var(--orange)'], ['confirmada', 'Vinculadas', 'var(--green)'], ['oculta', 'Ocultas', 'var(--ink-3)'], ['todas', 'Todas', 'var(--ink)']];
+function tabs() { subtabs($('#fotoSub'), STATUS.map(([k, l, c]) => ({ key: k, label: l, accent: c, count: k === 'pendente' ? state.pending : undefined })), status, k => { status = k; page = 0; load(); }); }
 
 const key = s => (fold(s).match(/[a-z0-9]+/g) || []).map((w, i) => i === 0 && w === 'chaves' ? 'chave' : w).join('');
 const field = (note, label) => (String(note || '').split('\n').find(l => l.startsWith(label + ': ')) || '').slice(label.length + 2);
@@ -23,12 +25,12 @@ function existing(ph) {
 const label = { confirmada: ['ok', 'Vinculada'], pendente: ['warn', 'Para revisar'], oculta: ['', 'Oculta'] };
 
 function render() {
-  const status = $('#fotoStatus').value;
+  tabs();
   $('#dlProducts').innerHTML = state.products.map(p => `<option value="${p.id} · ${esc(p.name)}">`).join('');
   $('#fotosInfo').textContent = data.total ? `${n(data.total)} ${data.total === 1 ? 'foto' : 'fotos'} nesta seleção` : '';
-  $('#fotoList').innerHTML = data.rows.length ? data.rows.map(ph => {
+  $('#fotoList').innerHTML = data.rows.length ? data.rows.map((ph, i) => {
     const s = suggestion(ph), ex = existing(ph), [cls, txt] = label[ph.review_status] || label.pendente;
-    return `<article class="panel rv" data-id="${ph.id}">
+    return `<article class="panel rv" data-id="${ph.id}" style="--i:${i}">
       <div class="ph" data-zoom="${esc(ph.url)}" data-cap="${esc(ph.filename)}"><img src="${esc(ph.thumb)}" alt="" loading="lazy" decoding="async"></div>
       <div class="in"><div style="display:flex;justify-content:space-between;align-items:center"><span class="pill ${cls}">${txt}</span><span class="muted" style="font-size:12px">Foto ${ph.id}</span></div>
         <h3>${esc(ph.product_name || s.name || 'Qual é esta peça?')}</h3>
@@ -38,7 +40,7 @@ function render() {
         <div class="row"><button class="btn primary sm" data-act="link">${icon('check')}Vincular</button>${ph.review_status !== 'confirmada' ? (ex ? `<button class="btn sm" data-act="open" data-pid="${ex.id}">Abrir #${ex.id}</button>` : `<button class="btn sm" data-act="create">${icon('plus')}Criar peça</button>`) : ''}<button class="btn sm ghost" data-act="hide">${ph.review_status === 'oculta' ? 'Restaurar' : 'Ocultar'}</button></div>
         ${ex && ph.review_status !== 'confirmada' ? `<button class="btn sm ok" data-act="suggest" data-pid="${ex.id}">Vincular a “${esc(ex.name)}”</button>` : ''}
       </div></article>`;
-  }).join('') : `<div class="empty" style="grid-column:1/-1"><b>${status === 'pendente' ? 'Tudo revisado' : 'Nenhuma foto nesta seleção'}</b><span>Escolha outra situação para ver as demais fotos.</span></div>`;
+  }).join('') : `<div class="empty" style="grid-column:1/-1"><span class="ill">${icon('check')}</span><b>${status === 'pendente' ? 'Tudo revisado' : 'Nenhuma foto nesta seleção'}</b><span>Escolha outra situação para ver as demais fotos.</span></div>`;
   const pages = Math.max(1, Math.ceil(data.total / SIZE)), pg = $('#fotoPager');
   pg.classList.toggle('hidden', pages <= 1);
   pg.innerHTML = `<button class="btn sm" data-p="-1" ${page === 0 ? 'disabled' : ''}>Anterior</button><span>Página ${page + 1} de ${pages}</span><button class="btn sm" data-p="1" ${page >= pages - 1 ? 'disabled' : ''}>Próxima</button>`;
@@ -46,7 +48,7 @@ function render() {
 
 export async function load() {
   try {
-    data = await api(`/api/review?status=${$('#fotoStatus').value}&limit=${SIZE}&offset=${page * SIZE}`);
+    data = await api(`/api/review?status=${status}&limit=${SIZE}&offset=${page * SIZE}`);
     if (!data.rows.length && page > 0) { page--; return load(); }
     render();
   } catch (e) { toast(e.message, true); }
@@ -55,7 +57,6 @@ async function act(ph, status, pid, primary = true) { await api(`/api/photos/${p
 async function changed(msg) { toast(msg); await Promise.all([load(), reload()]); }
 
 export function init() {
-  $('#fotoStatus').onchange = () => { page = 0; load(); };
   $('#fotoPager').onclick = e => { const b = e.target.closest('[data-p]'); if (b) { page += +b.dataset.p; load(); scrollTo({ top: 0 }); } };
   $('#fotoList').onclick = async e => {
     const z = e.target.closest('[data-zoom]'); if (z) return zoom(z.dataset.zoom, z.dataset.cap);

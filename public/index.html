@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Happy Machine · Estoque</title>
-<meta name="theme-color" content="#ffd23f">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light only">
 <link rel="icon" href="/assets/logo.webp" type="image/webp">
 <link rel="preload" href="/assets/Manrope.woff" as="font" type="font/woff" crossorigin>
 <link rel="stylesheet" href="/css/app.css">
@@ -13,101 +14,146 @@
 <body data-auth="locked">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="m3 7.5 9-4.5 9 4.5v9L12 21l-9-4.5v-9Z"/><path d="m3 7.5 9 4.5 9-4.5M12 12v9"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.3 3.3 0 0 1 0 6.4M18 14.8c2 .6 3.2 2.4 3.5 5.2"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4.2 3.9-6.5 8-6.5s7.2 2.3 8 6.5"/></symbol>
 <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m3 16 5-5 4 4 3-3 6 6"/></symbol>
 <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 17.7 6.3 21l6.3-6.3a4 4 0 0 0 5.1-5.4l-2.6 2.6-2.4-.6-.6-2.4 2.6-2.6Z"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
 <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
 <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
 <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
 <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
 <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
 <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></symbol>
 <symbol id="i-out" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 8l-4 4 4 4M6 12h10"/></symbol>
 <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+<symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></symbol>
 </defs></svg>
 
 <section id="auth" aria-label="Acesso">
   <aside class="authStory">
-    <div class="logo"><img src="/assets/logo.webp" alt="" width="46" height="46">Happy Machine</div>
-    <div><h1>Cada peça no lugar certo.</h1><p>Estoque, fotos e consertos da equipe em um só lugar.</p></div>
+    <div class="blobs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="logo"><img src="/assets/logo.webp" alt="" width="52" height="50">Happy Machine</div>
+    <div class="authCopy"><h1>Cada peça<br>no lugar <em>certo.</em></h1><p>Estoque, pessoas, fotos e consertos da equipe em um só lugar.</p></div>
   </aside>
   <div class="authMain"><div class="authCard">
     <div id="authMsg" class="authMsg" role="status" aria-live="polite"></div>
-    <div id="stepLogin"><h2>Entrar</h2><p class="muted" style="margin:4px 0 18px">Use o e-mail e a senha que o administrador criou.</p>
+    <div id="stepLogin" class="step"><h2>Entrar</h2><p class="muted">Use o e-mail e a senha que o administrador criou.</p>
       <form id="formLogin">
         <label class="field">E-mail<input id="email" type="email" autocomplete="username" required></label>
         <label class="field">Senha<input id="password" type="password" autocomplete="current-password" required></label>
-        <button class="btn primary" type="submit">Entrar</button>
+        <button class="btn primary lg" type="submit">Entrar<svg class="i"><use href="#i-send"/></svg></button>
       </form></div>
-    <div id="stepCode" hidden><h2>Digite o código</h2><p id="codeHelp" class="muted" style="margin:4px 0 18px"></p>
+    <div id="stepCode" class="step" hidden><h2>Digite o código</h2><p id="codeHelp" class="muted"></p>
       <form id="formCode">
         <label class="field">Código recebido por e-mail<input id="code" class="code" inputmode="numeric" pattern="([0-9]{6}|[0-9]{8})" maxlength="8" autocomplete="one-time-code" required></label>
-        <button class="btn primary" type="submit">Confirmar</button>
+        <button class="btn primary lg" type="submit">Confirmar</button>
         <button id="codeBack" class="btn ghost" type="button">Voltar</button>
       </form></div>
   </div></div>
 </section>
 
 <div id="app">
-  <nav class="rail" aria-label="Principal">
-    <div class="logo"><img src="/assets/logo.webp" alt="" width="34" height="34"><div>Happy Machine<small>Estoque</small></div></div>
-    <button class="nav" data-view="estoque"><svg class="i"><use href="#i-grid"/></svg>Estoque</button>
-    <button class="nav" data-view="fotos"><svg class="i"><use href="#i-photo"/></svg>Fotos<span id="badgeFotos" class="badge hidden"></span></button>
-    <button class="nav" data-view="consertos"><svg class="i"><use href="#i-wrench"/></svg>Consertos</button>
-    <button class="nav" data-view="historico"><svg class="i"><use href="#i-clock"/></svg>Histórico</button>
-    <button class="nav hidden" id="navAdmin" data-view="admin"><svg class="i"><use href="#i-shield"/></svg>Admin</button>
-    <div class="who"><b id="whoName"></b><button id="logout" class="btn sm ghost" style="justify-content:flex-start;padding:0"><svg class="i"><use href="#i-out"/></svg>Sair</button></div>
-  </nav>
+  <header class="top">
+    <div class="topRow">
+      <a class="brand" href="#estoque"><img src="/assets/logo.webp" alt="" width="40" height="38"><span>Happy Machine<small>Estoque</small></span></a>
+      <nav class="tabs" id="tabs" aria-label="Principal">
+        <span class="tabInk" aria-hidden="true"></span>
+        <button class="tab" data-view="estoque" style="--c:var(--red)"><svg class="i"><use href="#i-box"/></svg><span>Estoque</span></button>
+        <button class="tab" data-view="pessoas" style="--c:var(--blue)"><svg class="i"><use href="#i-users"/></svg><span>Pessoas</span></button>
+        <button class="tab" data-view="fotos" style="--c:var(--pink)"><svg class="i"><use href="#i-photo"/></svg><span>Fotos</span><b id="badgeFotos" class="badge hidden"></b></button>
+        <button class="tab" data-view="consertos" style="--c:var(--orange)"><svg class="i"><use href="#i-wrench"/></svg><span>Consertos</span></button>
+        <button class="tab" data-view="manutencao" style="--c:var(--green)"><svg class="i"><use href="#i-gear"/></svg><span>Manutenção Máquinas</span></button>
+        <button class="tab" data-view="historico" style="--c:var(--ink)"><svg class="i"><use href="#i-clock"/></svg><span>Histórico</span></button>
+        <button class="tab hidden" id="navAdmin" data-view="admin" style="--c:var(--ink)"><svg class="i"><use href="#i-shield"/></svg><span>Admin</span></button>
+      </nav>
+      <div class="me"><span class="avatar" id="whoAvatar" aria-hidden="true"></span><b id="whoName"></b><button id="logout" class="btn icon ghost" aria-label="Sair" title="Sair"><svg class="i"><use href="#i-out"/></svg></button></div>
+    </div>
+  </header>
+
   <main id="main" tabindex="-1">
-    <section id="v-estoque" hidden>
-      <div class="head"><div><h1>Estoque</h1><p id="summary" class="muted"></p></div>
-        <div class="acts"><button id="btnCsv" class="btn"><svg class="i"><use href="#i-down"/></svg>Exportar</button><button id="btnNew" class="btn primary"><svg class="i"><use href="#i-plus"/></svg>Nova peça</button><button class="btn ghost mobileOut" id="logout2"><svg class="i"><use href="#i-out"/></svg>Sair</button></div></div>
+    <!-- ESTOQUE -->
+    <section id="v-estoque" class="view" hidden>
+      <div class="head"><div><p class="eyebrow">Estoque central</p><h1>Peças guardadas</h1></div>
+        <div class="acts"><button id="btnCsv" class="btn"><svg class="i"><use href="#i-down"/></svg>Exportar</button><button id="btnNew" class="btn primary"><svg class="i"><use href="#i-plus"/></svg>Nova peça</button></div></div>
+      <div class="stats" id="estStats"></div>
+      <div class="subbar"><div class="subtabs" id="estSub"></div></div>
       <div class="tools">
-        <div class="searchRow">
-          <label class="search"><span class="sr">Buscar</span><svg class="i"><use href="#i-search"/></svg><input id="q" class="control" type="search" placeholder="Buscar por nome, categoria ou código" autocomplete="off"><kbd>/</kbd></label>
-          <select id="cat" class="control" style="width:auto;min-width:170px" aria-label="Categoria"></select>
-          <select id="sort" class="control" style="width:auto" aria-label="Ordenar"><option value="name">Nome</option><option value="qty-desc">Maior quantidade</option><option value="qty-asc">Menor quantidade</option><option value="recent">Mais recentes</option></select>
-          <div class="seg" role="group" aria-label="Visualização"><button id="vGrid" aria-label="Cartões" aria-pressed="true"><svg class="i"><use href="#i-grid"/></svg></button><button id="vList" aria-label="Lista" aria-pressed="false"><svg class="i"><use href="#i-list"/></svg></button></div>
-        </div>
-        <div id="chips" class="chips"></div>
+        <label class="search"><span class="sr">Buscar</span><svg class="i"><use href="#i-search"/></svg><input id="q" class="control" type="search" placeholder="Buscar por nome, categoria ou código" autocomplete="off"><kbd>/</kbd></label>
+        <select id="cat" class="control" aria-label="Categoria"></select>
+        <select id="sort" class="control" aria-label="Ordenar"><option value="name">Nome</option><option value="qty-desc">Maior quantidade</option><option value="qty-asc">Menor quantidade</option><option value="recent">Mais recentes</option></select>
+        <div class="seg" role="group" aria-label="Visualização"><button id="vGrid" aria-label="Cartões" aria-pressed="true"><svg class="i"><use href="#i-grid"/></svg></button><button id="vList" aria-label="Lista" aria-pressed="false"><svg class="i"><use href="#i-list"/></svg></button></div>
       </div>
       <div id="cards" class="cards" aria-live="polite"></div>
     </section>
 
-    <section id="v-fotos" hidden>
-      <div class="head"><div><h1>Fotos para revisar</h1><p id="fotosInfo" class="muted"></p></div>
-        <div class="acts"><select id="fotoStatus" class="control" style="width:auto" aria-label="Situação"><option value="pendente">Para revisar</option><option value="confirmada">Vinculadas</option><option value="oculta">Ocultas</option><option value="todas">Todas</option></select></div></div>
+    <!-- PESSOAS -->
+    <section id="v-pessoas" class="view" hidden>
+      <div class="head"><div><p class="eyebrow">Mini estoques</p><h1 id="pesTitle">Pessoas</h1><p id="pesInfo" class="muted"></p></div>
+        <div class="acts" id="pesActs"></div></div>
+      <div class="subbar"><div class="subtabs" id="pesSub"></div></div>
+      <div id="pesBody"></div>
+    </section>
+
+    <!-- FOTOS -->
+    <section id="v-fotos" class="view" hidden>
+      <div class="head"><div><p class="eyebrow">Revisão</p><h1>Fotos</h1><p id="fotosInfo" class="muted"></p></div></div>
+      <div class="subbar"><div class="subtabs" id="fotoSub"></div></div>
       <datalist id="dlProducts"></datalist>
       <div id="fotoList" class="cols"></div>
       <div id="fotoPager" class="pager hidden"></div>
     </section>
 
-    <section id="v-consertos" hidden>
-      <div class="head"><div><h1>Consertos</h1><p class="muted">Peças quebradas ficam fora do estoque disponível. Ao consertar, registre a entrada na peça.</p></div>
+    <!-- CONSERTOS -->
+    <section id="v-consertos" class="view" hidden>
+      <div class="head"><div><p class="eyebrow">Fora do estoque</p><h1>Consertos</h1><p class="muted">Peças quebradas ficam fora do disponível. Ao consertar, registre a entrada na peça.</p></div>
         <div class="acts"><button id="btnRepair" class="btn primary"><svg class="i"><use href="#i-plus"/></svg>Registrar peça quebrada</button></div></div>
-      <div id="rstats" class="rstats"></div>
-      <div class="searchRow" style="margin-bottom:14px"><label class="search"><span class="sr">Buscar</span><svg class="i"><use href="#i-search"/></svg><input id="rq" class="control" type="search" placeholder="Buscar peça ou defeito"></label>
-        <select id="rfilter" class="control" style="width:auto" aria-label="Situação"><option value="">Todas as situações</option><option value="aguardando">Aguardando</option><option value="em_conserto">Em conserto</option><option value="consertada">Consertada</option><option value="sem_conserto">Sem conserto</option></select></div>
+      <div class="subbar"><div class="subtabs" id="repSub"></div></div>
+      <div class="tools"><label class="search"><span class="sr">Buscar</span><svg class="i"><use href="#i-search"/></svg><input id="rq" class="control" type="search" placeholder="Buscar peça ou defeito"></label></div>
       <div id="rcards" class="cols"></div>
     </section>
 
-    <section id="v-historico" hidden>
-      <div class="head"><div><h1>Histórico</h1><p class="muted">Últimas 300 movimentações.</p></div></div>
-      <div class="searchRow" style="margin-bottom:14px"><label class="search"><span class="sr">Buscar</span><svg class="i"><use href="#i-search"/></svg><input id="hq" class="control" type="search" placeholder="Buscar peça ou observação"></label>
-        <select id="hkind" class="control" style="width:auto" aria-label="Tipo"><option value="">Todos os tipos</option><option value="entrada">Entradas</option><option value="saida">Saídas</option><option value="ajuste">Ajustes</option><option value="cadastro">Cadastros</option></select></div>
-      <div class="panel table"><table><thead><tr><th>Data</th><th>Peça</th><th>Tipo</th><th class="n">Alteração</th><th class="n">Antes</th><th class="n">Depois</th><th>Observação</th></tr></thead><tbody id="hbody"></tbody></table></div>
+    <!-- MANUTENÇÃO -->
+    <section id="v-manutencao" class="view" hidden>
+      <div class="head"><div><p class="eyebrow">Novidade</p><h1>Manutenção Máquinas</h1></div></div>
+      <div class="soon">
+        <div class="gears" aria-hidden="true">
+          <svg class="g1" viewBox="0 0 24 24"><use href="#i-gear"/></svg>
+          <svg class="g2" viewBox="0 0 24 24"><use href="#i-gear"/></svg>
+          <svg class="g3" viewBox="0 0 24 24"><use href="#i-gear"/></svg>
+        </div>
+        <h2>Em breve<span class="dots"><i>.</i><i>.</i><i>.</i></span></h2>
+        <p class="muted">Estamos preparando o controle de manutenção das máquinas.</p>
+        <div class="bar" role="progressbar" aria-label="Carregando"><i></i></div>
+      </div>
     </section>
 
-    <section id="v-admin" hidden>
-      <div class="head"><div><h1>Administração</h1><p class="muted">Equipe, exportações e cópia de segurança.</p></div>
+    <!-- HISTÓRICO -->
+    <section id="v-historico" class="view" hidden>
+      <div class="head"><div><p class="eyebrow">Movimentações</p><h1>Histórico</h1><p class="muted">Últimas 300 movimentações.</p></div></div>
+      <div class="subbar"><div class="subtabs" id="histSub"></div></div>
+      <div class="tools"><label class="search"><span class="sr">Buscar</span><svg class="i"><use href="#i-search"/></svg><input id="hq" class="control" type="search" placeholder="Buscar peça, pessoa, destino ou observação"></label></div>
+      <div class="panel table"><table><thead><tr><th>Data</th><th>Peça</th><th>Tipo</th><th class="n">Alteração</th><th class="n">Antes</th><th class="n">Depois</th><th>Para / de onde</th><th>Observação</th></tr></thead><tbody id="hbody"></tbody></table></div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="v-admin" class="view" hidden>
+      <div class="head"><div><p class="eyebrow">Equipe</p><h1>Administração</h1><p class="muted">Usuários, exportações e cópia de segurança.</p></div>
         <div class="acts"><button id="btnBackup" class="btn"><svg class="i"><use href="#i-down"/></svg>Cópia dos dados (JSON)</button></div></div>
-      <form id="formUser" class="panel" style="padding:16px;display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-bottom:14px">
+      <form id="formUser" class="panel userForm">
         <label class="field">Nome<input id="uName" maxlength="100" required></label>
         <label class="field">E-mail<input id="uEmail" type="email" required></label>
         <button class="btn primary" type="submit">Criar usuário</button>
       </form>
-      <div id="cred" class="warnbox hidden" style="margin-bottom:14px"><div><b>Conta criada: <span id="credEmail"></span></b><br>Senha (aparece só agora): <code id="credPass" style="font-weight:800"></code></div><button id="credOk" class="btn sm" type="button">Já guardei</button></div>
+      <div id="cred" class="warnbox hidden"><div><b>Conta criada: <span id="credEmail"></span></b><br>Senha (aparece só agora): <code id="credPass"></code></div><button id="credOk" class="btn sm" type="button">Já guardei</button></div>
       <div class="panel table"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Permissão</th><th>Acesso</th><th></th></tr></thead><tbody id="ubody"></tbody></table></div>
     </section>
   </main>
@@ -124,7 +170,7 @@
     <label class="field">Estoque mínimo<input id="pMin" type="number" min="0" step="1" value="0" inputmode="numeric"></label>
     <label class="field span2">Observações<textarea id="pNotes" rows="3" placeholder="Modelo, local, condição…"></textarea></label>
     <div class="field span2" id="pPhotoWrap">Foto
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn"><svg class="i"><use href="#i-photo"/></svg>Escolher<input id="pFile" type="file" accept="image/*" hidden></label><label class="btn"><svg class="i"><use href="#i-cam"/></svg>Câmera<input id="pCam" type="file" accept="image/*" capture="environment" hidden></label></div>
+      <div class="row"><label class="btn"><svg class="i"><use href="#i-photo"/></svg>Escolher<input id="pFile" type="file" accept="image/*" hidden></label><label class="btn"><svg class="i"><use href="#i-cam"/></svg>Câmera<input id="pCam" type="file" accept="image/*" capture="environment" hidden></label></div>
       <img id="pPreview" class="preview hidden" alt="Prévia da foto"></div>
   </div></div>
   <div class="da"><button type="button" class="btn" data-close>Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
@@ -134,23 +180,39 @@
   <div class="dh"><div><h2 id="dName"></h2><p id="dSub"></p></div><button type="button" class="x" data-close aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button></div>
   <div class="db">
     <div class="detail"><div id="dGal" class="gal"></div>
-      <div style="display:grid;gap:14px;align-content:start">
-        <div id="dQty" class="big"></div><div id="dMin" class="muted"></div>
+      <div class="dside">
+        <div><div id="dQty" class="big"></div><div id="dMin" class="muted"></div></div>
+        <div id="dHolders" class="holderPills"></div>
         <div id="dWarn" class="warnbox hidden"><span>Confira o nome e a quantidade para incluir esta peça no total.</span><button id="dConfirm" class="btn sm primary">Confirmar peça</button></div>
         <div id="dNotes" class="notes"></div>
-        <div class="acts2"><button id="bIn" class="btn ok">+ Entrada</button><button id="bOut" class="btn bad">− Saída</button><button id="bAdj" class="btn">Ajustar</button><button id="bEdit" class="btn">Editar</button><button id="bDel" class="btn ghost">Excluir</button></div>
+        <div class="acts2"><button id="bIn" class="btn ok"><svg class="i"><use href="#i-plus"/></svg>Adicionar</button><button id="bOut" class="btn bad"><svg class="i"><use href="#i-minus"/></svg>Saída</button><button id="bAdj" class="btn">Ajustar</button><button id="bEdit" class="btn">Editar</button><button id="bDel" class="btn ghost">Excluir</button></div>
       </div></div>
-    <div class="panel table" style="max-height:260px"><table><thead><tr><th>Data</th><th>Tipo</th><th class="n">Alteração</th><th class="n">Antes</th><th class="n">Depois</th><th>Observação</th></tr></thead><tbody id="dHist"></tbody></table></div>
+    <div class="panel table" style="max-height:260px"><table><thead><tr><th>Data</th><th>Tipo</th><th class="n">Alteração</th><th class="n">Antes</th><th class="n">Depois</th><th>Para / de onde</th><th>Observação</th></tr></thead><tbody id="dHist"></tbody></table></div>
   </div>
 </dialog>
 
-<dialog id="dMove" class="small"><form id="formMove">
+<dialog id="dMove"><form id="formMove">
   <div class="dh"><div><h2 id="mTitle"></h2><p id="mSub"></p></div><button type="button" class="x" data-close aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button></div>
   <div class="db"><input type="hidden" id="mKind">
-    <label class="field" id="mAmtWrap">Quantidade<input id="mAmt" type="number" min="1" step="1" value="1" inputmode="numeric"></label>
-    <label class="field hidden" id="mNewWrap">Nova quantidade total<input id="mNew" type="number" min="0" step="1" inputmode="numeric"></label>
-    <label class="field">Observação (opcional)<input id="mNote" maxlength="180" placeholder="Ex.: reposição, usada na máquina 4"></label></div>
-  <div class="da"><button type="button" class="btn" data-close>Cancelar</button><button class="btn primary" type="submit">Confirmar</button></div>
+    <div id="mProdWrap" class="field hidden">Peça<input id="mProd" class="control" list="dlProducts" placeholder="Digite o nome ou o código da peça" autocomplete="off"></div>
+    <div id="mWhoWrap">
+      <div class="seg wide" role="tablist" id="mMode"><span class="segInk" aria-hidden="true"></span><button type="button" data-mode="pessoa" role="tab"><svg class="i"><use href="#i-user"/></svg><span id="mModeP">Para uma pessoa</span></button><button type="button" data-mode="lugar" role="tab"><svg class="i"><use href="#i-pin"/></svg><span id="mModeL">Para um lugar</span></button></div>
+      <div class="modePane" id="mPanePessoa"><div class="pick" id="mPeople"></div></div>
+      <div class="modePane" id="mPaneLugar" hidden><div class="pick" id="mPlaces"></div>
+        <label class="field reveal" id="mOtherWrap" hidden>Especifique<input id="mOther" maxlength="100" placeholder="Para onde foi?"></label></div>
+    </div>
+    <div class="grid2">
+      <div class="field" id="mAmtWrap"><label for="mAmt">Quantidade</label><div class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input id="mAmt" type="number" min="1" step="1" value="1" inputmode="numeric"><button type="button" data-step="1" aria-label="Mais">+</button></div></div>
+      <label class="field hidden" id="mNewWrap">Nova quantidade total<input id="mNew" type="number" min="0" step="1" inputmode="numeric"></label>
+      <label class="field">Observação (opcional)<input id="mNote" maxlength="180" placeholder="Ex.: máquina 4"></label>
+    </div></div>
+  <div class="da"><button type="button" class="btn" data-close>Cancelar</button><button class="btn primary" type="submit" id="mOk">Confirmar</button></div>
+</form></dialog>
+
+<dialog id="dHolder" class="small"><form id="formHolder">
+  <div class="dh"><div><h2 id="hTitle">Nova pessoa</h2><p>Crie um mini estoque para alguém da equipe.</p></div><button type="button" class="x" data-close aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="db"><input type="hidden" id="hId"><label class="field">Nome<input id="hName" maxlength="80" required placeholder="Ex.: Bruno"></label></div>
+  <div class="da"><button type="button" class="btn ghost hidden" id="hArchive">Arquivar pessoa</button><button type="button" class="btn" data-close>Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
 </form></dialog>
 
 <dialog id="dRepair"><form id="formRepair">
@@ -162,14 +224,14 @@
     <label class="field span2">Defeito<textarea id="rDefect" rows="3" maxlength="2000" required placeholder="Ex.: não gira, cabo rompido"></textarea></label>
     <label class="field">Situação<select id="rStatus"><option value="aguardando">Aguardando</option><option value="em_conserto">Em conserto</option><option value="consertada">Consertada</option><option value="sem_conserto">Sem conserto</option></select></label>
     <label class="field span2">Observações<textarea id="rNotes" rows="2" maxlength="4000"></textarea></label>
-    <div class="field span2">Foto<div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn"><svg class="i"><use href="#i-photo"/></svg>Escolher<input id="rFile" type="file" accept="image/*" hidden></label><label class="btn"><svg class="i"><use href="#i-cam"/></svg>Câmera<input id="rCam" type="file" accept="image/*" capture="environment" hidden></label></div><img id="rPreview" class="preview hidden" alt="Prévia"></div>
+    <div class="field span2">Foto<div class="row"><label class="btn"><svg class="i"><use href="#i-photo"/></svg>Escolher<input id="rFile" type="file" accept="image/*" hidden></label><label class="btn"><svg class="i"><use href="#i-cam"/></svg>Câmera<input id="rCam" type="file" accept="image/*" capture="environment" hidden></label></div><img id="rPreview" class="preview hidden" alt="Prévia"></div>
   </div></div>
   <div class="da"><button type="button" class="btn" data-close>Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
 </form></dialog>
 
 <dialog id="dConfirm2" class="small"><form method="dialog">
   <div class="dh"><div><h2 id="cTitle"></h2><p id="cMsg"></p></div></div>
-  <div class="da" style="padding-top:14px"><button value="no" class="btn">Cancelar</button><button value="yes" id="cOk" class="btn primary">Confirmar</button></div>
+  <div class="da"><button value="no" class="btn">Cancelar</button><button value="yes" id="cOk" class="btn primary">Confirmar</button></div>
 </form></dialog>
 
 <dialog id="dZoom" class="zoom"><img id="zImg" alt=""><p id="zCap"></p></dialog>

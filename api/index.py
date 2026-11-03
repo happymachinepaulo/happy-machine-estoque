@@ -130,6 +130,27 @@ def quantity_unit(product):
     return 'un'
 
 
+def clean_text(value, limit):
+    return re.sub(r'\s+', ' ', str(value or '')).strip()[:limit]
+
+
+def movement_payload(body):
+    """Entrada/saída precisam de origem/destino: uma pessoa (holder_id) ou um lugar/motivo (destination)."""
+    kind = body.get('kind')
+    out = {'kind': kind, 'note': clean_text(body.get('note'), 180)}
+    if kind == 'ajuste':
+        out['new_quantity'] = integer(body.get('new_quantity', ''))
+        return out
+    if kind not in ('entrada', 'saida'): raise APIError('Tipo de movimentação inválido.')
+    out['amount'] = integer(body.get('amount', ''), 1)
+    if body.get('holder_id') not in (None, ''):
+        out['holder_id'] = integer(body['holder_id'], 1)
+    else:
+        out['destination'] = clean_text(body.get('destination'), 120)
+        if not out['destination']: raise APIError('Informe para onde foi.' if kind == 'saida' else 'Informe de onde veio.')
+    return out
+
+
 def valid_image(mime, payload):
     return ((mime == 'image/jpeg' and payload.startswith(b'\xff\xd8\xff')) or
             (mime == 'image/png' and payload.startswith(b'\x89PNG\r\n\x1a\n')) or
@@ -257,6 +278,20 @@ def catalogue(token):
         p['photo'] = p.pop('thumb'); p.pop('url', None); p.pop('_path', None); p.pop('_thumb', None)
         p['notes'] = (p.get('notes') or '')[:220]
     return firsts
+
+
+def holders(token):
+    """Pessoas e o que cada uma tem. Lista vazia se a migração 018 ainda não foi aplicada."""
+    try:
+        people = rows('holders', token, select='id,name,active,created_at', order='name.asc,id.asc')
+        stock = rows('holder_stock', token, select='holder_id,product_id,quantity,updated_at', quantity='gt.0', order='holder_id.asc,product_id.asc')
+    except APIError as e:
+        if e.status in (400, 404): return []
+        raise
+    by = {h['id']: dict(h, items=[]) for h in people}
+    for s in stock:
+        if s['holder_id'] in by: by[s['holder_id']]['items'].append({k: s[k] for k in ('product_id', 'quantity', 'updated_at')})
+    return list(by.values())
 
 
 def pending_photos(token):
@@ -402,8 +437,10 @@ class handler(BaseHTTPRequestHandler):
     def get(self, path, qs, profile):
         t = self.auth_token
         if path == '/api/boot':
-            f_products = _pool.submit(catalogue, t); f_pending = _pool.submit(pending_photos, t)
-            return self.respond({'me': profile, 'products': f_products.result(), 'pending_photos': f_pending.result()})
+            f_products = _pool.submit(catalogue, t); f_pending = _pool.submit(pending_photos, t); f_holders = _pool.submit(holders, t)
+            return self.respond({'me': profile, 'products': f_products.result(), 'pending_photos': f_pending.result(), 'holders': f_holders.result()})
+        if path == '/api/holders':
+            return self.respond(holders(t))
         if path == '/api/products':
             return self.respond(catalogue(t))
         if re.fullmatch(r'/api/products/\d+', path):
@@ -424,12 +461,18 @@ class handler(BaseHTTPRequestHandler):
             items, total = photo_rows(t, **q)
             return self.respond({'rows': items, 'total': total})
         if path == '/api/history':
-            q = {'select': 'id,product_id,kind,amount,before_qty,after_qty,note,created_at,products(name)', 'order': 'id.desc', 'limit': min(integer(qs.get('limit', [300])[0], 1), 1000)}
+            q = {'select': 'id,product_id,kind,amount,before_qty,after_qty,note,created_at,holder_id,destination,products(name)', 'order': 'id.desc', 'limit': min(integer(qs.get('limit', [300])[0], 1), 1000)}
             kind = qs.get('kind', [''])[0]
             if kind:
-                if kind not in ('entrada', 'saida', 'ajuste', 'cadastro'): raise APIError('Filtro inválido.')
+                if kind not in ('entrada', 'saida', 'ajuste', 'cadastro', 'consumo'): raise APIError('Filtro inválido.')
                 q['kind'] = 'eq.' + kind
-            data = remote('/rest/v1/movements?' + urllib.parse.urlencode(q), token=t)
+            holder = qs.get('holder', [''])[0]
+            if holder: q['holder_id'] = 'eq.' + str(integer(holder, 1))
+            try: data = remote('/rest/v1/movements?' + urllib.parse.urlencode(q), token=t)
+            except APIError as e:
+                if e.status != 400 or holder: raise
+                q['select'] = 'id,product_id,kind,amount,before_qty,after_qty,note,created_at,products(name)'   # migração 018 ainda não aplicada
+                data = remote('/rest/v1/movements?' + urllib.parse.urlencode(q), token=t)
             for r in data: r['product_name'] = (r.pop('products', None) or {}).get('name', 'Peça removida')
             return self.respond(data)
         if path == '/api/repairs':
@@ -445,7 +488,13 @@ class handler(BaseHTTPRequestHandler):
                 w.writerow(["'" + v if isinstance(v, str) and v.startswith(('=', '+', '-', '@', '\t', '\r')) else v for v in cells])
             return self.respond(('﻿' + out.getvalue()).encode(), ctype='text/csv; charset=utf-8', extra={'Content-Disposition': 'attachment; filename="estoque.csv"'})
         if path == '/api/backup':
-            tables = dict(zip(['products', 'photos', 'movements', 'audit_log', 'repairs'], _pool.map(lambda n: rows(n, t, select='*'), ['products', 'photos', 'movements', 'audit_log', 'repairs'])))
+            names = ['products', 'photos', 'movements', 'audit_log', 'repairs', 'holders', 'holder_stock']
+            def dump(n):
+                try: return rows(n, t, select='*')
+                except APIError as e:
+                    if n.startswith('holder') and e.status in (400, 404): return []
+                    raise
+            tables = dict(zip(names, _pool.map(dump, names)))
             content = {'format': 'happy-machine-online-v1', 'created_at': datetime.now(timezone.utc).isoformat(), 'tables': tables}
             return self.respond(json.dumps(content, ensure_ascii=False).encode(), ctype='application/json', extra={'Content-Disposition': 'attachment; filename="estoque_online.json"'})
         raise APIError('Rota não encontrada.', 404)
@@ -517,7 +566,27 @@ class handler(BaseHTTPRequestHandler):
             except Exception:
                 self.drop_photos(*uploaded); raise
         if re.fullmatch(r'/api/products/\d+/(movement|confirm)', path):
-            parts = path.split('/'); return self.respond(self.stock_command(parts[4], int(parts[3]), self.json_body()))
+            parts = path.split('/'); body = self.json_body()
+            if parts[4] == 'movement': body = movement_payload(body)
+            return self.respond(self.stock_command(parts[4], int(parts[3]), body))
+        if path == '/api/holders':
+            name = str(self.json_body().get('name', '')).strip()
+            if not 1 <= len(name) <= 80: raise APIError('Informe o nome da pessoa (até 80 letras).')
+            return self.respond(self.stock_command('holder_create', None, {'name': name}), 201)
+        if re.fullmatch(r'/api/holders/\d+/update', path):
+            body = self.json_body(); payload = {}
+            if 'name' in body:
+                payload['name'] = str(body['name']).strip()
+                if not 1 <= len(payload['name']) <= 80: raise APIError('Informe o nome da pessoa (até 80 letras).')
+            if 'active' in body:
+                if not isinstance(body['active'], bool): raise APIError('Situação inválida.')
+                payload['active'] = body['active']
+            return self.respond(self.stock_command('holder_update', int(path.split('/')[3]), payload))
+        if re.fullmatch(r'/api/holders/\d+/consume', path):
+            body = self.json_body(); pid = integer(body.get('product_id', ''), 1)
+            payload = {'holder_id': int(path.split('/')[3]), 'amount': integer(body.get('amount', ''), 1), 'destination': clean_text(body.get('destination'), 120), 'note': clean_text(body.get('note'), 180)}
+            if not payload['destination']: raise APIError('Informe onde a peça foi usada.')
+            return self.respond(self.stock_command('holder_consume', pid, payload))
         if re.fullmatch(r'/api/photos/\d+/review', path):
             return self.respond(self.stock_command('review_photo', int(path.split('/')[3]), self.json_body()))
         raise APIError('Rota não encontrada.', 404)
