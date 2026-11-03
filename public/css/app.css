@@ -60,30 +60,34 @@ select.control{width:auto;padding-right:34px;appearance:none;background:var(--su
 @media(max-width:560px){.grid2{grid-template-columns:1fr}}
 
 /* ── entrada ── */
-#auth{min-height:100dvh;display:grid;grid-template-columns:minmax(300px,1.1fr) minmax(340px,560px)}
-.authStory{background:var(--yellow);color:var(--ink);padding:44px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;isolation:isolate}
-.authStory .logo{display:flex;align-items:center;gap:12px;font-weight:800;font-size:19px}.authStory .logo img{width:52px;height:auto}
-.authStory h1{font-size:clamp(38px,5.6vw,72px);line-height:.98;letter-spacing:-.04em;font-weight:800}
-.authStory h1 em{font-style:normal;color:var(--red)}
-.authStory p{max-width:34ch;margin-top:18px;font-weight:650;font-size:17px}
-.authCopy{animation:rise .9s var(--ease) both .1s}
-.blobs{position:absolute;inset:0;z-index:-1}
-.blobs i{position:absolute;border-radius:50%;opacity:.95;animation:float 9s ease-in-out infinite}
-.blobs i:nth-child(1){width:240px;height:240px;background:var(--red);right:-60px;top:12%;animation-delay:-2s}
-.blobs i:nth-child(2){width:120px;height:120px;background:var(--blue);right:22%;top:46%;animation-delay:-4s}
-.blobs i:nth-child(3){width:70px;height:70px;background:var(--green);right:10%;bottom:14%;animation-delay:-1s}
-.blobs i:nth-child(4){width:46px;height:46px;background:var(--pink);right:38%;top:16%;animation-delay:-6s}
-.blobs i:nth-child(5){width:160px;height:160px;background:var(--orange);left:-50px;bottom:-50px;animation-delay:-3s}
-@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(14px,-18px) scale(1.04)}66%{transform:translate(-10px,12px) scale(.97)}}
-.authMain{display:grid;place-items:center;padding:28px;background:var(--surface)}
-.authCard{width:100%;max-width:370px;display:grid;gap:18px}
-.authCard h2{font-size:30px;letter-spacing:-.03em}
-.authCard .step>p{margin:6px 0 20px}
+#auth{min-height:100dvh;display:grid;grid-template-columns:minmax(320px,1fr) minmax(360px,560px)}
+.authStory{position:relative;overflow:hidden;isolation:isolate;background:#141318;color:#fff;padding:44px 52px;display:flex;flex-direction:column;justify-content:space-between;gap:40px}
+.authStory::before{content:"";position:absolute;inset:0;z-index:-1;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse at 30% 60%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse at 30% 60%,#000 20%,transparent 75%)}
+.glow{position:absolute;z-index:-2;width:640px;height:640px;left:-180px;bottom:-260px;border-radius:50%;background:radial-gradient(circle,rgba(239,2,36,.55),rgba(239,2,36,0) 65%);animation:drift 14s ease-in-out infinite}
+@keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(120px,-70px)}}
+.authStory .logo{display:flex;align-items:center;gap:12px;font-weight:800;font-size:17px;line-height:1.15}
+.authStory .logo img{width:44px;height:auto;background:#fff;border-radius:12px;padding:4px}
+.authStory .logo small{display:block;font-weight:600;font-size:12px;color:rgba(255,255,255,.55)}
+.authCopy{animation:rise .9s var(--ease) both .1s;max-width:520px}
+.authStory h1{font-size:clamp(34px,4.2vw,54px);line-height:1.05;letter-spacing:-.035em;font-weight:800}
+.authStory p{margin-top:16px;font-size:17px;font-weight:500;color:rgba(255,255,255,.7);max-width:40ch}
+.feats{list-style:none;margin:30px 0 0;padding:0;display:grid;gap:12px}
+.feats li{display:flex;align-items:center;gap:12px;font-weight:650;color:rgba(255,255,255,.88);animation:rise .7s var(--ease) both}
+.feats li:nth-child(1){animation-delay:.3s}.feats li:nth-child(2){animation-delay:.4s}.feats li:nth-child(3){animation-delay:.5s}
+.feats svg{width:34px;height:34px;padding:8px;border-radius:10px;background:rgba(255,255,255,.08);color:#ff4d63}
+.authStory .copy{font-size:12px;color:rgba(255,255,255,.4);font-weight:600}
+.authMain{display:grid;place-items:center;padding:32px;background:var(--surface)}
+.authCard{width:100%;max-width:380px;display:grid;gap:18px}
+.authMark{width:48px;height:auto;margin-bottom:22px;display:none}
+.authCard h2{font-size:28px;letter-spacing:-.03em}
+.authCard .step>p{margin:6px 0 24px}
 .authCard .step{animation:rise .5s var(--ease) both}
-.authCard form{display:grid;gap:14px}
+.authCard form{display:grid;gap:16px}
+.authCard .btn{border-radius:var(--r-s)}
+.authCard .btn.primary{box-shadow:none}
 .authMsg{min-height:20px;font-size:14px;font-weight:700;color:var(--ink-3)}.authMsg.error{color:var(--red)}
 .code{letter-spacing:.35em;font-size:24px!important;text-align:center;font-weight:800!important}
-@media(max-width:760px){#auth{grid-template-columns:1fr}.authStory{padding:24px 20px 34px;min-height:0;gap:30px}.authStory h1{font-size:40px}.blobs i:nth-child(1){width:140px;height:140px}}
+@media(max-width:860px){#auth{grid-template-columns:1fr}.authStory{display:none}.authMark{display:block}.authMain{align-items:start;padding-top:12vh}}
 body[data-auth=ready] #auth,body[data-auth=locked] #app{display:none}
 
 /* ── topo + abas principais ── */
@@ -312,6 +316,7 @@ td.n,th.n{text-align:right}
 .gears .g1{width:86px;height:86px;left:8px;top:22px;stroke:var(--red);animation:spin 4s linear infinite}
 .gears .g2{width:56px;height:56px;left:82px;top:4px;stroke:var(--blue);animation:spin 2.6s linear infinite reverse}
 .gears .g3{width:44px;height:44px;left:88px;top:62px;stroke:var(--green);animation:spin 2.1s linear infinite reverse}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(14px,-18px) scale(1.04)}66%{transform:translate(-10px,12px) scale(.97)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 .soon h2{font-size:clamp(34px,5vw,54px);letter-spacing:-.04em;font-weight:800}
 .dots i{font-style:normal;display:inline-block;animation:bounce 1.2s ease-in-out infinite;color:var(--red)}

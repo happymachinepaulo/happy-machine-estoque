@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Happy Machine · Estoque</title>
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#f6f4ef">
 <meta name="color-scheme" content="light only">
 <link rel="icon" href="/assets/logo.webp" type="image/webp">
 <link rel="preload" href="/assets/Manrope.woff" as="font" type="font/woff" crossorigin>
@@ -40,16 +40,25 @@
 
 <section id="auth" aria-label="Acesso">
   <aside class="authStory">
-    <div class="blobs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="logo"><img src="/assets/logo.webp" alt="" width="52" height="50">Happy Machine</div>
-    <div class="authCopy"><h1>Cada peça<br>no lugar <em>certo.</em></h1><p>Estoque, pessoas, fotos e consertos da equipe em um só lugar.</p></div>
+    <div class="glow" aria-hidden="true"></div>
+    <div class="logo"><img src="/assets/logo.webp" alt="" width="44" height="42"><span>Happy Machine<small>Controle de estoque</small></span></div>
+    <div class="authCopy">
+      <h1>Controle de estoque<br>da equipe Happy.</h1>
+      <p>Acompanhe o que está guardado, com quem está cada peça e para onde ela foi.</p>
+      <ul class="feats">
+        <li><svg class="i"><use href="#i-box"/></svg>Estoque central com histórico</li>
+        <li><svg class="i"><use href="#i-users"/></svg>Mini estoques por pessoa</li>
+        <li><svg class="i"><use href="#i-shield"/></svg>Acesso com código por e-mail</li>
+      </ul>
+    </div>
+    <small class="copy">© Happy Machine</small>
   </aside>
   <div class="authMain"><div class="authCard">
     <div id="authMsg" class="authMsg" role="status" aria-live="polite"></div>
-    <div id="stepLogin" class="step"><h2>Entrar</h2><p class="muted">Use o e-mail e a senha que o administrador criou.</p>
+    <div id="stepLogin" class="step"><img class="authMark" src="/assets/logo.webp" alt="" width="48" height="46"><h2>Acesse sua conta</h2><p class="muted">Use o e-mail e a senha criados pelo administrador.</p>
       <form id="formLogin">
-        <label class="field">E-mail<input id="email" type="email" autocomplete="username" required></label>
-        <label class="field">Senha<input id="password" type="password" autocomplete="current-password" required></label>
+        <label class="field">E-mail<input id="email" type="email" autocomplete="username" placeholder="nome@happymachine.com.br" required></label>
+        <label class="field">Senha<input id="password" type="password" autocomplete="current-password" placeholder="••••••••" required></label>
         <button class="btn primary lg" type="submit">Entrar<svg class="i"><use href="#i-send"/></svg></button>
       </form></div>
     <div id="stepCode" class="step" hidden><h2>Digite o código</h2><p id="codeHelp" class="muted"></p>
