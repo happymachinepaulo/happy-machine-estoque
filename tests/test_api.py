@@ -52,9 +52,9 @@ class API(unittest.TestCase):
         self.assertEqual(sum(1 for c in self.fake.calls if c[1] == '/auth/v1/user'), n)
 
     def test_entrada_saida_e_saldo_negativo(self):
-        self.assertEqual(self.j('/api/products/2/movement', 'POST', {'kind': 'entrada', 'amount': 3})[0], 200)
+        self.assertEqual(self.j('/api/products/2/movement', 'POST', {'kind': 'entrada', 'amount': 3, 'destination': 'Compra'})[0], 200)
         self.assertEqual(self.fake.products[1]['quantity'], 5)
-        self.assertEqual(self.j('/api/products/2/movement', 'POST', {'kind': 'saida', 'amount': 99})[0], 400)
+        self.assertEqual(self.j('/api/products/2/movement', 'POST', {'kind': 'saida', 'amount': 99, 'destination': 'Loja'})[0], 400)
         self.assertEqual(self.fake.products[1]['quantity'], 5)
 
     def test_revisao_paginada(self):
@@ -73,12 +73,35 @@ class API(unittest.TestCase):
         self.fake.profile['role'] = 'operator'; self.assertEqual(self.req('/api/admin/users')[0], 403)
 
     def test_historico_e_csv(self):
-        self.j('/api/products/3/movement', 'POST', {'kind': 'saida', 'amount': 1})
+        self.j('/api/products/3/movement', 'POST', {'kind': 'saida', 'amount': 1, 'destination': 'Outros: evento'})
         self.assertEqual(self.j('/api/history?limit=10')[0], 200)
         s, raw = self.req('/api/export.csv'); self.assertEqual(s, 200); self.assertIn(b'Pe\xc3\xa7a 1', raw)
 
     def test_consertos_duas_chamadas_seguidas(self):
         self.assertEqual(self.j('/api/repairs')[0], 200); self.assertEqual(self.j('/api/repairs')[0], 200)
+
+    def test_saida_exige_destino(self):
+        self.assertEqual(self.j('/api/products/3/movement', 'POST', {'kind': 'saida', 'amount': 1})[0], 400)
+        self.assertEqual(self.fake.products[2]['quantity'], 3)
+
+    def test_saida_para_pessoa_e_devolucao(self):
+        s, d = self.j('/api/products/3/movement', 'POST', {'kind': 'saida', 'amount': 2, 'holder_id': 1}); self.assertEqual(s, 200)
+        self.assertEqual(self.fake.products[2]['quantity'], 1)
+        bruno = next(h for h in self.j('/api/boot')[1]['holders'] if h['id'] == 1)
+        self.assertEqual(bruno['items'], [{'product_id': 3, 'quantity': 2, 'updated_at': ''}])
+        self.assertEqual(self.j('/api/products/3/movement', 'POST', {'kind': 'entrada', 'amount': 3, 'holder_id': 1})[0], 400)
+        self.assertEqual(self.j('/api/products/3/movement', 'POST', {'kind': 'entrada', 'amount': 1, 'holder_id': 1})[0], 200)
+        self.assertEqual(self.fake.products[2]['quantity'], 2)
+        self.assertEqual(self.j('/api/holders/1/consume', 'POST', {'product_id': 3, 'amount': 1, 'destination': 'Máquina 4'})[0], 200)
+        self.assertEqual(self.j('/api/boot')[1]['holders'][0]['items'], [])
+        self.assertEqual(self.fake.products[2]['quantity'], 2)
+        s, hist = self.j('/api/history?holder=1'); self.assertEqual([m['kind'] for m in hist], ['consumo', 'entrada', 'saida'])
+
+    def test_pessoas_criar_e_arquivar(self):
+        self.assertEqual(self.j('/api/holders', 'POST', {'name': 'Ana'})[0], 201)
+        self.assertEqual(self.j('/api/holders', 'POST', {'name': ' '})[0], 400)
+        self.j('/api/products/1/movement', 'POST', {'kind': 'saida', 'amount': 1, 'holder_id': 3})
+        self.assertEqual(self.j('/api/holders/3/update', 'POST', {'active': False})[0], 400)
 
 
 if __name__ == '__main__': unittest.main()

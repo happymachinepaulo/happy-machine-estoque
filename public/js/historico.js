@@ -1,11 +1,15 @@
-import { $, fold, api, toast } from './core.js';
+import { $, fold, api, toast, subtabs } from './core.js';
+import { state } from './state.js';
 import { historyRows } from './estoque.js';
-let rows = [];
+let rows = [], kind = '';
+const KINDS = [['', 'Todos', 'var(--ink)'], ['entrada', 'Adicionados', 'var(--green)'], ['saida', 'Saídas', 'var(--red)'], ['consumo', 'Baixas de pessoas', 'var(--blue)'], ['ajuste', 'Ajustes', 'var(--orange)'], ['cadastro', 'Cadastros', 'var(--pink)']];
+function tabs() { subtabs($('#histSub'), KINDS.map(([k, l, c]) => ({ key: k, label: l, accent: c })), kind, k => { kind = k; tabs(); load(); }); }
 function render() {
-  const q = fold($('#hq').value.trim());
-  $('#hbody').innerHTML = historyRows(rows.filter(m => !q || fold(`${m.product_name} ${m.note}`).includes(q)));
+  const q = fold($('#hq').value.trim()), names = new Map(state.holders.map(h => [h.id, h.name]));
+  $('#hbody').innerHTML = historyRows(rows.filter(m => !q || fold(`${m.product_name} ${m.note} ${m.destination || ''} ${names.get(m.holder_id) || ''}`).includes(q)));
 }
 export async function load() {
-  try { rows = await api('/api/history?limit=300' + ($('#hkind').value ? '&kind=' + $('#hkind').value : '')); render(); } catch (e) { toast(e.message, true); }
+  tabs();
+  try { rows = await api('/api/history?limit=300' + (kind ? '&kind=' + kind : '')); render(); } catch (e) { toast(e.message, true); }
 }
-export function init() { $('#hq').oninput = render; $('#hkind').onchange = load; }
+export function init() { $('#hq').oninput = render; }
