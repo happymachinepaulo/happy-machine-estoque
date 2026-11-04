@@ -4,7 +4,7 @@ import { reload, newFromPhoto, openDetail } from './estoque.js';
 
 const SIZE = 24;
 let page = 0, data = { rows: [], total: 0 }, status = 'pendente';
-const STATUS = [['pendente', 'Para revisar', 'var(--orange)'], ['confirmada', 'Vinculadas', 'var(--green)'], ['oculta', 'Ocultas', 'var(--ink-3)'], ['todas', 'Todas', 'var(--ink)']];
+const STATUS = [['pendente', 'Para revisar', 'var(--orange)'], ['confirmada', 'Vinculadas', 'var(--capri)'], ['oculta', 'Ocultas', 'var(--ink-3)'], ['todas', 'Todas', 'var(--red-l)']];
 function tabs() { subtabs($('#fotoSub'), STATUS.map(([k, l, c]) => ({ key: k, label: l, accent: c, count: k === 'pendente' ? state.pending : undefined })), status, k => { status = k; page = 0; load(); }); }
 
 const key = s => (fold(s).match(/[a-z0-9]+/g) || []).map((w, i) => i === 0 && w === 'chaves' ? 'chave' : w).join('');

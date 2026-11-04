@@ -1,0 +1,7 @@
+Fontes usadas no site (todas sob a SIL Open Font License 1.1, https://openfontlicense.org):
+
+- Mouse Memoirs (títulos)  Copyright 2012 Vernon Adams
+- Cutive Mono (texto de máquina de escrever)  Copyright 2012 Vernon Adams
+- Roboto (texto)  Copyright 2011 The Roboto Project Authors
+
+A licença permite usar, embutir e redistribuir as fontes, desde que não sejam vendidas sozinhas.

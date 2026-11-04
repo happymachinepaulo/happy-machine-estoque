@@ -3,7 +3,7 @@
 Controle de estoque de peças. Vercel (site estático + `api/index.py`) e Supabase (login, banco, fotos privadas).
 
 ## O que mudou (v3)
-- **Visual novo:** abas principais com indicador deslizante, subabas em cada tela, animações (entrada das telas, cartões em cascata, números que sobem, janelas com mola). Paleta da Happy (vermelho, amarelo, azul, verde, rosa, laranja), só tema claro.
+- **Visual novo:** abas principais com indicador deslizante, subabas em cada tela, animações (entrada das telas, cartões em cascata, números que sobem, janelas com mola). Identidade do manual da marca: fundo grafite, cores neon do manual (azul, vermelho, laranja, pink, amarelo, roxo, rosa, capri), fontes Mouse Memoirs, Cutive Mono e Roboto, abertura com HAPPY em neon e a aba **Painel** ao vivo (mapa do estoque com quem está com cada peça, letreiro de movimentações e quadros de estoque baixo e mais movimentadas).
 - **Mini estoques por pessoa (aba Pessoas):** Bruno, Matheus e quem mais for cadastrado. Cada pessoa tem uma subaba com as peças que estão com ela, *Devolver*, *Dar baixa* (usou num lugar) e *Entregar peça*.
 - **Saída** vai para uma pessoa ou para um lugar/motivo (com *Outros* + texto livre). **Adicionar** vem de uma pessoa (devolução) ou de outra origem (com *Outros* + texto livre). O histórico mostra para onde foi / de onde veio.
 - **Manutenção Máquinas:** aba nova, por enquanto só "Em breve".
