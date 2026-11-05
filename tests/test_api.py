@@ -137,6 +137,8 @@ class API(unittest.TestCase):
         self.assertEqual((s, raw[:2]), (200, b'\xff\xd8'))
         self.assertEqual(self.req('/api/galpao/..%2Fapi.jpg')[0], 404)
         self.assertEqual(self.req('/api/galpao/Z9.jpg')[0], 404)
+        self.fake.profile['role'] = 'operator'; api._sessions.clear()
+        self.assertEqual(self.req('/api/galpao/tA1.jpg')[0], 403)      # provisório: só o administrador
 
     def test_logs_de_acesso(self):
         o = {'Origin': 'http://app.test', 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1', 'X-Forwarded-For': '200.1.2.3, 10.0.0.1'}

@@ -19,7 +19,7 @@ function qtyTag(p) {
   return `<div class="qty ${cls}"><b>${n(p.quantity)}</b><span>${unitLabel(p)}${isPending(p) ? ' · conferir' : ''}</span></div>`;
 }
 const card = (p, i) => `<button class="card" data-id="${p.id}" style="--i:${i}" aria-label="${esc(p.name)}, ${p.quantity} ${unitLabel(p)}">
-  <div class="ph">${p.photo ? `<img src="${esc(p.photo)}" alt="" loading="lazy" decoding="async" width="400" height="300">` : `<div class="none">${icon('photo')}Sem foto</div>`}${qtyTag(p)}${p.photo_count > 1 ? `<span class="tag">${p.photo_count} fotos</span>` : ''}${p.location ? `<span class="tag loc" title="Estante ${esc(p.location)}">${icon('map')}${esc(p.location)}</span>` : ''}${p._out ? `<span class="tag withp" title="${n(p._out)} com pessoas">${icon('users')}${n(p._out)}</span>` : ''}</div>
+  <div class="ph">${p.photo ? `<img src="${esc(p.photo)}" alt="" loading="lazy" decoding="async" width="400" height="300">` : `<div class="none">${icon('photo')}Sem foto</div>`}${qtyTag(p)}${p.photo_count > 1 ? `<span class="tag">${p.photo_count} fotos</span>` : ''}${p.location && state.me?.role === 'admin' ? `<span class="tag loc" title="Estante ${esc(p.location)}">${icon('map')}${esc(p.location)}</span>` : ''}${p._out ? `<span class="tag withp" title="${n(p._out)} com pessoas">${icon('users')}${n(p._out)}</span>` : ''}</div>
   <div class="cbody"><div class="cat"><span>${esc(p.category || 'Sem categoria')}</span><span>#${p.id}</span></div><h3>${esc(p.name)}</h3></div></button>`;
 
 const CHIPS = [['todas', 'Todas', 'var(--red-l)'], ['conferir', 'A conferir', 'var(--orange)'], ['baixo', 'Estoque baixo', 'var(--red-l)'], ['pessoas', 'Com pessoas', 'var(--blue)'], ['semfoto', 'Sem foto', 'var(--pink)']];

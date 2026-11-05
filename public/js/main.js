@@ -17,6 +17,8 @@ const views = { painel: painel.load, estoque: null, galpao: galpao.load, pessoas
 const order = Object.keys(views);
 const titles = { painel: 'Painel', estoque: 'Estoque', galpao: 'Galpão', pessoas: 'Pessoas', fotos: 'Fotos', consertos: 'Consertos', manutencao: 'Manutenção Máquinas', historico: 'Histórico', admin: 'Admin', logs: 'Logs', config: 'Configurações' };
 let inited = false, currentView = null;
+/* abas só da conta administradora (o Galpão ainda é provisório) */
+const ADMIN_ONLY = ['admin', 'logs', 'galpao'];
 
 function moveInk() {
   const tabs = $('#tabs'), act = tabs.querySelector('[aria-current=page]'), ink = tabs.querySelector('.tabInk');
@@ -33,7 +35,7 @@ function moveInk() {
 }
 
 function show() {
-  let v = location.hash.slice(1); if (!v) v = prefs.get('home', 'painel'); if (!(v in views) || ((v === 'admin' || v === 'logs') && state.me?.role !== 'admin')) v = 'painel';
+  let v = location.hash.slice(1); if (!v) v = prefs.get('home', 'painel'); if (!(v in views) || (ADMIN_ONLY.includes(v) && state.me?.role !== 'admin')) v = 'painel';
   const back = currentView && order.indexOf(v) < order.indexOf(currentView);
   $$('main > section').forEach(s => {
     const on = s.id === 'v-' + v;
@@ -54,6 +56,8 @@ function who() {
   $('#whoName').textContent = name; $('#whoAvatar').textContent = initials(name); tools.who();
   $('#navAdmin').classList.toggle('hidden', state.me?.role !== 'admin');
   $('#navLogs').classList.toggle('hidden', state.me?.role !== 'admin');
+  $('#navGalpao').classList.toggle('hidden', state.me?.role !== 'admin');
+  document.documentElement.classList.toggle('isAdmin', state.me?.role === 'admin');
 }
 
 async function ready() {
@@ -72,7 +76,8 @@ async function ready() {
   who(); show();
   await estoque.reload(false);
   who(); moveInk();
-  if ((location.hash === '#admin' || location.hash === '#logs') && state.me?.role !== 'admin') location.hash = 'estoque';
+  if (ADMIN_ONLY.includes(location.hash.slice(1)) && state.me?.role !== 'admin') location.hash = 'estoque';
+  else if (ADMIN_ONLY.includes(location.hash.slice(1)) && currentView !== location.hash.slice(1)) show();   // a conta só fica conhecida depois do carregamento
 }
 /* abertura: HAPPY acende letra por letra como neon (uma vez por sessão) */
 function splash() {

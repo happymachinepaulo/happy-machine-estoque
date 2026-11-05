@@ -90,7 +90,7 @@
         <span class="tabInk" aria-hidden="true"></span>
         <button class="tab" data-view="painel" style="--c:var(--white);--ink-c:var(--white);--tc:#141416"><svg class="i"><use href="#i-pulse"/></svg><span>Painel</span></button>
         <button class="tab" data-view="estoque" style="--c:var(--red-l);--ink-c:var(--red)"><svg class="i"><use href="#i-box"/></svg><span>Estoque</span></button>
-        <button class="tab" data-view="galpao" style="--c:var(--yellow);--ink-c:var(--yellow);--tc:#141416"><svg class="i"><use href="#i-map"/></svg><span>Galpão</span></button>
+        <button class="tab hidden" id="navGalpao" data-view="galpao" style="--c:var(--yellow);--ink-c:var(--yellow);--tc:#141416"><svg class="i"><use href="#i-map"/></svg><span>Galpão</span></button>
         <button class="tab" data-view="pessoas" style="--c:var(--blue-l);--ink-c:var(--blue)"><svg class="i"><use href="#i-users"/></svg><span>Pessoas</span></button>
         <button class="tab" data-view="fotos" style="--c:var(--pink);--ink-c:var(--pink)"><svg class="i"><use href="#i-photo"/></svg><span>Fotos</span><b id="badgeFotos" class="badge hidden"></b></button>
         <button class="tab" data-view="consertos" style="--c:var(--orange);--ink-c:var(--orange)"><svg class="i"><use href="#i-wrench"/></svg><span>Consertos</span></button>
@@ -295,7 +295,7 @@
     <div class="detail"><div id="dGal" class="gal"></div>
       <div class="dside">
         <div><div id="dQty" class="big"></div><div id="dMin" class="muted"></div></div>
-        <label class="locRow"><svg class="i"><use href="#i-map"/></svg><span>Estante</span><select id="dLoc" class="control"></select></label>
+        <label class="locRow adminOnly"><svg class="i"><use href="#i-map"/></svg><span>Estante</span><select id="dLoc" class="control"></select></label>
         <div id="dHolders" class="holderPills"></div>
         <div id="dWarn" class="warnbox hidden"><span>Confira o nome e a quantidade para incluir esta peça no total.</span><button id="dConfirm" class="btn sm primary">Confirmar peça</button></div>
         <div id="dNotes" class="notes"></div>

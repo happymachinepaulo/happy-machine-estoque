@@ -814,3 +814,5 @@ html.calm .spot,html.calm .pvTag{animation:none;opacity:1}
 .pvChips button.off{opacity:.7}.pvChips button.off i{outline:1px dashed rgba(255,255,255,.4);outline-offset:1px}
 .pvChips i{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--c,var(--ink-3));color:#141416;font:400 17px/1 var(--display);font-style:normal}
 .pvChips small{color:var(--ink-3);font-weight:700}
+
+html:not(.isAdmin) .adminOnly{display:none!important}

@@ -548,6 +548,8 @@ class handler(BaseHTTPRequestHandler):
             p['photos'] = [{k: ph[k] for k in ('id', 'filename', 'is_primary', 'url', 'thumb')} for ph in f_photos.result()]
             p['movements'] = f_moves.result()
             return self.respond(p)
+        if path.startswith('/api/galpao/') and profile['role'] != 'admin':
+            raise APIError('O Galpão está liberado só para o administrador por enquanto.', 403)
         if path == '/api/galpao/layout':
             return self.respond({'layout': galpao_layout()})
         if re.fullmatch(r'/api/galpao/t?(?:[A-K]\d{1,2}|pano)\.jpg', path):
