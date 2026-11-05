@@ -10,9 +10,9 @@ Controle de estoque de peças. Vercel (site estático + `api/index.py`) e Supaba
 - **Saída** vai para uma pessoa ou para um lugar/motivo (com *Outros* + texto livre). **Adicionar** vem de uma pessoa (devolução) ou de outra origem (com *Outros* + texto livre). O histórico mostra para onde foi / de onde veio.
 - **Manutenção Máquinas:** aba nova, por enquanto só "Em breve".
 - **Banco:** `supabase/018_estoque_pessoas.sql` (pessoas, estoque de cada pessoa, destino nas movimentações). Sem ela o site continua funcionando, mas a aba Pessoas fica vazia e a saída para pessoa falha.
-- **Banco:** `supabase/019_mapa_galpao.sql` (estante A–K de cada peça, usada na aba Galpão). Sem ela a planta abre, mas todas as peças aparecem sem estante e trocar a estante falha.
+- **Banco:** `supabase/019_mapa_galpao.sql` (estante A–K de cada peça, usada na aba Galpão). Sem ela o galpão abre, mas todas as peças aparecem sem estante e trocar a estante falha.
 - **Banco:** `supabase/020_logs_acesso.sql` (tabela `access_log`: quem entrou, conta, aparelho, IP e cidade). A aba **Logs** só aparece para o administrador; sem a 020 ela mostra só as alterações do estoque.
-- **Galpão:** a planta fica em `public/js/shelves.js` (posição, cor e nome de cada estante). As fotos das estantes ficam em `api/galpao/` e só abrem com login.
+- **Galpão:** foto panorâmica real (`api/galpao/pano.jpg`, montada com as duas fotos gerais). As marcações padrão das estantes no panorama ficam em `PANO` de `public/js/shelves.js`; o administrador redesenha pelo botão **Ajustar** e o que ele salva fica em `app_settings` (migração 020). Peças marcadas em cada foto: `public/js/spots.js`. Fotos em `api/galpao/`, só com login.
 
 ## O que mudou (v2)
 - **Rápido:** uma chamada (`/api/boot`) traz estoque + fotos + pendências; fotos com miniatura de 480 px; sessão em cache de 30 s; conexões reaproveitadas; sem SDK do Supabase, three.js ou gsap no navegador (de ~1,5 MB de JS para ~40 KB).

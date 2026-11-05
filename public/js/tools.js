@@ -69,7 +69,7 @@ function initConfig() {
 }
 
 /* ── busca rápida ── */
-const PAGES = [['painel', 'Painel', 'pulse'], ['estoque', 'Estoque', 'box'], ['galpao', 'Galpão (mapa)', 'map'], ['pessoas', 'Pessoas', 'users'], ['fotos', 'Revisar fotos', 'photo'], ['consertos', 'Consertos', 'wrench'], ['manutencao', 'Manutenção das máquinas', 'gear'], ['historico', 'Histórico', 'clock'], ['config', 'Configurações', 'sliders']];
+const PAGES = [['painel', 'Painel', 'pulse'], ['estoque', 'Estoque', 'box'], ['galpao', 'Galpão (foto do estoque)', 'map'], ['pessoas', 'Pessoas', 'users'], ['fotos', 'Revisar fotos', 'photo'], ['consertos', 'Consertos', 'wrench'], ['manutencao', 'Manutenção das máquinas', 'gear'], ['historico', 'Histórico', 'clock'], ['config', 'Configurações', 'sliders']];
 let qsSel = 0;
 function qsRender() {
   const q = fold($('#qsInput').value.trim());

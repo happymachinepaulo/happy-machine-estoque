@@ -82,6 +82,11 @@ class Fake:
             if method == 'POST': self.audit.append({'id': len(self.audit) + 1, 'created_at': __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(), 'product_id': None, 'before_data': '', **data}); return None
             return self._page(self._order(list(self.audit), qs), qs)
         if p == '/rest/v1/email_login_sessions': return None
+        if p == '/rest/v1/app_settings':
+            self.settings = getattr(self, 'settings', {})
+            if method == 'POST': self.settings[data['key']] = data['value']; return None
+            k = qs.get('key', '').partition('.')[2]
+            return [{'value': self.settings[k]}] if k in self.settings else []
         if p == '/storage/v1/object/sign/stock-photos':
             return [{'path': x, 'signedURL': f'/object/sign/stock-photos/{x}?token=t'} for x in data['paths']]
         if p == '/storage/v1/object/stock-photos' and method == 'DELETE': return {}

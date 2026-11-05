@@ -63,6 +63,4 @@ export const SPOTS = {
   J6: [S(0, 25, 65, 15, 0, 'Cestos amarelos com peças pequenas'), S(5, 0, 35, 10, 0, 'Peças vermelhas e verdes'), S(5, 65, 85, 20, 181, 'Conjunto de eixo metálico'), S(45, 48, 15, 10, 0, 'Pote verde-água'), S(85, 45, 15, 15, 0, 'Rolo de fita')],
   J7: [S(0, 38, 80, 38, 181, 'Conjunto de eixo metálico'), S(12, 15, 60, 25, 162, 'Painéis / carenagens plásticas'), S(80, 15, 20, 45, 171, 'Capacetes de proteção')],
   J8: [S(70, 40, 30, 25, 0, 'Cestos com peças'), S(18, 30, 22, 18, 0, 'Caixa com peças pretas'), S(5, 85, 40, 15, 0, 'Placas com display'), S(55, 85, 25, 15, 49, 'Eletroímã de garra MEGA')],
-  K1: [S(50, 45, 30, 50, 0, 'Chicotes de fios nos cestos'), S(0, 0, 22, 100, 0, 'Caixas embaladas')],
-  K2: [S(10, 40, 15, 40, 87, 'Fontes ATX'), S(62, 10, 30, 90, 0, 'Caixas embaladas')],
 };

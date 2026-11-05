@@ -152,6 +152,17 @@ class API(unittest.TestCase):
         self.fake.profile['role'] = 'operator'; api._sessions.clear()
         self.assertEqual(self.req('/api/admin/logs')[0], 403)
 
+    def test_marcacoes_do_galpao(self):
+        self.assertEqual(self.j('/api/galpao/layout'), (200, {'layout': None}))
+        s, d = self.j('/api/galpao/layout', 'POST', {'shelves': {'A': [[1, 2, 10, 20]], 'K': []}})
+        self.assertEqual((s, d['layout']['shelves']), (200, {'A': [[1.0, 2.0, 10.0, 20.0]]}))
+        self.assertEqual(self.j('/api/galpao/layout')[1]['layout']['shelves']['A'], [[1.0, 2.0, 10.0, 20.0]])
+        self.assertEqual(self.j('/api/galpao/layout', 'POST', {'shelves': {'Z': [[1, 2, 3, 4]]}})[0], 400)
+        self.assertEqual(self.j('/api/galpao/layout', 'POST', {'shelves': {'A': [[95, 2, 10, 4]]}})[0], 400)
+        self.assertEqual(self.req('/api/galpao/pano.jpg')[0], 200)
+        self.fake.profile['role'] = 'operator'; api._sessions.clear()
+        self.assertEqual(self.j('/api/galpao/layout', 'POST', {'shelves': {}})[0], 403)
+
     def test_nome_do_aparelho(self):
         d = api.device_name
         self.assertEqual(d('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'), 'Windows · Chrome')

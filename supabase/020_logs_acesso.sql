@@ -1,4 +1,5 @@
--- 020 · Logs de acesso: quem entrou, com qual conta, de qual aparelho e de onde.
+-- 020 · Logs de acesso (quem entrou, com qual conta, de qual aparelho e de onde)
+--       e configurações do site (marcações das estantes no panorama do galpão).
 -- Só o servidor (service_role) grava e lê; nenhum usuário lê esta tabela direto.
 -- A página "Logs" do site mostra estes registros apenas para o administrador.
 -- Seguro para rodar mais de uma vez.
@@ -26,8 +27,18 @@ revoke all on public.access_log from anon, authenticated;
 grant all on public.access_log to service_role;
 grant usage, select on all sequences in schema public to service_role;
 
+-- configurações do site (ex.: onde cada estante está na foto panorâmica do galpão)
+create table if not exists public.app_settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.app_settings enable row level security;
+revoke all on public.app_settings from anon, authenticated;
+grant all on public.app_settings to service_role;
+
 -- guarda 1 ano de registros
 delete from public.access_log where created_at < now() - interval '365 days';
 
-insert into public.audit_log(action,after_data) values('migration_020','Logs de acesso: tabela access_log');
+insert into public.audit_log(action,after_data) values('migration_020','Logs de acesso (access_log) e configurações (app_settings)');
 commit;

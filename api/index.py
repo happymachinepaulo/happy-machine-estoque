@@ -208,6 +208,36 @@ def forget_session(token):
         _sessions.pop(hashlib.sha256(token.encode()).hexdigest(), None)
 
 
+# ───────────────────────── Galpão: onde cada estante está no panorama ─────────────────────────
+def galpao_layout():
+    """Marcações salvas pelo administrador (None = usar as marcações padrão do site)."""
+    try: r = remote('/rest/v1/app_settings?' + urllib.parse.urlencode({'key': 'eq.galpao_layout', 'select': 'value'}), service=True)
+    except APIError: return None
+    return r[0]['value'] if r else None
+
+
+def save_galpao_layout(body, actor):
+    shelves = body.get('shelves') if isinstance(body, dict) else None
+    if not isinstance(shelves, dict) or set(shelves) - set(SHELVES[1:]): raise APIError('Marcações inválidas.')
+    clean = {}
+    for k, rects in shelves.items():
+        if not isinstance(rects, list) or len(rects) > 4: raise APIError('Marcações inválidas.')
+        out = []
+        for r in rects:
+            if not isinstance(r, list) or len(r) != 4 or not all(isinstance(v, (int, float)) and 0 <= v <= 100 for v in r): raise APIError('Marcações inválidas.')
+            x, y, w, h = (round(float(v), 2) for v in r)
+            if w < .5 or h < .5 or x + w > 100.01 or y + h > 100.01: raise APIError('Marcações inválidas.')
+            out.append([x, y, w, h])
+        if out: clean[k] = out
+    value = {'v': 1, 'shelves': clean}
+    try:
+        remote('/rest/v1/app_settings?on_conflict=key', 'POST', {'key': 'galpao_layout', 'value': value}, service=True, headers={'Prefer': 'resolution=merge-duplicates'})
+    except APIError: raise APIError('Rode a migração 020 no Supabase para salvar as marcações.', 503) from None
+    try: remote('/rest/v1/audit_log', 'POST', {'action': 'galpao_layout', 'after_data': json.dumps({'estantes': sorted(clean)}), 'actor_id': actor}, service=True)
+    except APIError: pass
+    return {'ok': True, 'layout': value}
+
+
 # ───────────────────────── Logs de acesso ─────────────────────────
 def device_name(ua):
     """Nome curto e legível do aparelho a partir do User-Agent: "iPhone · Safari", "Windows · Chrome"."""
@@ -421,6 +451,9 @@ class handler(BaseHTTPRequestHandler):
             if path.startswith('/api/admin/'):
                 if profile['role'] != 'admin': raise APIError('Acesso restrito ao administrador.', 403)
                 return self.admin(method, path, profile)
+            if path == '/api/galpao/layout' and method == 'POST':
+                if profile['role'] != 'admin': raise APIError('Só o administrador ajusta as marcações do galpão.', 403)
+                return self.respond(save_galpao_layout(self.json_body(), profile['id']))
             if method == 'GET': return self.get(path, qs, profile)
             if method == 'POST': return self.post(path)
             if method == 'DELETE' and re.fullmatch(r'/api/products/\d+', path):
@@ -515,7 +548,9 @@ class handler(BaseHTTPRequestHandler):
             p['photos'] = [{k: ph[k] for k in ('id', 'filename', 'is_primary', 'url', 'thumb')} for ph in f_photos.result()]
             p['movements'] = f_moves.result()
             return self.respond(p)
-        if re.fullmatch(r'/api/galpao/t?[A-K]\d{1,2}\.jpg', path):
+        if path == '/api/galpao/layout':
+            return self.respond({'layout': galpao_layout()})
+        if re.fullmatch(r'/api/galpao/t?(?:[A-K]\d{1,2}|pano)\.jpg', path):
             f = os.path.join(GALPAO, path.rsplit('/', 1)[1])
             if not os.path.isfile(f): raise APIError('Foto não encontrada.', 404)
             with open(f, 'rb') as fh: return self.respond(fh.read(), ctype='image/jpeg', cache='private, max-age=604800')

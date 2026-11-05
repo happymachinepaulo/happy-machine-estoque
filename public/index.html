@@ -176,10 +176,10 @@
 
     <!-- MANUTENÇÃO -->
     <section id="v-galpao" class="view" hidden>
-      <div class="head"><div><h1>Galpão</h1><p class="muted">O estoque em 3D, montado com as fotos das estantes. Gire, toque numa estante e depois numa peça da foto.</p></div></div>
+      <div class="head"><div><h1>Galpão</h1><p class="muted">A foto do galpão de verdade. Toque numa estante para entrar nela e depois toque na peça.</p></div></div>
       <div class="tools"><label class="search"><span class="sr">Onde está</span><svg class="i"><use href="#i-search"/></svg><input id="gQ" class="control" type="search" placeholder="Onde está? Digite o nome da peça" autocomplete="off"></label></div>
       <div id="gFound" class="gFound glass" hidden></div>
-      <div class="galpao"><div id="plan" class="plan glass"></div><aside id="shelfPanel" class="shelfPanel glass" aria-live="polite"></aside></div>
+      <div class="galpao"><div id="plan" class="plan glass"></div><aside id="shelfPanel" class="shelfPanel glass" aria-live="polite" hidden></aside></div>
     </section>
 
     <section id="v-manutencao" class="view" hidden>
@@ -302,18 +302,6 @@
         <div class="acts2"><button id="bIn" class="btn ok"><svg class="i"><use href="#i-plus"/></svg>Adicionar</button><button id="bOut" class="btn bad"><svg class="i"><use href="#i-minus"/></svg>Saída</button><button id="bAdj" class="btn">Ajustar</button><button id="bEdit" class="btn">Editar</button><button id="bDel" class="btn ghost">Excluir</button></div>
       </div></div>
     <div class="panel table" style="max-height:260px"><table><thead><tr><th>Data</th><th>Tipo</th><th class="n">Alteração</th><th class="n">Antes</th><th class="n">Depois</th><th>Para / de onde</th><th>Observação</th></tr></thead><tbody id="dHist"></tbody></table></div>
-  </div>
-</dialog>
-
-<dialog id="dShelf" class="wide shelfView" aria-labelledby="vsName">
-  <div class="dh"><div class="vsHead"><span id="vsBadge" class="shBadge"></span><div><h2 id="vsName"></h2><p id="vsSub"></p></div></div><button type="button" class="x" data-close aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button></div>
-  <div class="db">
-    <div id="vsStage" class="vsStage"><div class="vsFrame"><img id="vsImg" alt="Foto da estante"><div id="vsSpots" class="vsSpots"></div></div>
-      <button type="button" id="vsPrev" class="vsNav prev" aria-label="Foto anterior"><svg class="i"><use href="#i-back"/></svg></button><button type="button" id="vsNext" class="vsNav next" aria-label="Próxima foto"><svg class="i"><use href="#i-send"/></svg></button>
-      <div id="vsPop" class="vsPop" hidden><b id="vsPopName"></b><span>Ainda não está no estoque.</span><div class="row"><button type="button" id="vsReg" class="btn sm primary"><svg class="i"><use href="#i-plus"/></svg>Cadastrar com este recorte</button><button type="button" id="vsPopX" class="btn sm ghost">Agora não</button></div></div>
-    </div>
-    <p class="vsLegend"><span class="lg has"></span>No estoque: toque para abrir<span class="lg new"></span>Sem cadastro: toque para cadastrar</p>
-    <div id="vsThumbs" class="vsThumbs"></div>
   </div>
 </dialog>
 
