@@ -99,7 +99,7 @@ export function pickPhoto(inputs, preview, onFile) {
     preview.src = URL.createObjectURL(f); preview.classList.remove('hidden'); onFile?.(f);
     inputs.forEach(i => { if (i !== input) i.value = ''; });
   });
-  return { get file() { return current; }, clear() { current = null; inputs.forEach(i => i.value = ''); preview.classList.add('hidden'); preview.removeAttribute('src'); } };
+  return { get file() { return current; }, set(f) { current = f; preview.src = URL.createObjectURL(f); preview.classList.remove('hidden'); inputs.forEach(i => i.value = ''); }, clear() { current = null; inputs.forEach(i => i.value = ''); preview.classList.add('hidden'); preview.removeAttribute('src'); } };
 }
 
 /* ── abas e subabas com indicador deslizante ── */

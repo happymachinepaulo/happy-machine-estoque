@@ -97,6 +97,7 @@
         <button class="tab" data-view="manutencao" title="Manutenção Máquinas" style="--c:var(--capri);--ink-c:var(--capri);--tc:#141416"><svg class="i"><use href="#i-gear"/></svg><span>Máquinas</span></button>
         <button class="tab" data-view="historico" style="--c:var(--rosa);--ink-c:var(--purple-l)"><svg class="i"><use href="#i-clock"/></svg><span>Histórico</span></button>
         <button class="tab hidden" id="navAdmin" data-view="admin" style="--c:var(--ink-2);--ink-c:#55555f"><svg class="i"><use href="#i-shield"/></svg><span>Admin</span></button>
+        <button class="tab hidden" id="navLogs" data-view="logs" title="Logs de acesso" style="--c:var(--capri);--ink-c:var(--capri);--tc:#141416"><svg class="i"><use href="#i-list"/></svg><span>Logs</span></button>
         <span class="sep" aria-hidden="true"></span>
         <button class="tab" data-view="config" title="Configurações" style="--c:var(--ink-2);--ink-c:var(--white);--tc:#141416"><svg class="i"><use href="#i-sliders"/></svg><span>Ajustes</span></button>
       </nav>
@@ -175,7 +176,7 @@
 
     <!-- MANUTENÇÃO -->
     <section id="v-galpao" class="view" hidden>
-      <div class="head"><div><h1>Galpão</h1><p class="muted">A planta do estoque. Toque numa estante para ver as fotos e o que está guardado nela.</p></div></div>
+      <div class="head"><div><h1>Galpão</h1><p class="muted">O estoque em 3D, montado com as fotos das estantes. Gire, toque numa estante e depois numa peça da foto.</p></div></div>
       <div class="tools"><label class="search"><span class="sr">Onde está</span><svg class="i"><use href="#i-search"/></svg><input id="gQ" class="control" type="search" placeholder="Onde está? Digite o nome da peça" autocomplete="off"></label></div>
       <div id="gFound" class="gFound glass" hidden></div>
       <div class="galpao"><div id="plan" class="plan glass"></div><aside id="shelfPanel" class="shelfPanel glass" aria-live="polite"></aside></div>
@@ -214,6 +215,17 @@
       </form>
       <div id="cred" class="warnbox hidden"><div><b>Conta criada: <span id="credEmail"></span></b><br>Senha (aparece só agora): <code id="credPass"></code></div><button id="credOk" class="btn sm" type="button">Já guardei</button></div>
       <div class="panel table"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Permissão</th><th>Acesso</th><th></th></tr></thead><tbody id="ubody"></tbody></table></div>
+    </section>
+    <!-- LOGS (só administrador) -->
+    <section id="v-logs" class="view" hidden>
+      <div class="head"><div><h1>Logs</h1><p class="muted">Só você vê esta página. Quem entrou, com qual conta, de qual aparelho e de onde, e o que mudou.</p></div>
+        <div class="acts"><button id="logRefresh" class="btn" type="button"><svg class="i"><use href="#i-back"/></svg>Atualizar</button></div></div>
+      <div id="logWarn" class="warnbox hidden"><div><b>Os acessos ainda não estão sendo gravados.</b><br>Rode o arquivo <code>supabase/020_logs_acesso.sql</code> no SQL Editor do Supabase. As alterações no estoque já aparecem abaixo.</div></div>
+      <div class="stats" id="logStats"></div>
+      <div class="panel board lgPeople"><header><div><h2>Quem está usando</h2><p>Cada conta e os aparelhos de onde ela entrou.</p></div></header><div id="logPeople" class="lgGrid"></div></div>
+      <div class="subbar"><div class="subtabs" id="logSub"></div></div>
+      <div class="tools"><label class="search"><span class="sr">Buscar</span><svg class="i"><use href="#i-search"/></svg><input id="logQ" class="control" type="search" placeholder="Buscar conta, aparelho, IP, cidade ou peça"></label></div>
+      <div class="panel table lgTable"><table><thead id="logHead"></thead><tbody id="logBody"></tbody></table></div>
     </section>
     <!-- CONFIGURAÇÕES -->
     <section id="v-config" class="view" hidden>
@@ -290,6 +302,18 @@
         <div class="acts2"><button id="bIn" class="btn ok"><svg class="i"><use href="#i-plus"/></svg>Adicionar</button><button id="bOut" class="btn bad"><svg class="i"><use href="#i-minus"/></svg>Saída</button><button id="bAdj" class="btn">Ajustar</button><button id="bEdit" class="btn">Editar</button><button id="bDel" class="btn ghost">Excluir</button></div>
       </div></div>
     <div class="panel table" style="max-height:260px"><table><thead><tr><th>Data</th><th>Tipo</th><th class="n">Alteração</th><th class="n">Antes</th><th class="n">Depois</th><th>Para / de onde</th><th>Observação</th></tr></thead><tbody id="dHist"></tbody></table></div>
+  </div>
+</dialog>
+
+<dialog id="dShelf" class="wide shelfView" aria-labelledby="vsName">
+  <div class="dh"><div class="vsHead"><span id="vsBadge" class="shBadge"></span><div><h2 id="vsName"></h2><p id="vsSub"></p></div></div><button type="button" class="x" data-close aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="db">
+    <div id="vsStage" class="vsStage"><div class="vsFrame"><img id="vsImg" alt="Foto da estante"><div id="vsSpots" class="vsSpots"></div></div>
+      <button type="button" id="vsPrev" class="vsNav prev" aria-label="Foto anterior"><svg class="i"><use href="#i-back"/></svg></button><button type="button" id="vsNext" class="vsNav next" aria-label="Próxima foto"><svg class="i"><use href="#i-send"/></svg></button>
+      <div id="vsPop" class="vsPop" hidden><b id="vsPopName"></b><span>Ainda não está no estoque.</span><div class="row"><button type="button" id="vsReg" class="btn sm primary"><svg class="i"><use href="#i-plus"/></svg>Cadastrar com este recorte</button><button type="button" id="vsPopX" class="btn sm ghost">Agora não</button></div></div>
+    </div>
+    <p class="vsLegend"><span class="lg has"></span>No estoque: toque para abrir<span class="lg new"></span>Sem cadastro: toque para cadastrar</p>
+    <div id="vsThumbs" class="vsThumbs"></div>
   </div>
 </dialog>
 

@@ -18,6 +18,7 @@ class Fake:
         self.movements, self.repairs, self.calls, self.uploads = [], [], [], {}
         self.holders = [{'id': 1, 'name': 'Bruno', 'active': True, 'created_at': ''}, {'id': 2, 'name': 'Matheus', 'active': True, 'created_at': ''}]
         self.holder_stock = []
+        self.access, self.audit = [], []
         self.seq = {'p': max([p['id'] for p in self.products] or [0]) + 1, 'ph': max([p['id'] for p in self.photos] or [0]) + 1, 'm': 1, 'r': 1}
 
     # ── utilidades ──
@@ -74,7 +75,13 @@ class Fake:
             return [self.profile]
         if p.startswith('/auth/v1/admin/users/'):
             self.account_ops = getattr(self, 'account_ops', []) + [(method, data)]; return {}
-        if p in ('/rest/v1/audit_log', '/rest/v1/email_login_sessions'): return None
+        if p == '/rest/v1/access_log':
+            if method == 'POST': self.access.append({'id': max([a['id'] for a in self.access] or [0]) + 1, 'created_at': __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(), **data}); return None
+            return self._page(self._order(list(self.access), qs), qs)
+        if p == '/rest/v1/audit_log':
+            if method == 'POST': self.audit.append({'id': len(self.audit) + 1, 'created_at': __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(), 'product_id': None, 'before_data': '', **data}); return None
+            return self._page(self._order(list(self.audit), qs), qs)
+        if p == '/rest/v1/email_login_sessions': return None
         if p == '/storage/v1/object/sign/stock-photos':
             return [{'path': x, 'signedURL': f'/object/sign/stock-photos/{x}?token=t'} for x in data['paths']]
         if p == '/storage/v1/object/stock-photos' and method == 'DELETE': return {}

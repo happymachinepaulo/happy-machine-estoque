@@ -54,6 +54,23 @@ for d in range(6, -1, -1):
         hid = _r.choice([1, 2, 3, None]); dest = '' if hid and kind != 'consumo' else _r.choice(['Uso em máquina', 'Cliente', 'Outros: Feira de SP'])
         fake._move(pid, kind, -1 if kind != 'entrada' else 1, 10, 9, '', hid, dest)
         fake.movements[-1]['created_at'] = (_now - _dt.timedelta(days=d, hours=_r.randint(0, 6), minutes=_r.randint(0, 59))).isoformat()
+# logs de acesso de exemplo (página Logs)
+_ua = {'iPhone · Safari': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) Safari/604.1', 'Windows · Chrome': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0 Safari/537.36',
+       'Android (SM-A546E) · Chrome': 'Mozilla/5.0 (Linux; Android 14; SM-A546E Build/UP1A) Chrome/130.0 Mobile Safari/537.36'}
+for k, (mins, uid, email, ev, ok, dev, ip, place) in enumerate([
+        (3, fake.profile['id'], fake.profile['email'], 'abriu', True, 'Windows · Chrome', '177.92.10.4', 'São Paulo, SP, BR'),
+        (50, None, 'bruno@happymachine.com.br', 'entrou', True, 'Android (SM-A546E) · Chrome', '189.40.77.12', 'Guarulhos, SP, BR'),
+        (52, None, 'bruno@happymachine.com.br', 'codigo_errado', False, 'Android (SM-A546E) · Chrome', '189.40.77.12', 'Guarulhos, SP, BR'),
+        (54, None, 'bruno@happymachine.com.br', 'senha_ok', True, 'Android (SM-A546E) · Chrome', '189.40.77.12', 'Guarulhos, SP, BR'),
+        (190, None, 'teste@gmail.com', 'senha_errada', False, 'Windows · Chrome', '45.160.3.9', 'Curitiba, PR, BR'),
+        (600, fake.profile['id'], fake.profile['email'], 'entrou', True, 'iPhone · Safari', '177.92.10.4', 'São Paulo, SP, BR'),
+        (1500, fake.profile['id'], fake.profile['email'], 'saiu', True, 'iPhone · Safari', '177.92.10.4', 'São Paulo, SP, BR')]):
+    fake.access.insert(0, {'id': 100 - k, 'created_at': (_now - _dt.timedelta(minutes=mins)).isoformat(), 'user_id': uid, 'email': email, 'event': ev, 'ok': ok, 'ip': ip, 'place': place,
+                           'device': dev, 'user_agent': _ua[dev], 'session_id': 's', 'detail': 'Código enviado por e-mail' if ev == 'senha_ok' else ''})
+fake.access.sort(key=lambda a: a['id'])
+fake.audit += [{'id': 1, 'created_at': (_now - _dt.timedelta(hours=2)).isoformat(), 'product_id': 2, 'action': 'location', 'before_data': 'J', 'after_data': 'F', 'actor_id': fake.profile['id']},
+               {'id': 2, 'created_at': (_now - _dt.timedelta(hours=1)).isoformat(), 'product_id': 5, 'action': 'movement', 'before_data': '', 'after_data': '{"kind":"saida","amount":2,"destination":"Cliente"}', 'actor_id': fake.profile['id']},
+               {'id': 3, 'created_at': (_now - _dt.timedelta(minutes=20)).isoformat(), 'product_id': None, 'action': 'change_password', 'before_data': '', 'after_data': '{}', 'actor_id': fake.profile['id']}]
 api.remote = fake.remote
 
 class Handler(api.handler):

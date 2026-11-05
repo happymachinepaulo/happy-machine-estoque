@@ -5,7 +5,7 @@ import { shelfOptions, shelf } from './shelves.js';
 
 const F = { q: '', cat: '', chip: 'todas', sort: 'name', list: false };
 try { F.list = localStorage.getItem('hm-list') === '1'; } catch {}
-let current = null, photoPick = null, reviewPhoto = null, loading = false, lastStats = {};
+let current = null, photoPick = null, reviewPhoto = null, loading = false, lastStats = {}, pendingLoc = '';
 
 const isPending = p => p.review_status === 'pendente';
 const isUnknown = p => isPending(p) && p.quantity === 0 && !p.broken;
@@ -102,13 +102,21 @@ export function historyRows(rows, withName = true) {
 
 /* ── formulário ── */
 function resetForm() {
-  $('#formProduct').reset(); $('#pId').value = ''; reviewPhoto = null; photoPick.clear(); $('#pFile').closest('div').classList.remove('hidden');
+  pendingLoc = ''; $('#formProduct').reset(); $('#pId').value = ''; reviewPhoto = null; photoPick.clear(); $('#pFile').closest('div').classList.remove('hidden');
   $('#pQtyWrap').classList.remove('hidden'); $('#pPhotoWrap').classList.remove('hidden'); $('#pTitle').textContent = 'Nova peça'; $('#pSub').textContent = 'Foto, nome e quantidade.';
 }
 export function newFromPhoto(photo, suggestion) {
   resetForm(); reviewPhoto = photo.id; $('#pTitle').textContent = 'Criar peça com esta foto'; $('#pSub').textContent = 'Identifique a peça e informe a quantidade contada.';
   $('#pName').value = suggestion.name || ''; $('#pCat').value = suggestion.category || ''; $('#pNotes').value = photo.review_note || ''; $('#pQty').value = '';
   $('#pPreview').src = photo.url; $('#pPreview').classList.remove('hidden'); $('#pFile').closest('div').classList.add('hidden'); open($('#dProduct')); $('#pName').focus();
+}
+/* cadastro a partir de uma peça vista na foto do galpão: já vem com nome, recorte da foto e estante */
+export function newWithCrop(file, { name = '', location = '' } = {}) {
+  resetForm(); pendingLoc = location;
+  $('#pTitle').textContent = 'Cadastrar peça vista no galpão'; $('#pSub').textContent = `${location ? `Estante ${location} · ` : ''}Confira o nome e informe a quantidade contada.`;
+  $('#pName').value = name; $('#pQty').value = '';
+  if (file) photoPick.set(file);
+  open($('#dProduct')); $('#pName').focus(); $('#pName').select();
 }
 async function saveProduct(e) {
   e.preventDefault(); const id = $('#pId').value, btn = e.submitter; btn.disabled = true;
@@ -119,7 +127,8 @@ async function saveProduct(e) {
     if (reviewPhoto) fd.set('existing_photo_id', reviewPhoto);
     else if (photoPick.file) { const { photo, thumb } = await prepareImage(photoPick.file); fd.set('photo', photo, 'foto.jpg'); if (thumb) fd.set('thumb', thumb, 'thumb.jpg'); }
     const r = await api(id ? `/api/products/${id}/update` : '/api/products', { method: 'POST', body: fd });
-    $('#dProduct').close(); toast(id ? 'Peça atualizada' : 'Peça cadastrada');
+    if (!id && pendingLoc && r?.id) { try { await api(`/api/products/${r.id}/location`, { json: { location: pendingLoc } }); } catch {} }
+    $('#dProduct').close(); toast(id ? 'Peça atualizada' : pendingLoc ? `Peça cadastrada na estante ${pendingLoc}` : 'Peça cadastrada'); pendingLoc = '';
     const wasReview = reviewPhoto; reviewPhoto = null;
     await reload(); document.dispatchEvent(new CustomEvent('stock:changed'));
     if (wasReview) openDetail(r.id); else if (id) openDetail(+id);
