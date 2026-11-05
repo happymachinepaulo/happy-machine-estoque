@@ -21,7 +21,7 @@ const card = (p, i) => `<button class="card" data-id="${p.id}" style="--i:${i}" 
   <div class="ph">${p.photo ? `<img src="${esc(p.photo)}" alt="" loading="lazy" decoding="async" width="400" height="300">` : `<div class="none">${icon('photo')}Sem foto</div>`}${qtyTag(p)}${p.photo_count > 1 ? `<span class="tag">${p.photo_count} fotos</span>` : ''}${p._out ? `<span class="tag withp" title="${n(p._out)} com pessoas">${icon('users')}${n(p._out)}</span>` : ''}</div>
   <div class="cbody"><div class="cat"><span>${esc(p.category || 'Sem categoria')}</span><span>#${p.id}</span></div><h3>${esc(p.name)}</h3></div></button>`;
 
-const CHIPS = [['todas', 'Todas', 'var(--red)'], ['conferir', 'A conferir', 'var(--orange)'], ['baixo', 'Estoque baixo', 'var(--red)'], ['pessoas', 'Com pessoas', 'var(--blue)'], ['semfoto', 'Sem foto', 'var(--pink)']];
+const CHIPS = [['todas', 'Todas', 'var(--red-l)'], ['conferir', 'A conferir', 'var(--orange)'], ['baixo', 'Estoque baixo', 'var(--red-l)'], ['pessoas', 'Com pessoas', 'var(--blue)'], ['semfoto', 'Sem foto', 'var(--pink)']];
 const test = { todas: () => true, conferir: isPending, baixo: isLow, pessoas: p => p._out > 0, semfoto: p => !p.photo_id };
 
 function filtered() {
@@ -34,7 +34,7 @@ function filtered() {
 function stats(P) {
   const ok = P.filter(p => !isPending(p));
   const s = { pecas: ok.length, unidades: ok.filter(p => p.unit === 'un').reduce((a, p) => a + p.quantity, 0), pessoas: P.reduce((a, p) => a + (p._out || 0), 0), baixo: P.filter(isLow).length };
-  const tiles = [['pecas', 'Peças conferidas', 'var(--red)', 'box'], ['unidades', 'Unidades guardadas', 'var(--yellow)', 'grid'], ['pessoas', 'Com pessoas', 'var(--blue)', 'users'], ['baixo', 'Estoque baixo', 'var(--orange)', 'down']];
+  const tiles = [['pecas', 'peças conferidas', 'var(--red)', 'box'], ['unidades', 'unidades guardadas', 'var(--blue)', 'grid'], ['pessoas', 'com pessoas', 'var(--pink)', 'users'], ['baixo', 'estoque baixo', 'var(--orange)', 'down']];
   $('#estStats').innerHTML = P.length ? tiles.map(([k, l, c, ic], i) => `<div class="stat" style="--c:${c};--i:${i}"><i>${icon(ic)}</i><span>${l}</span><b data-count="${s[k]}" data-from="${lastStats[k] ?? 0}">${n(lastStats[k] ?? 0)}</b></div>`).join('') : '';
   lastStats = s; countUp($('#estStats'));
 }
@@ -72,7 +72,7 @@ async function openDetail(id) {
     $('#dName').textContent = p.name; $('#dSub').textContent = `${p.category || 'Sem categoria'} · #${p.id}`;
     $('#dQty').innerHTML = isUnknown(p) ? 'A contar' : `<span data-count="${p.quantity}">${n(p.quantity)}</span><small>${bigUnit(p)} no estoque</small>`;
     $('#dMin').textContent = p.min_quantity > 0 ? `Estoque mínimo: ${p.min_quantity}` : 'Sem estoque mínimo';
-    $('#dHolders').innerHTML = p._with.length ? p._with.map((w, i) => `<span style="animation-delay:${i * 60}ms;background:color-mix(in srgb,${personColor(w.holder.id)} 14%,#fff);color:${personColor(w.holder.id)}"><i style="background:${personColor(w.holder.id)}">${esc(initials(w.holder.name))}</i>${esc(w.holder.name)}: ${n(w.quantity)}</span>`).join('') : '';
+    $('#dHolders').innerHTML = p._with.length ? p._with.map((w, i) => `<span style="animation-delay:${i * 60}ms;background:color-mix(in srgb,${personColor(w.holder.id)} 22%,transparent);color:#fff;border:1px solid color-mix(in srgb,${personColor(w.holder.id)} 60%,transparent)"><i style="background:${personColor(w.holder.id)}">${esc(initials(w.holder.name))}</i>${esc(w.holder.name)}: ${n(w.quantity)}</span>`).join('') : '';
     $('#dWarn').classList.toggle('hidden', p.review_status !== 'pendente');
     $('#dNotes').textContent = p.notes || 'Sem observações.';
     gallery(p, 0);

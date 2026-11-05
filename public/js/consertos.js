@@ -3,7 +3,7 @@ import { $, esc, fold, n, icon, api, toast, open, confirmBox, prepareImage, pick
 const LABEL = { aguardando: 'Aguardando', em_conserto: 'Em conserto', consertada: 'Consertada', sem_conserto: 'Sem conserto' };
 const PILL = { aguardando: 'warn', em_conserto: '', consertada: 'ok', sem_conserto: 'bad' };
 let rows = [], pick, st = '';
-const ACC = { '': 'var(--ink)', aguardando: 'var(--orange)', em_conserto: 'var(--blue)', consertada: 'var(--green)', sem_conserto: 'var(--red)' };
+const ACC = { '': 'var(--red-l)', aguardando: 'var(--orange)', em_conserto: 'var(--blue)', consertada: 'var(--capri)', sem_conserto: 'var(--red)' };
 const notes = r => (r.notes || '').replace(/\[paulo-quebradas-20261009:\d+\]/g, '').trim();
 const options = s => Object.entries(LABEL).map(([k, v]) => `<option value="${k}" ${k === s ? 'selected' : ''}>${v}</option>`).join('');
 

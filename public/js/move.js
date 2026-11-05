@@ -36,7 +36,7 @@ function setMode(mode) {
   ctx.mode = mode; $('#mMode').dataset.mode = mode;
   $$('#mMode [data-mode]').forEach(b => b.setAttribute('aria-selected', b.dataset.mode === mode));
   $('#mPanePessoa').hidden = mode !== 'pessoa'; $('#mPaneLugar').hidden = mode !== 'lugar';
-  $('#mMode .segInk').style.background = mode === 'pessoa' ? 'var(--blue)' : 'var(--ink)';
+  $('#mMode .segInk').style.background = mode === 'pessoa' ? 'var(--blue)' : 'var(--red)';
 }
 function subtitle() {
   const p = ctx.product;

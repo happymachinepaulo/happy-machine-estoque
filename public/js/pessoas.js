@@ -51,7 +51,7 @@ export function render() {
   if ($('#v-pessoas').hidden) return;
   const list = activeHolders();
   if (sel !== 'todos' && !list.some(h => String(h.id) === sel)) sel = 'todos';
-  subtabs($('#pesSub'), [{ key: 'todos', label: 'Visão geral', accent: 'var(--ink)', count: list.length },
+  subtabs($('#pesSub'), [{ key: 'todos', label: 'Visão geral', accent: 'var(--red-l)', count: list.length },
     ...list.map(h => ({ key: String(h.id), label: h.name, accent: personColor(h.id), dot: true, count: totals(h).unidades })),
     { key: 'novo', label: '+ Pessoa', cls: 'add' }], sel, k => {
       if (k === 'novo') return editHolder(null, created);
@@ -63,6 +63,7 @@ async function created(id) { await reload(); if (id) sel = String(id); hist.id =
 const done = async () => { hist.id = null; await reload(); document.dispatchEvent(new CustomEvent('stock:changed')); render(); };
 
 export function load() { render(); }
+export function select(id) { sel = String(id); hist.id = null; }
 export function init() {
   subscribe(render);
   $('#v-pessoas').addEventListener('click', e => {

@@ -131,6 +131,6 @@ export function countUp(root = document) {
 }
 
 /* ── pessoas: cor e iniciais ── */
-const COLORS = ['var(--blue)', 'var(--red)', 'var(--green)', 'var(--pink)', 'var(--orange)', '#7b3fe4', '#0aa5a5'];
+const COLORS = ['#345AFA', '#C31634', '#DA1476', '#E79C2A', '#8a3dff', '#D94BFA', '#0fb8c9'];
 export const personColor = id => COLORS[(Number(id) || 0) % COLORS.length];
 export const initials = name => (String(name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('') || '?').toUpperCase();

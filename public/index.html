@@ -4,14 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Happy Machine · Estoque</title>
-<meta name="theme-color" content="#f6f4ef">
-<meta name="color-scheme" content="light only">
+<meta name="theme-color" content="#121213">
+<meta name="color-scheme" content="dark">
 <link rel="icon" href="/assets/logo.webp" type="image/webp">
-<link rel="preload" href="/assets/Manrope.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="/assets/MouseMemoirs.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/Roboto.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/CutiveMono.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/css/app.css">
 <script type="module" src="/js/main.js"></script>
 </head>
 <body data-auth="locked">
+<div class="neonbg" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
 <symbol id="i-box" viewBox="0 0 24 24"><path d="m3 7.5 9-4.5 9 4.5v9L12 21l-9-4.5v-9Z"/><path d="m3 7.5 9 4.5 9-4.5M12 12v9"/></symbol>
@@ -35,15 +38,17 @@
 <symbol id="i-back" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></symbol>
 <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
 <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+<symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
 <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></symbol>
 </defs></svg>
 
 <section id="auth" aria-label="Acesso">
   <aside class="authStory">
     <div class="glow" aria-hidden="true"></div>
+    <div class="lines" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="logo"><img src="/assets/logo.webp" alt="" width="44" height="42"><span>Happy Machine<small>Controle de estoque</small></span></div>
     <div class="authCopy">
-      <h1>Controle de estoque<br>da equipe Happy.</h1>
+      <div class="kicker">Controle <span class="tagr">de</span></div><h1>Estoque<br>Happy Machine</h1>
       <p>Acompanhe o que está guardado, com quem está cada peça e para onde ela foi.</p>
       <ul class="feats">
         <li><svg class="i"><use href="#i-box"/></svg>Estoque central com histórico</li>
@@ -55,7 +60,7 @@
   </aside>
   <div class="authMain"><div class="authCard">
     <div id="authMsg" class="authMsg" role="status" aria-live="polite"></div>
-    <div id="stepLogin" class="step"><img class="authMark" src="/assets/logo.webp" alt="" width="48" height="46"><h2>Acesse sua conta</h2><p class="muted">Use o e-mail e a senha criados pelo administrador.</p>
+    <div id="stepLogin" class="step"><img class="authMark" src="/assets/logo.webp" alt="" width="56" height="54"><h2>Acesse sua conta</h2><p class="muted">Use o e-mail e a senha criados pelo administrador.</p>
       <form id="formLogin">
         <label class="field">E-mail<input id="email" type="email" autocomplete="username" placeholder="nome@happymachine.com.br" required></label>
         <label class="field">Senha<input id="password" type="password" autocomplete="current-password" placeholder="••••••••" required></label>
@@ -73,25 +78,45 @@
 <div id="app">
   <header class="top">
     <div class="topRow">
-      <a class="brand" href="#estoque"><img src="/assets/logo.webp" alt="" width="40" height="38"><span>Happy Machine<small>Estoque</small></span></a>
+      <a class="brand" href="#painel" aria-label="Happy Machine Estoque"><img src="/assets/bear.webp" alt="" width="42" height="32"><span><span class="hw"><b>H</b><b>A</b><b>P</b><b>P</b><b>Y</b></span><small>ESTOQUE</small></span></a>
       <nav class="tabs" id="tabs" aria-label="Principal">
         <span class="tabInk" aria-hidden="true"></span>
-        <button class="tab" data-view="estoque" style="--c:var(--red)"><svg class="i"><use href="#i-box"/></svg><span>Estoque</span></button>
-        <button class="tab" data-view="pessoas" style="--c:var(--blue)"><svg class="i"><use href="#i-users"/></svg><span>Pessoas</span></button>
-        <button class="tab" data-view="fotos" style="--c:var(--pink)"><svg class="i"><use href="#i-photo"/></svg><span>Fotos</span><b id="badgeFotos" class="badge hidden"></b></button>
-        <button class="tab" data-view="consertos" style="--c:var(--orange)"><svg class="i"><use href="#i-wrench"/></svg><span>Consertos</span></button>
-        <button class="tab" data-view="manutencao" style="--c:var(--green)"><svg class="i"><use href="#i-gear"/></svg><span>Manutenção Máquinas</span></button>
-        <button class="tab" data-view="historico" style="--c:var(--ink)"><svg class="i"><use href="#i-clock"/></svg><span>Histórico</span></button>
-        <button class="tab hidden" id="navAdmin" data-view="admin" style="--c:var(--ink)"><svg class="i"><use href="#i-shield"/></svg><span>Admin</span></button>
+        <button class="tab" data-view="painel" style="--c:var(--yellow);--ink-c:var(--white);--tc:#121213"><svg class="i"><use href="#i-pulse"/></svg><span>Painel</span></button>
+        <button class="tab" data-view="estoque" style="--c:var(--red-l);--ink-c:var(--red)"><svg class="i"><use href="#i-box"/></svg><span>Estoque</span></button>
+        <button class="tab" data-view="pessoas" style="--c:#7f9bff;--ink-c:var(--blue)"><svg class="i"><use href="#i-users"/></svg><span>Pessoas</span></button>
+        <button class="tab" data-view="fotos" style="--c:var(--pink);--ink-c:var(--pink)"><svg class="i"><use href="#i-photo"/></svg><span>Fotos</span><b id="badgeFotos" class="badge hidden"></b></button>
+        <button class="tab" data-view="consertos" style="--c:var(--orange);--ink-c:var(--orange)"><svg class="i"><use href="#i-wrench"/></svg><span>Consertos</span></button>
+        <button class="tab" data-view="manutencao" style="--c:var(--capri);--ink-c:var(--capri);--tc:#121213"><svg class="i"><use href="#i-gear"/></svg><span>Manutenção Máquinas</span></button>
+        <button class="tab" data-view="historico" style="--c:var(--rosa);--ink-c:var(--purple-l)"><svg class="i"><use href="#i-clock"/></svg><span>Histórico</span></button>
+        <button class="tab hidden" id="navAdmin" data-view="admin" style="--c:var(--ink-2);--ink-c:#4a4a52"><svg class="i"><use href="#i-shield"/></svg><span>Admin</span></button>
       </nav>
       <div class="me"><span class="avatar" id="whoAvatar" aria-hidden="true"></span><b id="whoName"></b><button id="logout" class="btn icon ghost" aria-label="Sair" title="Sair"><svg class="i"><use href="#i-out"/></svg></button></div>
     </div>
   </header>
 
   <main id="main" tabindex="-1">
+    <!-- PAINEL -->
+    <section id="v-painel" class="view" hidden>
+      <div class="head"><div><p class="eyebrow" id="hello">Painel <span class="tagr">ao</span></p><h1>Vivo</h1><p class="muted" id="painelInfo">Onde está cada peça da Happy agora.</p></div>
+        <div class="acts"><button class="btn" data-go="pessoas"><svg class="i"><use href="#i-users"/></svg>Pessoas</button><button class="btn primary" data-go="estoque"><svg class="i"><use href="#i-box"/></svg>Abrir estoque</button></div></div>
+      <div class="marquee" id="ticker" aria-label="Últimas movimentações"><div class="track"></div></div>
+      <div class="stats" id="dashStats"></div>
+      <div class="dash">
+        <div class="panel mapCard">
+          <header><div><h2>Mapa do estoque</h2><p id="mapSub">Peças saindo e voltando, em tempo real</p></div><span class="live">ao vivo</span></header>
+          <svg id="map" viewBox="0 0 1000 620" role="img" aria-label="Mapa de onde estão as peças"></svg>
+          <div class="mapLegend"><span><i style="--c:var(--red-l)"></i>saída</span><span><i style="--c:var(--capri)"></i>devolução / entrada</span><span><i style="--c:var(--orange)"></i>baixa de pessoa</span></div>
+        </div>
+        <div class="side">
+          <div class="panel board"><h3>Precisa repor <small id="lowCount"></small></h3><ul class="bars" id="lowList"></ul></div>
+          <div class="panel board"><h3>Mais movimentadas <small>últimos registros</small></h3><ul class="bars" id="topList"></ul></div>
+        </div>
+      </div>
+    </section>
+
     <!-- ESTOQUE -->
     <section id="v-estoque" class="view" hidden>
-      <div class="head"><div><p class="eyebrow">Estoque central</p><h1>Peças guardadas</h1></div>
+      <div class="head"><div><p class="eyebrow">Peças <span class="tagr">do</span></p><h1>Estoque</h1></div>
         <div class="acts"><button id="btnCsv" class="btn"><svg class="i"><use href="#i-down"/></svg>Exportar</button><button id="btnNew" class="btn primary"><svg class="i"><use href="#i-plus"/></svg>Nova peça</button></div></div>
       <div class="stats" id="estStats"></div>
       <div class="subbar"><div class="subtabs" id="estSub"></div></div>
@@ -106,7 +131,7 @@
 
     <!-- PESSOAS -->
     <section id="v-pessoas" class="view" hidden>
-      <div class="head"><div><p class="eyebrow">Mini estoques</p><h1 id="pesTitle">Pessoas</h1><p id="pesInfo" class="muted"></p></div>
+      <div class="head"><div><p class="eyebrow">Estoque <span class="tagr">de</span></p><h1 id="pesTitle">Pessoas</h1><p id="pesInfo" class="muted"></p></div>
         <div class="acts" id="pesActs"></div></div>
       <div class="subbar"><div class="subtabs" id="pesSub"></div></div>
       <div id="pesBody"></div>
@@ -114,7 +139,7 @@
 
     <!-- FOTOS -->
     <section id="v-fotos" class="view" hidden>
-      <div class="head"><div><p class="eyebrow">Revisão</p><h1>Fotos</h1><p id="fotosInfo" class="muted"></p></div></div>
+      <div class="head"><div><p class="eyebrow">Revisão <span class="tagr">de</span></p><h1>Fotos</h1><p id="fotosInfo" class="muted"></p></div></div>
       <div class="subbar"><div class="subtabs" id="fotoSub"></div></div>
       <datalist id="dlProducts"></datalist>
       <div id="fotoList" class="cols"></div>
@@ -123,7 +148,7 @@
 
     <!-- CONSERTOS -->
     <section id="v-consertos" class="view" hidden>
-      <div class="head"><div><p class="eyebrow">Fora do estoque</p><h1>Consertos</h1><p class="muted">Peças quebradas ficam fora do disponível. Ao consertar, registre a entrada na peça.</p></div>
+      <div class="head"><div><p class="eyebrow">Peças <span class="tagr">em</span></p><h1>Conserto</h1><p class="muted">Peças quebradas ficam fora do disponível. Ao consertar, registre a entrada na peça.</p></div>
         <div class="acts"><button id="btnRepair" class="btn primary"><svg class="i"><use href="#i-plus"/></svg>Registrar peça quebrada</button></div></div>
       <div class="subbar"><div class="subtabs" id="repSub"></div></div>
       <div class="tools"><label class="search"><span class="sr">Buscar</span><svg class="i"><use href="#i-search"/></svg><input id="rq" class="control" type="search" placeholder="Buscar peça ou defeito"></label></div>
@@ -132,7 +157,7 @@
 
     <!-- MANUTENÇÃO -->
     <section id="v-manutencao" class="view" hidden>
-      <div class="head"><div><p class="eyebrow">Novidade</p><h1>Manutenção Máquinas</h1></div></div>
+      <div class="head"><div><p class="eyebrow">Manutenção <span class="tagr">das</span></p><h1>Máquinas</h1></div></div>
       <div class="soon">
         <div class="gears" aria-hidden="true">
           <svg class="g1" viewBox="0 0 24 24"><use href="#i-gear"/></svg>
@@ -147,7 +172,7 @@
 
     <!-- HISTÓRICO -->
     <section id="v-historico" class="view" hidden>
-      <div class="head"><div><p class="eyebrow">Movimentações</p><h1>Histórico</h1><p class="muted">Últimas 300 movimentações.</p></div></div>
+      <div class="head"><div><p class="eyebrow">Registro <span class="tagr">do</span></p><h1>Histórico</h1><p class="muted">Últimas 300 movimentações.</p></div></div>
       <div class="subbar"><div class="subtabs" id="histSub"></div></div>
       <div class="tools"><label class="search"><span class="sr">Buscar</span><svg class="i"><use href="#i-search"/></svg><input id="hq" class="control" type="search" placeholder="Buscar peça, pessoa, destino ou observação"></label></div>
       <div class="panel table"><table><thead><tr><th>Data</th><th>Peça</th><th>Tipo</th><th class="n">Alteração</th><th class="n">Antes</th><th class="n">Depois</th><th>Para / de onde</th><th>Observação</th></tr></thead><tbody id="hbody"></tbody></table></div>
@@ -155,7 +180,7 @@
 
     <!-- ADMIN -->
     <section id="v-admin" class="view" hidden>
-      <div class="head"><div><p class="eyebrow">Equipe</p><h1>Administração</h1><p class="muted">Usuários, exportações e cópia de segurança.</p></div>
+      <div class="head"><div><p class="eyebrow">Equipe <span class="tagr">e</span></p><h1>Acessos</h1><p class="muted">Usuários, exportações e cópia de segurança.</p></div>
         <div class="acts"><button id="btnBackup" class="btn"><svg class="i"><use href="#i-down"/></svg>Cópia dos dados (JSON)</button></div></div>
       <form id="formUser" class="panel userForm">
         <label class="field">Nome<input id="uName" maxlength="100" required></label>
