@@ -454,6 +454,8 @@ class handler(BaseHTTPRequestHandler):
             if path == '/api/galpao/layout' and method == 'POST':
                 if profile['role'] != 'admin': raise APIError('Só o administrador ajusta as marcações do galpão.', 403)
                 return self.respond(save_galpao_layout(self.json_body(), profile['id']))
+            if method == 'POST' and re.fullmatch(r'/api/products/\d+/location', path) and profile['role'] != 'admin':
+                raise APIError('Só o administrador muda a estante das peças.', 403)
             if method == 'GET': return self.get(path, qs, profile)
             if method == 'POST': return self.post(path)
             if method == 'DELETE' and re.fullmatch(r'/api/products/\d+', path):
@@ -720,6 +722,11 @@ class handler(BaseHTTPRequestHandler):
                 raise APIError(e.message if e.status == 429 else 'Senha atual incorreta.', 429 if e.status == 429 else 400) from None
             try: remote('/auth/v1/logout?scope=local', 'POST', token=s['access_token'])
             except (APIError, KeyError): pass
+        def logout_others():
+            # apagar as sessões confirmadas por e-mail é o que corta o acesso; o logout do Supabase é extra
+            remote('/rest/v1/email_login_sessions?' + urllib.parse.urlencode({'user_id': 'eq.' + me, 'session_id': 'neq.' + str(jwt.get('session_id', ''))}), 'DELETE', service=True)
+            try: remote('/auth/v1/logout?scope=others', 'POST', token=self.auth_token)
+            except APIError: pass
         if path == '/api/account/profile':
             name = clean_text(data.get('name'), 100)
             if len(name) < 2: raise APIError('Digite seu nome.')
@@ -728,16 +735,16 @@ class handler(BaseHTTPRequestHandler):
             return self.respond({'ok': True, 'name': name})
         if path == '/api/account/password':
             new = str(data.get('new_password', ''))
-            if len(new) < 10 or len(new) > 72 or not re.search(r'[A-Za-z]', new) or not re.search(r'\d', new):
-                raise APIError('A nova senha precisa ter de 10 a 72 caracteres, com letras e números.')
+            if len(new) < 16 or len(new) > 72 or not re.search(r'[A-Za-z]', new) or not re.search(r'\d', new):
+                raise APIError('A nova senha precisa ter de 16 a 72 caracteres, com letras e números.')
             if new == str(data.get('password', '')): raise APIError('A nova senha precisa ser diferente da atual.')
             check_password()
             remote('/auth/v1/admin/users/' + me, 'PUT', {'password': new}, service=True)
+            logout_others()   # quem tinha a senha antiga perde o acesso nos outros aparelhos
             audit('change_password', {'id': me}); log_access(self, 'senha_alterada', me, profile['email'], session_id=jwt.get('session_id', ''))
             return self.respond({'ok': True})
         if path == '/api/account/logout-others':
-            remote('/auth/v1/logout?scope=others', 'POST', token=self.auth_token)
-            remote('/rest/v1/email_login_sessions?' + urllib.parse.urlencode({'user_id': 'eq.' + me, 'session_id': 'neq.' + str(jwt.get('session_id', ''))}), 'DELETE', service=True)
+            logout_others()
             audit('logout_others', {'id': me}); log_access(self, 'saiu_outros', me, profile['email'], session_id=jwt.get('session_id', ''))
             return self.respond({'ok': True})
         if path == '/api/account/delete':

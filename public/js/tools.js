@@ -30,8 +30,8 @@ export function loadConfig() {
   $('#prefSplash').checked = prefs.get('splash', true); $('#prefCalm').checked = prefs.get('calm', false); $('#prefBig').checked = prefs.get('big', false);
 }
 function strength(pw) {
-  let s = 0; if (pw.length >= 10) s++; if (pw.length >= 14) s++; if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++; if (/\d/.test(pw)) s++; if (/[^A-Za-z0-9]/.test(pw)) s++;
-  const ok = pw.length >= 10 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
+  let s = 0; if (pw.length >= 16) s++; if (pw.length >= 20) s++; if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++; if (/\d/.test(pw)) s++; if (/[^A-Za-z0-9]/.test(pw)) s++;
+  const ok = pw.length >= 16 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
   return { s: ok ? s : Math.min(s, 1), ok };
 }
 function initConfig() {
@@ -43,13 +43,13 @@ function initConfig() {
     const { s, ok } = strength($('#pwNew').value), L = ['muito fraca', 'fraca', 'razoável', 'boa', 'forte', 'muito forte'];
     $('#pwMeter').style.width = ($('#pwNew').value ? Math.max(12, s / 5 * 100) : 0) + '%';
     $('#pwMeter').style.background = !ok ? 'var(--red-l)' : s >= 4 ? 'var(--capri)' : 'var(--orange)';
-    $('#pwHint').textContent = $('#pwNew').value ? `Senha ${L[s]}${ok ? '' : ': use 10 ou mais caracteres, com letras e números'}.` : 'Use 10 ou mais caracteres, misturando letras e números.';
+    $('#pwHint').textContent = $('#pwNew').value ? `Senha ${L[s]}${ok ? '' : ': use 16 ou mais caracteres, com letras e números'}.` : 'Use 16 ou mais caracteres, misturando letras e números.';
   });
   $('#formPass').onsubmit = busy($('#formPass'), async () => {
     if ($('#pwNew').value !== $('#pwNew2').value) { $('#pwNew2').focus(); throw new Error('As duas senhas novas não são iguais.'); }
-    if (!strength($('#pwNew').value).ok) throw new Error('A nova senha precisa ter 10 ou mais caracteres, com letras e números.');
+    if (!strength($('#pwNew').value).ok) throw new Error('A nova senha precisa ter 16 ou mais caracteres, com letras e números.');
     await api('/api/account/password', { json: { password: $('#pwOld').value, new_password: $('#pwNew').value } });
-    $('#formPass').reset(); $('#pwMeter').style.width = '0'; toast('Senha alterada. Use a nova no próximo login.');
+    $('#formPass').reset(); $('#pwMeter').style.width = '0'; toast('Senha alterada. Os outros aparelhos foram desconectados.');
   });
   $('#btnOthers').onclick = async () => {
     try { await api('/api/account/logout-others', { json: {} }); toast('Pronto. Os outros aparelhos foram desconectados.'); } catch (e) { toast(e.message, true); }

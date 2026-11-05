@@ -106,11 +106,12 @@ class API(unittest.TestCase):
     def test_conta_nome_e_senha(self):
         self.assertEqual(self.j('/api/account/profile', 'POST', {'name': 'Paulo Silva'})[0], 200)
         self.assertEqual(self.fake.profile['name'], 'Paulo Silva')
-        s, r = self.j('/api/account/password', 'POST', {'password': 'senha-errada', 'new_password': 'NovaSenha123'})
+        s, r = self.j('/api/account/password', 'POST', {'password': 'senha-errada', 'new_password': 'NovaSenhaForte2026'})
         self.assertEqual((s, r['error']), (400, 'Senha atual incorreta.'))
         self.assertEqual(self.j('/api/account/password', 'POST', {'password': 'x', 'new_password': 'curta1'})[0], 400)
-        self.assertEqual(self.j('/api/account/password', 'POST', {'password': 'atual', 'new_password': 'NovaSenha123'})[0], 200)
-        self.assertEqual(self.fake.account_ops[-1], ('PUT', {'password': 'NovaSenha123'}))
+        self.assertEqual(self.j('/api/account/password', 'POST', {'password': 'atual', 'new_password': 'SoDezLetra1'})[0], 400)   # mínimo 16
+        self.assertEqual(self.j('/api/account/password', 'POST', {'password': 'atual', 'new_password': 'NovaSenhaForte2026'})[0], 200)
+        self.assertEqual(self.fake.account_ops[-1], ('PUT', {'password': 'NovaSenhaForte2026'}))
 
     def test_excluir_conta(self):
         s, r = self.j('/api/account/delete', 'POST', {'password': 'atual', 'confirm': 'EXCLUIR'})
@@ -130,6 +131,8 @@ class API(unittest.TestCase):
         self.assertEqual(next(p for p in self.j('/api/boot')[1]['products'] if p['id'] == 2)['location'], 'F')
         self.assertEqual(self.j('/api/products/2/location', 'POST', {'location': 'Z'})[0], 400)
         self.assertEqual(self.j('/api/products/99/location', 'POST', {'location': 'A'})[0], 404)
+        self.fake.profile['role'] = 'operator'; api._sessions.clear()
+        self.assertEqual(self.j('/api/products/2/location', 'POST', {'location': 'A'})[0], 403)   # estante: só o administrador
 
     def test_fotos_do_galpao_exigem_login(self):
         self.assertEqual(self.req('/api/galpao/A1.jpg', token=False)[0], 401)
