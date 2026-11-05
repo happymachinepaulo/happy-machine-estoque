@@ -17,7 +17,7 @@ def base():
 
 class API(unittest.TestCase):
     def setUp(self):
-        self.fake = Fake(*base()); api._sessions.clear(); api._signed.clear()
+        self.fake = Fake(*base()); api._sessions.clear(); api._signed.clear(); api._opened.clear()
         self.old = api.remote; api.remote = self.fake.remote
         self.srv = ThreadingHTTPServer(('127.0.0.1', 0), api.handler); threading.Thread(target=self.srv.serve_forever, daemon=True).start()
         self.port = self.srv.server_address[1]
@@ -122,6 +122,56 @@ class API(unittest.TestCase):
 
     def test_sair_dos_outros_aparelhos(self):
         self.assertEqual(self.j('/api/account/logout-others', 'POST', {})[0], 200)
+
+
+    def test_estante_da_peca(self):
+        s, d = self.j('/api/products/2/location', 'POST', {'location': 'f'})
+        self.assertEqual((s, d['location']), (200, 'F'))
+        self.assertEqual(next(p for p in self.j('/api/boot')[1]['products'] if p['id'] == 2)['location'], 'F')
+        self.assertEqual(self.j('/api/products/2/location', 'POST', {'location': 'Z'})[0], 400)
+        self.assertEqual(self.j('/api/products/99/location', 'POST', {'location': 'A'})[0], 404)
+
+    def test_fotos_do_galpao_exigem_login(self):
+        self.assertEqual(self.req('/api/galpao/A1.jpg', token=False)[0], 401)
+        s, raw = self.req('/api/galpao/tA1.jpg')
+        self.assertEqual((s, raw[:2]), (200, b'\xff\xd8'))
+        self.assertEqual(self.req('/api/galpao/..%2Fapi.jpg')[0], 404)
+        self.assertEqual(self.req('/api/galpao/Z9.jpg')[0], 404)
+        self.fake.profile['role'] = 'operator'; api._sessions.clear()
+        self.assertEqual(self.req('/api/galpao/tA1.jpg')[0], 403)      # provisório: só o administrador
+
+    def test_logs_de_acesso(self):
+        o = {'Origin': 'http://app.test', 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1', 'X-Forwarded-For': '200.1.2.3, 10.0.0.1'}
+        self.assertEqual(self.j('/api/auth/login', 'POST', {'email': 'demo@happymachine.test', 'password': 'senha-errada'}, token=False, headers=o)[0], 401)
+        s, d = self.j('/api/auth/login', 'POST', {'email': 'demo@happymachine.test', 'password': 'ok'}, token=False, headers=o); self.assertEqual(s, 200)
+        self.assertEqual(self.j('/api/auth/verify', 'POST', {'challenge': d['challenge'], 'code': '111111'}, token=False, headers=o)[0], 400)
+        self.assertEqual(self.j('/api/auth/verify', 'POST', {'challenge': d['challenge'], 'code': '000000'}, token=False, headers=o)[0], 200)
+        self.req('/api/boot', headers=o); self.req('/api/boot', headers=o)      # recarregar não duplica "abriu"
+        ev = [(a['event'], a['ok']) for a in self.fake.access]
+        self.assertEqual(ev, [('senha_errada', False), ('senha_ok', True), ('codigo_errado', False), ('entrou', True), ('abriu', True)])
+        self.assertEqual((self.fake.access[3]['device'], self.fake.access[3]['ip']), ('iPhone · Safari', '200.1.2.3'))
+        s, d = self.j('/api/admin/logs'); self.assertEqual((s, d['ready'], len(d['access'])), (200, True, 5))
+        self.fake.profile['role'] = 'operator'; api._sessions.clear()
+        self.assertEqual(self.req('/api/admin/logs')[0], 403)
+
+    def test_marcacoes_do_galpao(self):
+        self.assertEqual(self.j('/api/galpao/layout'), (200, {'layout': None}))
+        s, d = self.j('/api/galpao/layout', 'POST', {'shelves': {'A': [[1, 2, 10, 20]], 'K': []}})
+        self.assertEqual((s, d['layout']['shelves']), (200, {'A': [[1.0, 2.0, 10.0, 20.0]]}))
+        self.assertEqual(self.j('/api/galpao/layout')[1]['layout']['shelves']['A'], [[1.0, 2.0, 10.0, 20.0]])
+        self.assertEqual(self.j('/api/galpao/layout', 'POST', {'shelves': {'Z': [[1, 2, 3, 4]]}})[0], 400)
+        self.assertEqual(self.j('/api/galpao/layout', 'POST', {'shelves': {'A': [[95, 2, 10, 4]]}})[0], 400)
+        self.assertEqual(self.req('/api/galpao/pano.jpg')[0], 200)
+        self.fake.profile['role'] = 'operator'; api._sessions.clear()
+        self.assertEqual(self.j('/api/galpao/layout', 'POST', {'shelves': {}})[0], 403)
+
+    def test_nome_do_aparelho(self):
+        d = api.device_name
+        self.assertEqual(d('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'), 'Windows · Chrome')
+        self.assertEqual(d('Mozilla/5.0 (Linux; Android 14; SM-A546E Build/UP1A) AppleWebKit/537.36 Chrome/130.0 Mobile Safari/537.36'), 'Android (SM-A546E) · Chrome')
+        self.assertEqual(d('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17.5 Safari/605.1.15'), 'Mac · Safari')
+        self.assertEqual(d('Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/130.0 Safari/537.36 Edg/130.0'), 'Windows · Edge')
+        self.assertEqual(d(''), 'Desconhecido')
 
 
 if __name__ == '__main__': unittest.main()

@@ -49,6 +49,7 @@
 <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12Z"/></symbol>
 <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M3 4h2l2.4 11h11l2-8H6.2"/></symbol>
 <symbol id="i-devices" viewBox="0 0 24 24"><rect x="3" y="4" width="13" height="10" rx="1.5"/><path d="M7 18h5"/><rect x="17" y="9" width="4" height="10" rx="1"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5L9 4Z"/><path d="M9 4v13.5M15 6.5V20"/></symbol>
 <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></symbol>
 </defs></svg>
 
@@ -89,12 +90,14 @@
         <span class="tabInk" aria-hidden="true"></span>
         <button class="tab" data-view="painel" style="--c:var(--white);--ink-c:var(--white);--tc:#141416"><svg class="i"><use href="#i-pulse"/></svg><span>Painel</span></button>
         <button class="tab" data-view="estoque" style="--c:var(--red-l);--ink-c:var(--red)"><svg class="i"><use href="#i-box"/></svg><span>Estoque</span></button>
+        <button class="tab hidden" id="navGalpao" data-view="galpao" style="--c:var(--yellow);--ink-c:var(--yellow);--tc:#141416"><svg class="i"><use href="#i-map"/></svg><span>Galpão</span></button>
         <button class="tab" data-view="pessoas" style="--c:var(--blue-l);--ink-c:var(--blue)"><svg class="i"><use href="#i-users"/></svg><span>Pessoas</span></button>
         <button class="tab" data-view="fotos" style="--c:var(--pink);--ink-c:var(--pink)"><svg class="i"><use href="#i-photo"/></svg><span>Fotos</span><b id="badgeFotos" class="badge hidden"></b></button>
         <button class="tab" data-view="consertos" style="--c:var(--orange);--ink-c:var(--orange)"><svg class="i"><use href="#i-wrench"/></svg><span>Consertos</span></button>
         <button class="tab" data-view="manutencao" title="Manutenção Máquinas" style="--c:var(--capri);--ink-c:var(--capri);--tc:#141416"><svg class="i"><use href="#i-gear"/></svg><span>Máquinas</span></button>
         <button class="tab" data-view="historico" style="--c:var(--rosa);--ink-c:var(--purple-l)"><svg class="i"><use href="#i-clock"/></svg><span>Histórico</span></button>
         <button class="tab hidden" id="navAdmin" data-view="admin" style="--c:var(--ink-2);--ink-c:#55555f"><svg class="i"><use href="#i-shield"/></svg><span>Admin</span></button>
+        <button class="tab hidden" id="navLogs" data-view="logs" title="Logs de acesso" style="--c:var(--capri);--ink-c:var(--capri);--tc:#141416"><svg class="i"><use href="#i-list"/></svg><span>Logs</span></button>
         <span class="sep" aria-hidden="true"></span>
         <button class="tab" data-view="config" title="Configurações" style="--c:var(--ink-2);--ink-c:var(--white);--tc:#141416"><svg class="i"><use href="#i-sliders"/></svg><span>Ajustes</span></button>
       </nav>
@@ -172,6 +175,13 @@
     </section>
 
     <!-- MANUTENÇÃO -->
+    <section id="v-galpao" class="view" hidden>
+      <div class="head"><div><h1>Galpão</h1><p class="muted">A foto do galpão de verdade. Toque numa estante para entrar nela e depois toque na peça.</p></div></div>
+      <div class="tools"><label class="search"><span class="sr">Onde está</span><svg class="i"><use href="#i-search"/></svg><input id="gQ" class="control" type="search" placeholder="Onde está? Digite o nome da peça" autocomplete="off"></label></div>
+      <div id="gFound" class="gFound glass" hidden></div>
+      <div class="galpao"><div id="plan" class="plan glass"></div><aside id="shelfPanel" class="shelfPanel glass" aria-live="polite" hidden></aside></div>
+    </section>
+
     <section id="v-manutencao" class="view" hidden>
       <div class="head"><div><h1>Manutenção das máquinas</h1></div></div>
       <div class="soon">
@@ -205,6 +215,17 @@
       </form>
       <div id="cred" class="warnbox hidden"><div><b>Conta criada: <span id="credEmail"></span></b><br>Senha (aparece só agora): <code id="credPass"></code></div><button id="credOk" class="btn sm" type="button">Já guardei</button></div>
       <div class="panel table"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Permissão</th><th>Acesso</th><th></th></tr></thead><tbody id="ubody"></tbody></table></div>
+    </section>
+    <!-- LOGS (só administrador) -->
+    <section id="v-logs" class="view" hidden>
+      <div class="head"><div><h1>Logs</h1><p class="muted">Só você vê esta página. Quem entrou, com qual conta, de qual aparelho e de onde, e o que mudou.</p></div>
+        <div class="acts"><button id="logRefresh" class="btn" type="button"><svg class="i"><use href="#i-back"/></svg>Atualizar</button></div></div>
+      <div id="logWarn" class="warnbox hidden"><div><b>Os acessos ainda não estão sendo gravados.</b><br>Rode o arquivo <code>supabase/020_logs_acesso.sql</code> no SQL Editor do Supabase. As alterações no estoque já aparecem abaixo.</div></div>
+      <div class="stats" id="logStats"></div>
+      <div class="panel board lgPeople"><header><div><h2>Quem está usando</h2><p>Cada conta e os aparelhos de onde ela entrou.</p></div></header><div id="logPeople" class="lgGrid"></div></div>
+      <div class="subbar"><div class="subtabs" id="logSub"></div></div>
+      <div class="tools"><label class="search"><span class="sr">Buscar</span><svg class="i"><use href="#i-search"/></svg><input id="logQ" class="control" type="search" placeholder="Buscar conta, aparelho, IP, cidade ou peça"></label></div>
+      <div class="panel table lgTable"><table><thead id="logHead"></thead><tbody id="logBody"></tbody></table></div>
     </section>
     <!-- CONFIGURAÇÕES -->
     <section id="v-config" class="view" hidden>
@@ -274,6 +295,7 @@
     <div class="detail"><div id="dGal" class="gal"></div>
       <div class="dside">
         <div><div id="dQty" class="big"></div><div id="dMin" class="muted"></div></div>
+        <label class="locRow adminOnly"><svg class="i"><use href="#i-map"/></svg><span>Estante</span><select id="dLoc" class="control"></select></label>
         <div id="dHolders" class="holderPills"></div>
         <div id="dWarn" class="warnbox hidden"><span>Confira o nome e a quantidade para incluir esta peça no total.</span><button id="dConfirm" class="btn sm primary">Confirmar peça</button></div>
         <div id="dNotes" class="notes"></div>

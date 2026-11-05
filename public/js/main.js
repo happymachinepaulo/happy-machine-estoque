@@ -10,11 +10,15 @@ import * as historico from './historico.js';
 import * as admin from './admin.js';
 import * as move from './move.js';
 import * as tools from './tools.js';
+import * as galpao from './galpao.js';
+import * as logs from './logs.js';
 
-const views = { painel: painel.load, estoque: null, pessoas: pessoas.load, fotos: revisar.load, consertos: consertos.load, manutencao: null, historico: historico.load, admin: admin.load, config: tools.loadConfig };
+const views = { painel: painel.load, estoque: null, galpao: galpao.load, pessoas: pessoas.load, fotos: revisar.load, consertos: consertos.load, manutencao: null, historico: historico.load, admin: admin.load, logs: logs.load, config: tools.loadConfig };
 const order = Object.keys(views);
-const titles = { painel: 'Painel', estoque: 'Estoque', pessoas: 'Pessoas', fotos: 'Fotos', consertos: 'Consertos', manutencao: 'Manutenção Máquinas', historico: 'Histórico', admin: 'Admin', config: 'Configurações' };
+const titles = { painel: 'Painel', estoque: 'Estoque', galpao: 'Galpão', pessoas: 'Pessoas', fotos: 'Fotos', consertos: 'Consertos', manutencao: 'Manutenção Máquinas', historico: 'Histórico', admin: 'Admin', logs: 'Logs', config: 'Configurações' };
 let inited = false, currentView = null;
+/* abas só da conta administradora (o Galpão ainda é provisório) */
+const ADMIN_ONLY = ['admin', 'logs', 'galpao'];
 
 function moveInk() {
   const tabs = $('#tabs'), act = tabs.querySelector('[aria-current=page]'), ink = tabs.querySelector('.tabInk');
@@ -31,7 +35,7 @@ function moveInk() {
 }
 
 function show() {
-  let v = location.hash.slice(1); if (!v) v = prefs.get('home', 'painel'); if (!(v in views) || (v === 'admin' && state.me?.role !== 'admin')) v = 'painel';
+  let v = location.hash.slice(1); if (!v) v = prefs.get('home', 'painel'); if (!(v in views) || (ADMIN_ONLY.includes(v) && state.me?.role !== 'admin')) v = 'painel';
   const back = currentView && order.indexOf(v) < order.indexOf(currentView);
   $$('main > section').forEach(s => {
     const on = s.id === 'v-' + v;
@@ -51,13 +55,16 @@ function who() {
   const name = state.me?.name || state.me?.email || '';
   $('#whoName').textContent = name; $('#whoAvatar').textContent = initials(name); tools.who();
   $('#navAdmin').classList.toggle('hidden', state.me?.role !== 'admin');
+  $('#navLogs').classList.toggle('hidden', state.me?.role !== 'admin');
+  $('#navGalpao').classList.toggle('hidden', state.me?.role !== 'admin');
+  document.documentElement.classList.toggle('isAdmin', state.me?.role === 'admin');
 }
 
 async function ready() {
   if (!inited) {
     inited = true;
     move.init({ reload: estoque.reload });
-    estoque.init(); painel.init(); pessoas.init(); revisar.init(); consertos.init(); historico.init(); admin.init(); tools.init();
+    estoque.init(); painel.init(); pessoas.init(); revisar.init(); consertos.init(); historico.init(); admin.init(); logs.init(); tools.init();
     $$('.tab').forEach(b => b.onclick = () => { location.hash = b.dataset.view; });
     $('#logout').onclick = signOut;
     addEventListener('hashchange', show);
@@ -69,7 +76,8 @@ async function ready() {
   who(); show();
   await estoque.reload(false);
   who(); moveInk();
-  if (location.hash === '#admin' && state.me?.role !== 'admin') location.hash = 'estoque';
+  if (ADMIN_ONLY.includes(location.hash.slice(1)) && state.me?.role !== 'admin') location.hash = 'estoque';
+  else if (ADMIN_ONLY.includes(location.hash.slice(1)) && currentView !== location.hash.slice(1)) show();   // a conta só fica conhecida depois do carregamento
 }
 /* abertura: HAPPY acende letra por letra como neon (uma vez por sessão) */
 function splash() {

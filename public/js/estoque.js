@@ -1,10 +1,11 @@
 import { $, esc, fold, n, icon, api, download, toast, open, debounce, confirmBox, zoom, prepareImage, pickPhoto, fmtDate, kindLabel, subtabs, countUp, personColor, initials } from './core.js';
-import { state, setData, subscribe } from './state.js';
+import { state, setData, subscribe, patch } from './state.js';
 import { openMove } from './move.js';
+import { shelfOptions, shelf } from './shelves.js';
 
 const F = { q: '', cat: '', chip: 'todas', sort: 'name', list: false };
 try { F.list = localStorage.getItem('hm-list') === '1'; } catch {}
-let current = null, photoPick = null, reviewPhoto = null, loading = false, lastStats = {};
+let current = null, photoPick = null, reviewPhoto = null, loading = false, lastStats = {}, pendingLoc = '';
 
 const isPending = p => p.review_status === 'pendente';
 const isUnknown = p => isPending(p) && p.quantity === 0 && !p.broken;
@@ -18,7 +19,7 @@ function qtyTag(p) {
   return `<div class="qty ${cls}"><b>${n(p.quantity)}</b><span>${unitLabel(p)}${isPending(p) ? ' · conferir' : ''}</span></div>`;
 }
 const card = (p, i) => `<button class="card" data-id="${p.id}" style="--i:${i}" aria-label="${esc(p.name)}, ${p.quantity} ${unitLabel(p)}">
-  <div class="ph">${p.photo ? `<img src="${esc(p.photo)}" alt="" loading="lazy" decoding="async" width="400" height="300">` : `<div class="none">${icon('photo')}Sem foto</div>`}${qtyTag(p)}${p.photo_count > 1 ? `<span class="tag">${p.photo_count} fotos</span>` : ''}${p._out ? `<span class="tag withp" title="${n(p._out)} com pessoas">${icon('users')}${n(p._out)}</span>` : ''}</div>
+  <div class="ph">${p.photo ? `<img src="${esc(p.photo)}" alt="" loading="lazy" decoding="async" width="400" height="300">` : `<div class="none">${icon('photo')}Sem foto</div>`}${qtyTag(p)}${p.photo_count > 1 ? `<span class="tag">${p.photo_count} fotos</span>` : ''}${p.location && state.me?.role === 'admin' ? `<span class="tag loc" title="Estante ${esc(p.location)}">${icon('map')}${esc(p.location)}</span>` : ''}${p._out ? `<span class="tag withp" title="${n(p._out)} com pessoas">${icon('users')}${n(p._out)}</span>` : ''}</div>
   <div class="cbody"><div class="cat"><span>${esc(p.category || 'Sem categoria')}</span><span>#${p.id}</span></div><h3>${esc(p.name)}</h3></div></button>`;
 
 const CHIPS = [['todas', 'Todas', 'var(--red-l)'], ['conferir', 'A conferir', 'var(--orange)'], ['baixo', 'Estoque baixo', 'var(--red-l)'], ['pessoas', 'Com pessoas', 'var(--blue)'], ['semfoto', 'Sem foto', 'var(--pink)']];
@@ -73,6 +74,7 @@ async function openDetail(id) {
     $('#dQty').innerHTML = isUnknown(p) ? 'A contar' : `<span data-count="${p.quantity}">${n(p.quantity)}</span><small>${bigUnit(p)} no estoque</small>`;
     $('#dMin').textContent = p.min_quantity > 0 ? `Estoque mínimo: ${p.min_quantity}` : 'Sem estoque mínimo';
     $('#dHolders').innerHTML = p._with.length ? p._with.map((w, i) => `<span style="animation-delay:${i * 60}ms;background:color-mix(in srgb,${personColor(w.holder.id)} 22%,transparent);color:#fff;border:1px solid color-mix(in srgb,${personColor(w.holder.id)} 60%,transparent)"><i style="background:${personColor(w.holder.id)}">${esc(initials(w.holder.name))}</i>${esc(w.holder.name)}: ${n(w.quantity)}</span>`).join('') : '';
+    $('#dLoc').innerHTML = shelfOptions(listed?.location ?? p.location ?? '');
     $('#dWarn').classList.toggle('hidden', p.review_status !== 'pendente');
     $('#dNotes').textContent = p.notes || 'Sem observações.';
     gallery(p, 0);
@@ -100,13 +102,21 @@ export function historyRows(rows, withName = true) {
 
 /* ── formulário ── */
 function resetForm() {
-  $('#formProduct').reset(); $('#pId').value = ''; reviewPhoto = null; photoPick.clear(); $('#pFile').closest('div').classList.remove('hidden');
+  pendingLoc = ''; $('#formProduct').reset(); $('#pId').value = ''; reviewPhoto = null; photoPick.clear(); $('#pFile').closest('div').classList.remove('hidden');
   $('#pQtyWrap').classList.remove('hidden'); $('#pPhotoWrap').classList.remove('hidden'); $('#pTitle').textContent = 'Nova peça'; $('#pSub').textContent = 'Foto, nome e quantidade.';
 }
 export function newFromPhoto(photo, suggestion) {
   resetForm(); reviewPhoto = photo.id; $('#pTitle').textContent = 'Criar peça com esta foto'; $('#pSub').textContent = 'Identifique a peça e informe a quantidade contada.';
   $('#pName').value = suggestion.name || ''; $('#pCat').value = suggestion.category || ''; $('#pNotes').value = photo.review_note || ''; $('#pQty').value = '';
   $('#pPreview').src = photo.url; $('#pPreview').classList.remove('hidden'); $('#pFile').closest('div').classList.add('hidden'); open($('#dProduct')); $('#pName').focus();
+}
+/* cadastro a partir de uma peça vista na foto do galpão: já vem com nome, recorte da foto e estante */
+export function newWithCrop(file, { name = '', location = '' } = {}) {
+  resetForm(); pendingLoc = location;
+  $('#pTitle').textContent = 'Cadastrar peça vista no galpão'; $('#pSub').textContent = `${location ? `Estante ${location} · ` : ''}Confira o nome e informe a quantidade contada.`;
+  $('#pName').value = name; $('#pQty').value = '';
+  if (file) photoPick.set(file);
+  open($('#dProduct')); $('#pName').focus(); $('#pName').select();
 }
 async function saveProduct(e) {
   e.preventDefault(); const id = $('#pId').value, btn = e.submitter; btn.disabled = true;
@@ -117,7 +127,8 @@ async function saveProduct(e) {
     if (reviewPhoto) fd.set('existing_photo_id', reviewPhoto);
     else if (photoPick.file) { const { photo, thumb } = await prepareImage(photoPick.file); fd.set('photo', photo, 'foto.jpg'); if (thumb) fd.set('thumb', thumb, 'thumb.jpg'); }
     const r = await api(id ? `/api/products/${id}/update` : '/api/products', { method: 'POST', body: fd });
-    $('#dProduct').close(); toast(id ? 'Peça atualizada' : 'Peça cadastrada');
+    if (!id && pendingLoc && r?.id) { try { await api(`/api/products/${r.id}/location`, { json: { location: pendingLoc } }); } catch {} }
+    $('#dProduct').close(); toast(id ? 'Peça atualizada' : pendingLoc ? `Peça cadastrada na estante ${pendingLoc}` : 'Peça cadastrada'); pendingLoc = '';
     const wasReview = reviewPhoto; reviewPhoto = null;
     await reload(); document.dispatchEvent(new CustomEvent('stock:changed'));
     if (wasReview) openDetail(r.id); else if (id) openDetail(+id);
@@ -145,6 +156,11 @@ export function init() {
   $('#bDel').onclick = async () => {
     if (!await confirmBox(`Excluir "${current.name}"?`, 'O histórico da peça será apagado. As fotos voltam para a revisão.', 'Excluir')) return;
     try { await api('/api/products/' + current.id, { method: 'DELETE' }); $('#dDetail').close(); toast('Peça excluída'); await reload(); document.dispatchEvent(new CustomEvent('stock:changed')); } catch (e) { toast(e.message, true); }
+  };
+  $('#dLoc').onchange = async e => {
+    const loc = e.target.value;
+    try { await api(`/api/products/${current.id}/location`, { json: { location: loc } }); current.location = loc; patch(current.id, { location: loc }); toast(loc ? `Guardada na estante ${loc} · ${shelf(loc).name}` : 'Peça sem estante'); }
+    catch (err) { toast(err.message, true); }
   };
   $('#dConfirm').onclick = async () => { try { await api(`/api/products/${current.id}/confirm`, { method: 'POST' }); toast('Peça confirmada'); await openDetail(current.id); reload(); } catch (e) { toast(e.message, true); } };
   $('#dGal').onclick = async e => {

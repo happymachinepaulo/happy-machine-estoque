@@ -69,15 +69,15 @@ function initConfig() {
 }
 
 /* ── busca rápida ── */
-const PAGES = [['painel', 'Painel', 'pulse'], ['estoque', 'Estoque', 'box'], ['pessoas', 'Pessoas', 'users'], ['fotos', 'Revisar fotos', 'photo'], ['consertos', 'Consertos', 'wrench'], ['manutencao', 'Manutenção das máquinas', 'gear'], ['historico', 'Histórico', 'clock'], ['config', 'Configurações', 'sliders']];
+const PAGES = [['painel', 'Painel', 'pulse'], ['estoque', 'Estoque', 'box'], ['galpao', 'Galpão (foto do estoque)', 'map'], ['pessoas', 'Pessoas', 'users'], ['fotos', 'Revisar fotos', 'photo'], ['consertos', 'Consertos', 'wrench'], ['manutencao', 'Manutenção das máquinas', 'gear'], ['historico', 'Histórico', 'clock'], ['config', 'Configurações', 'sliders']];
 let qsSel = 0;
 function qsRender() {
   const q = fold($('#qsInput').value.trim());
   const prods = (q ? state.products.filter(p => p._s.includes(q) || String(p.id) === q) : [...state.products].sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))).slice(0, 8);
   const people = activeHolders().filter(h => !q || fold(h.name).includes(q)).slice(0, 4);
-  const pages = PAGES.filter(([k, l]) => (k !== 'admin') && (!q || fold(l).includes(q))).slice(0, q ? 4 : 0);
+  const pages = PAGES.filter(([k, l]) => (k !== 'galpao' || state.me?.role === 'admin') && (!q || fold(l).includes(q))).slice(0, q ? 4 : 0);
   const sec = (t, items) => items.length ? `<p class="qsSec">${t}</p>${items.join('')}` : '';
-  const html = sec(q ? 'Peças' : 'Peças recentes', prods.map(p => `<button class="qsItem" data-pid="${p.id}" role="option"><span class="th">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : icon('box')}</span><span class="tx"><b>${esc(p.name)}</b><small>${esc(p.category || 'Sem categoria')} · #${p.id}${p._out ? ` · ${n(p._out)} com pessoas` : ''}</small></span><em class="${isLow(p) ? 'low' : ''}">${isPending(p) && !p.quantity ? '?' : n(p.quantity)} ${unit(p)}</em></button>`))
+  const html = sec(q ? 'Peças' : 'Peças recentes', prods.map(p => `<button class="qsItem" data-pid="${p.id}" role="option"><span class="th">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : icon('box')}</span><span class="tx"><b>${esc(p.name)}</b><small>${esc(p.category || 'Sem categoria')} · #${p.id}${p.location && state.me?.role === 'admin' ? ` · Estante ${esc(p.location)}` : ''}${p._out ? ` · ${n(p._out)} com pessoas` : ''}</small></span><em class="${isLow(p) ? 'low' : ''}">${isPending(p) && !p.quantity ? '?' : n(p.quantity)} ${unit(p)}</em></button>`))
     + sec('Pessoas', people.map(h => `<button class="qsItem" data-holder="${h.id}" role="option"><span class="th av" style="background:${personColor(h.id)}">${esc(initials(h.name))}</span><span class="tx"><b>${esc(h.name)}</b><small>${h.items.length} tipos de peça · ${n(h.items.reduce((a, i) => a + i.quantity, 0))} unidades</small></span></button>`))
     + sec('Ir para', pages.map(([k, l, ic]) => `<button class="qsItem" data-go="${k}" role="option"><span class="th">${icon(ic)}</span><span class="tx"><b>${l}</b></span></button>`));
   $('#qsList').innerHTML = html || `<p class="qsNone">Nada encontrado para “${esc($('#qsInput').value)}”.</p>`;

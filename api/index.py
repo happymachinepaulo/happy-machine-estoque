@@ -12,6 +12,8 @@ from email.parser import BytesParser
 from email.policy import default
 
 MAX_BODY = 4_000_000
+GALPAO = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'galpao')   # fotos das estantes (só com login)
+SHELVES = ('',) + tuple('ABCDEFGHIJK')
 SESSION_TTL = 30          # segundos que uma sessão validada fica em cache
 SIGN_TTL = 3600           # validade das URLs assinadas de fotos
 SIGN_REUSE = 3000         # reaproveita URL assinada por este tempo
@@ -206,6 +208,85 @@ def forget_session(token):
         _sessions.pop(hashlib.sha256(token.encode()).hexdigest(), None)
 
 
+# ───────────────────────── Galpão: onde cada estante está no panorama ─────────────────────────
+def galpao_layout():
+    """Marcações salvas pelo administrador (None = usar as marcações padrão do site)."""
+    try: r = remote('/rest/v1/app_settings?' + urllib.parse.urlencode({'key': 'eq.galpao_layout', 'select': 'value'}), service=True)
+    except APIError: return None
+    return r[0]['value'] if r else None
+
+
+def save_galpao_layout(body, actor):
+    shelves = body.get('shelves') if isinstance(body, dict) else None
+    if not isinstance(shelves, dict) or set(shelves) - set(SHELVES[1:]): raise APIError('Marcações inválidas.')
+    clean = {}
+    for k, rects in shelves.items():
+        if not isinstance(rects, list) or len(rects) > 4: raise APIError('Marcações inválidas.')
+        out = []
+        for r in rects:
+            if not isinstance(r, list) or len(r) != 4 or not all(isinstance(v, (int, float)) and 0 <= v <= 100 for v in r): raise APIError('Marcações inválidas.')
+            x, y, w, h = (round(float(v), 2) for v in r)
+            if w < .5 or h < .5 or x + w > 100.01 or y + h > 100.01: raise APIError('Marcações inválidas.')
+            out.append([x, y, w, h])
+        if out: clean[k] = out
+    value = {'v': 1, 'shelves': clean}
+    try:
+        remote('/rest/v1/app_settings?on_conflict=key', 'POST', {'key': 'galpao_layout', 'value': value}, service=True, headers={'Prefer': 'resolution=merge-duplicates'})
+    except APIError: raise APIError('Rode a migração 020 no Supabase para salvar as marcações.', 503) from None
+    try: remote('/rest/v1/audit_log', 'POST', {'action': 'galpao_layout', 'after_data': json.dumps({'estantes': sorted(clean)}), 'actor_id': actor}, service=True)
+    except APIError: pass
+    return {'ok': True, 'layout': value}
+
+
+# ───────────────────────── Logs de acesso ─────────────────────────
+def device_name(ua):
+    """Nome curto e legível do aparelho a partir do User-Agent: "iPhone · Safari", "Windows · Chrome"."""
+    ua = ua or ''
+    if not ua: return 'Desconhecido'
+    if re.search(r'bot|crawl|spider|curl|python|wget|headless', ua, re.I): return 'Robô / script'
+    m = re.search(r'Android[^;)]*;\s*([^;)]+?)(?:\s+Build|\))', ua)
+    if 'iPhone' in ua: osn = 'iPhone'
+    elif 'iPad' in ua or ('Macintosh' in ua and 'Mobile' in ua): osn = 'iPad'
+    elif 'Android' in ua:
+        model = m.group(1).strip() if m else ''
+        osn = 'Android' + (f' ({model})' if model and model.upper() not in ('K', 'MOBILE', 'WV') else '')
+    elif 'Windows' in ua: osn = 'Windows'
+    elif 'Mac OS X' in ua or 'Macintosh' in ua: osn = 'Mac'
+    elif 'CrOS' in ua: osn = 'Chromebook'
+    elif 'Linux' in ua: osn = 'Linux'
+    else: osn = 'Outro'
+    for pat, name in ((r'Edg(?:e|A|iOS)?/', 'Edge'), (r'OPR/|Opera', 'Opera'), (r'SamsungBrowser/', 'Samsung Internet'), (r'Firefox/|FxiOS/', 'Firefox'),
+                      (r'CriOS/|Chrome/', 'Chrome'), (r'Safari/', 'Safari')):
+        if re.search(pat, ua): return f'{osn} · {name}'
+    return osn
+
+
+def log_access(handler, event, user_id=None, email='', ok=True, session_id='', detail=''):
+    """Grava um evento de acesso. Nunca derruba a requisição (a tabela pode ainda não existir)."""
+    h = handler.headers
+    ip = (h.get('X-Forwarded-For') or '').split(',')[0].strip() or h.get('X-Real-IP', '') or (handler.client_address[0] if getattr(handler, 'client_address', None) else '')
+    q = lambda k: urllib.parse.unquote(h.get(k, '') or '')
+    place = ', '.join(x for x in (q('X-Vercel-IP-City'), q('X-Vercel-IP-Country-Region'), q('X-Vercel-IP-Country')) if x)
+    ua = (h.get('User-Agent') or '')[:400]
+    row = {'event': event, 'ok': ok, 'user_id': user_id, 'email': (email or '')[:200], 'ip': ip[:64], 'place': place[:120], 'device': device_name(ua),
+           'user_agent': ua, 'session_id': str(session_id or '')[:64], 'detail': (detail or '')[:300]}
+    try: remote('/rest/v1/access_log', 'POST', row, service=True)
+    except Exception: pass
+
+
+_opened = {}
+def opened_recently(session_id):
+    """Evita um registro de "abriu o site" a cada recarga: no máximo um a cada 10 min por sessão."""
+    now = time.time()
+    with _sessions_lock:
+        if _opened.get(session_id, 0) > now:
+            return True
+        if len(_opened) > 512:
+            for k in [k for k, v in _opened.items() if v <= now]: _opened.pop(k, None)
+        _opened[session_id] = now + 600
+    return False
+
+
 # ───────────────────────── Fotos: URLs assinadas em lote ─────────────────────────
 _signed = {}
 _signed_lock = threading.Lock()
@@ -257,13 +338,14 @@ PHOTO_EMBED_BASIC = 'photos(id,is_primary,storage_path)'
 
 def catalogue(token):
     """Todos os produtos com a foto principal, numa única consulta."""
-    def fetch(embed):
-        return rows('products', token, select='id,name,category,quantity,min_quantity,notes,review_status,updated_at,' + embed,
+    def fetch(embed, loc=True):
+        return rows('products', token, select='id,name,category,quantity,min_quantity,notes,review_status,updated_at,' + ('location,' if loc else '') + embed,
                     **{'order': 'name.asc,id.asc', 'photos.review_status': 'eq.confirmada', 'photos.order': 'is_primary.desc,id.asc'})
-    try: items = fetch(PHOTO_EMBED)
-    except APIError as e:
-        if e.status != 400: raise
-        items = fetch(PHOTO_EMBED_BASIC)   # migração 017 ainda não aplicada
+    tries = ((PHOTO_EMBED, True), (PHOTO_EMBED, False), (PHOTO_EMBED_BASIC, False))   # 019 / 017 ainda não aplicadas
+    for i, args in enumerate(tries):
+        try: items = fetch(*args); break
+        except APIError as e:
+            if e.status != 400 or i == len(tries) - 1: raise
     firsts = []
     for p in items:
         photos = p.pop('photos', None) or []
@@ -276,7 +358,7 @@ def catalogue(token):
     with_urls(firsts, token, key='_path', thumb='_thumb')
     for p in firsts:
         p['photo'] = p.pop('thumb'); p.pop('url', None); p.pop('_path', None); p.pop('_thumb', None)
-        p['notes'] = (p.get('notes') or '')[:220]
+        p['notes'] = (p.get('notes') or '')[:220]; p.setdefault('location', '')
     return firsts
 
 
@@ -313,10 +395,10 @@ def photo_rows(token, **query):
 class handler(BaseHTTPRequestHandler):
     def log_message(self, *args): pass
 
-    def respond(self, obj, status=200, ctype='application/json; charset=utf-8', extra=None):
+    def respond(self, obj, status=200, ctype='application/json; charset=utf-8', extra=None, cache='private, no-store'):
         data = obj if isinstance(obj, bytes) else json.dumps(obj, ensure_ascii=False, separators=(',', ':')).encode()
         self.send_response(status)
-        self.send_header('Content-Type', ctype); self.send_header('Cache-Control', 'private, no-store')
+        self.send_header('Content-Type', ctype); self.send_header('Cache-Control', cache)
         self.send_header('Vary', 'Authorization'); self.send_header('X-Content-Type-Options', 'nosniff')
         for k, v in (extra or {}).items(): self.send_header(k, v)
         self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)
@@ -369,6 +451,9 @@ class handler(BaseHTTPRequestHandler):
             if path.startswith('/api/admin/'):
                 if profile['role'] != 'admin': raise APIError('Acesso restrito ao administrador.', 403)
                 return self.admin(method, path, profile)
+            if path == '/api/galpao/layout' and method == 'POST':
+                if profile['role'] != 'admin': raise APIError('Só o administrador ajusta as marcações do galpão.', 403)
+                return self.respond(save_galpao_layout(self.json_body(), profile['id']))
             if method == 'GET': return self.get(path, qs, profile)
             if method == 'POST': return self.post(path)
             if method == 'DELETE' and re.fullmatch(r'/api/products/\d+', path):
@@ -390,8 +475,9 @@ class handler(BaseHTTPRequestHandler):
         if path == '/api/auth/logout':
             token = self.token()
             try:
-                _, jwt = validate_session(token); forget_session(token)
+                prof, jwt = validate_session(token); forget_session(token)
                 remote('/rest/v1/email_login_sessions?' + urllib.parse.urlencode({'session_id': 'eq.' + jwt['session_id'], 'user_id': 'eq.' + jwt['sub']}), 'DELETE', service=True)
+                log_access(self, 'saiu', jwt['sub'], prof.get('email', ''), session_id=jwt['session_id'])
             except APIError: pass
             return self.respond({'ok': True})
         body = self.json_body()
@@ -407,16 +493,20 @@ class handler(BaseHTTPRequestHandler):
                 raise APIError('E-mail ou senha inválidos.', 401)
             try: session = remote('/auth/v1/token?grant_type=password', 'POST', {'email': email, 'password': password})
             except APIError as e:
-                if e.status in (400, 401, 403, 422): raise APIError('E-mail ou senha inválidos.', 401) from None
+                if e.status in (400, 401, 403, 422):
+                    log_access(self, 'senha_errada', None, email, ok=False); raise APIError('E-mail ou senha inválidos.', 401) from None
+                if e.status == 429: log_access(self, 'bloqueado', None, email, ok=False, detail='Muitas tentativas')
                 raise
             user = session['user']
             profiles = remote('/rest/v1/profiles?' + urllib.parse.urlencode({'id': 'eq.' + user['id'], 'select': 'id,email,active'}), service=True)
-            if not profiles or not profiles[0]['active']: raise APIError('Conta sem acesso ao estoque.', 403)
+            if not profiles or not profiles[0]['active']:
+                log_access(self, 'sem_acesso', user['id'], email, ok=False, detail='Conta desativada'); raise APIError('Conta sem acesso ao estoque.', 403)
             challenge = secrets.token_urlsafe(32); digest = hashlib.sha256(challenge.encode()).hexdigest()
             remote('/rest/v1/rpc/email_login_command', 'POST', {'action': 'begin', 'secret_hash': digest, 'uid': user['id'], 'email_address': user['email']}, service=True)
             remote('/auth/v1/otp', 'POST', {'email': user['email'], 'create_user': False})
             try: remote('/auth/v1/logout?scope=local', 'POST', token=session['access_token'])
             except APIError: pass
+            log_access(self, 'senha_ok', user['id'], user['email'], detail='Código enviado por e-mail')
             return self.respond({'challenge': challenge, 'expiresIn': 600})
         if path == '/api/auth/verify':
             challenge = body.get('challenge', ''); code = body.get('code', '')
@@ -426,11 +516,13 @@ class handler(BaseHTTPRequestHandler):
             attempt = remote('/rest/v1/rpc/email_login_command', 'POST', {'action': 'attempt', 'secret_hash': digest}, service=True)
             try: session = remote('/auth/v1/verify', 'POST', {'email': attempt['email'], 'token': code, 'type': 'email'})
             except APIError as e:
-                if e.status in (400, 401, 403, 422): raise APIError('Código inválido ou expirado. Confira seu e-mail.') from None
+                if e.status in (400, 401, 403, 422):
+                    log_access(self, 'codigo_errado', attempt.get('user_id'), attempt.get('email', ''), ok=False); raise APIError('Código inválido ou expirado. Confira seu e-mail.') from None
                 raise
             user = remote('/auth/v1/user', token=session['access_token']); jwt = claims(session['access_token'])
             if user['id'] != attempt['user_id'] or jwt.get('sub') != user['id'] or not jwt.get('session_id'): raise APIError('Sessão inválida.', 403)
             remote('/rest/v1/rpc/email_login_command', 'POST', {'action': 'complete', 'secret_hash': digest, 'uid': user['id'], 'sid': jwt['session_id']}, service=True)
+            log_access(self, 'entrou', user['id'], attempt.get('email', ''), session_id=jwt['session_id'])
             return self.respond({'access_token': session['access_token'], 'refresh_token': session['refresh_token'], 'expires_in': session.get('expires_in', 3600)})
         raise APIError('Rota não encontrada.', 404)
 
@@ -438,6 +530,8 @@ class handler(BaseHTTPRequestHandler):
     def get(self, path, qs, profile):
         t = self.auth_token
         if path == '/api/boot':
+            sid = str(claims(t).get('session_id', ''))
+            if sid and not opened_recently(sid): log_access(self, 'abriu', profile['id'], profile.get('email', ''), session_id=sid)
             f_products = _pool.submit(catalogue, t); f_pending = _pool.submit(pending_photos, t); f_holders = _pool.submit(holders, t)
             return self.respond({'me': profile, 'products': f_products.result(), 'pending_photos': f_pending.result(), 'holders': f_holders.result()})
         if path == '/api/holders':
@@ -454,6 +548,14 @@ class handler(BaseHTTPRequestHandler):
             p['photos'] = [{k: ph[k] for k in ('id', 'filename', 'is_primary', 'url', 'thumb')} for ph in f_photos.result()]
             p['movements'] = f_moves.result()
             return self.respond(p)
+        if path.startswith('/api/galpao/') and profile['role'] != 'admin':
+            raise APIError('O Galpão está liberado só para o administrador por enquanto.', 403)
+        if path == '/api/galpao/layout':
+            return self.respond({'layout': galpao_layout()})
+        if re.fullmatch(r'/api/galpao/t?(?:[A-K]\d{1,2}|pano)\.jpg', path):
+            f = os.path.join(GALPAO, path.rsplit('/', 1)[1])
+            if not os.path.isfile(f): raise APIError('Foto não encontrada.', 404)
+            with open(f, 'rb') as fh: return self.respond(fh.read(), ctype='image/jpeg', cache='private, max-age=604800')
         if path == '/api/review':
             status = qs.get('status', ['pendente'])[0]
             if status not in ('pendente', 'confirmada', 'oculta', 'todas'): raise APIError('Filtro inválido.')
@@ -566,6 +668,17 @@ class handler(BaseHTTPRequestHandler):
                 return self.respond(result, 201 if editing_id is None else 200)
             except Exception:
                 self.drop_photos(*uploaded); raise
+        if re.fullmatch(r'/api/products/\d+/location', path):
+            pid = int(path.split('/')[3]); loc = str(self.json_body().get('location', '')).strip().upper()
+            if loc not in SHELVES: raise APIError('Estante inválida.')
+            found = remote('/rest/v1/products?' + urllib.parse.urlencode({'select': 'id,name,location', 'id': 'eq.' + str(pid)}), token=t)
+            if not found: raise APIError('Produto não encontrado.', 404)
+            before = found[0].get('location', '')
+            if before != loc:
+                remote('/rest/v1/products?' + urllib.parse.urlencode({'id': 'eq.' + str(pid)}), 'PATCH', {'location': loc}, service=True)
+                try: remote('/rest/v1/audit_log', 'POST', {'product_id': pid, 'action': 'location', 'before_data': before, 'after_data': loc, 'actor_id': claims(t).get('sub')}, service=True)
+                except APIError: pass
+            return self.respond({'id': pid, 'location': loc})
         if re.fullmatch(r'/api/products/\d+/(movement|confirm)', path):
             parts = path.split('/'); body = self.json_body()
             if parts[4] == 'movement': body = movement_payload(body)
@@ -620,18 +733,18 @@ class handler(BaseHTTPRequestHandler):
             if new == str(data.get('password', '')): raise APIError('A nova senha precisa ser diferente da atual.')
             check_password()
             remote('/auth/v1/admin/users/' + me, 'PUT', {'password': new}, service=True)
-            audit('change_password', {'id': me})
+            audit('change_password', {'id': me}); log_access(self, 'senha_alterada', me, profile['email'], session_id=jwt.get('session_id', ''))
             return self.respond({'ok': True})
         if path == '/api/account/logout-others':
             remote('/auth/v1/logout?scope=others', 'POST', token=self.auth_token)
             remote('/rest/v1/email_login_sessions?' + urllib.parse.urlencode({'user_id': 'eq.' + me, 'session_id': 'neq.' + str(jwt.get('session_id', ''))}), 'DELETE', service=True)
-            audit('logout_others', {'id': me})
+            audit('logout_others', {'id': me}); log_access(self, 'saiu_outros', me, profile['email'], session_id=jwt.get('session_id', ''))
             return self.respond({'ok': True})
         if path == '/api/account/delete':
             if profile['role'] == 'admin': raise APIError('A conta do administrador principal não pode ser excluída.')
             if str(data.get('confirm', '')).strip().upper() != 'EXCLUIR': raise APIError('Digite EXCLUIR para confirmar.')
             check_password()
-            audit('delete_account', {'id': me, 'email': profile['email']})
+            audit('delete_account', {'id': me, 'email': profile['email']}); log_access(self, 'conta_excluida', me, profile['email'])
             remote('/auth/v1/admin/users/' + me, 'DELETE', service=True)
             forget_session(self.auth_token)
             return self.respond({'ok': True})
@@ -661,4 +774,21 @@ class handler(BaseHTTPRequestHandler):
             remote('/rest/v1/profiles?' + urllib.parse.urlencode({'id': 'eq.' + uid}), 'PATCH', {'active': active}, service=True)
             remote('/rest/v1/audit_log', 'POST', {'action': 'user_active', 'after_data': json.dumps({'id': uid, 'active': active}), 'actor_id': profile['id']}, service=True)
             return self.respond({'ok': True})
+        if path == '/api/admin/logs' and method == 'GET':
+            return self.respond(self.logs())
         raise APIError('Rota não encontrada.', 404)
+
+    def logs(self):
+        """Página de logs (só administrador): acessos com conta e aparelho + alterações importantes."""
+        f_access = _pool.submit(remote, '/rest/v1/access_log?' + urllib.parse.urlencode({'select': 'id,created_at,user_id,email,event,ok,ip,place,device,user_agent,session_id,detail', 'order': 'id.desc', 'limit': '1500'}), service=True)
+        f_audit = _pool.submit(remote, '/rest/v1/audit_log?' + urllib.parse.urlencode({'select': 'id,created_at,product_id,action,before_data,after_data,actor_id', 'order': 'id.desc', 'limit': '600'}), service=True)
+        f_users = _pool.submit(remote, '/rest/v1/profiles?' + urllib.parse.urlencode({'select': 'id,email,name,role,active'}), service=True)
+        f_names = _pool.submit(remote, '/rest/v1/products?' + urllib.parse.urlencode({'select': 'id,name', 'limit': '5000'}), service=True)
+        try: access, ready = f_access.result() or [], True
+        except APIError: access, ready = [], False        # migration 020 ainda não rodou
+        audit = f_audit.result() or []
+        names = {p['id']: p['name'] for p in (f_names.result() or [])}
+        for a in audit:
+            a['product_name'] = names.get(a.get('product_id'), '')
+            for k in ('before_data', 'after_data'): a[k] = (a.get(k) or '')[:600]
+        return {'ready': ready, 'access': access, 'audit': audit, 'users': f_users.result() or []}
