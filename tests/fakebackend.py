@@ -61,6 +61,7 @@ class Fake:
         if p == '/rest/v1/rpc/stock_access': return True
         if p == '/auth/v1/token':
             if qs.get('grant_type') == 'refresh_token': return {'access_token': fake_jwt(), 'refresh_token': 'r' * 20, 'expires_in': 3600}
+            if data and data.get('password') == 'senha-errada': from api_index import APIError; raise APIError('Invalid login credentials', 400)
             return {'user': {'id': UID, 'email': self.profile['email']}, 'access_token': fake_jwt()}
         if p == '/rest/v1/rpc/email_login_command':
             return {'user_id': UID, 'email': self.profile['email']} if data['action'] == 'attempt' else {'ok': True}
@@ -68,7 +69,12 @@ class Fake:
         if p == '/auth/v1/verify':
             if data.get('token') != '000000': from api_index import APIError; raise APIError('Código inválido', 400)
             return {'access_token': fake_jwt(), 'refresh_token': 'r' * 20, 'expires_in': 3600}
-        if p == '/rest/v1/profiles': return [self.profile]
+        if p == '/rest/v1/profiles':
+            if method == 'PATCH': self.profile.update(data); return None
+            return [self.profile]
+        if p.startswith('/auth/v1/admin/users/'):
+            self.account_ops = getattr(self, 'account_ops', []) + [(method, data)]; return {}
+        if p in ('/rest/v1/audit_log', '/rest/v1/email_login_sessions'): return None
         if p == '/storage/v1/object/sign/stock-photos':
             return [{'path': x, 'signedURL': f'/object/sign/stock-photos/{x}?token=t'} for x in data['paths']]
         if p == '/storage/v1/object/stock-photos' and method == 'DELETE': return {}
@@ -100,7 +106,7 @@ class Fake:
 
     def _move(self, pid, kind, amount, before, after, note='', holder_id=None, destination=''):
         self.movements.append({'id': self.seq['m'], 'product_id': pid, 'kind': kind, 'amount': amount, 'before_qty': before, 'after_qty': after, 'note': note,
-                               'holder_id': holder_id, 'destination': destination, 'created_at': '2026-10-23T12:00:00+00:00'})
+                               'holder_id': holder_id, 'destination': destination, 'created_at': __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat()})
         self.seq['m'] += 1
 
     def stock_command(self, cmd, pid, pl):

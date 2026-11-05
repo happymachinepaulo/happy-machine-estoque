@@ -103,5 +103,25 @@ class API(unittest.TestCase):
         self.j('/api/products/1/movement', 'POST', {'kind': 'saida', 'amount': 1, 'holder_id': 3})
         self.assertEqual(self.j('/api/holders/3/update', 'POST', {'active': False})[0], 400)
 
+    def test_conta_nome_e_senha(self):
+        self.assertEqual(self.j('/api/account/profile', 'POST', {'name': 'Paulo Silva'})[0], 200)
+        self.assertEqual(self.fake.profile['name'], 'Paulo Silva')
+        s, r = self.j('/api/account/password', 'POST', {'password': 'senha-errada', 'new_password': 'NovaSenha123'})
+        self.assertEqual((s, r['error']), (400, 'Senha atual incorreta.'))
+        self.assertEqual(self.j('/api/account/password', 'POST', {'password': 'x', 'new_password': 'curta1'})[0], 400)
+        self.assertEqual(self.j('/api/account/password', 'POST', {'password': 'atual', 'new_password': 'NovaSenha123'})[0], 200)
+        self.assertEqual(self.fake.account_ops[-1], ('PUT', {'password': 'NovaSenha123'}))
+
+    def test_excluir_conta(self):
+        s, r = self.j('/api/account/delete', 'POST', {'password': 'atual', 'confirm': 'EXCLUIR'})
+        self.assertEqual(s, 400)   # administrador principal não pode
+        self.fake.profile['role'] = 'operator'; api._sessions.clear()
+        self.assertEqual(self.j('/api/account/delete', 'POST', {'password': 'atual', 'confirm': 'nao'})[0], 400)
+        self.assertEqual(self.j('/api/account/delete', 'POST', {'password': 'atual', 'confirm': 'excluir'})[0], 200)
+        self.assertEqual(self.fake.account_ops[-1][0], 'DELETE')
+
+    def test_sair_dos_outros_aparelhos(self):
+        self.assertEqual(self.j('/api/account/logout-others', 'POST', {})[0], 200)
+
 
 if __name__ == '__main__': unittest.main()

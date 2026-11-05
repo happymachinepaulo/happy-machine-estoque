@@ -365,6 +365,7 @@ class handler(BaseHTTPRequestHandler):
             self.auth_token = self.token()
             profile, jwt = validate_session(self.auth_token)
             if path == '/api/me': return self.respond(profile)
+            if path.startswith('/api/account/') and method == 'POST': return self.account(path, profile, jwt)
             if path.startswith('/api/admin/'):
                 if profile['role'] != 'admin': raise APIError('Acesso restrito ao administrador.', 403)
                 return self.admin(method, path, profile)
@@ -592,6 +593,50 @@ class handler(BaseHTTPRequestHandler):
         raise APIError('Rota não encontrada.', 404)
 
     # ── administração ──
+    def account(self, path, profile, jwt):
+        """Minha conta: nome, senha, sair dos outros aparelhos e excluir a própria conta."""
+        data = self.json_body(); me = profile['id']
+        def audit(action, info):
+            try: remote('/rest/v1/audit_log', 'POST', {'action': action, 'after_data': json.dumps(info), 'actor_id': me}, service=True)
+            except APIError: pass
+        def check_password():
+            pw = str(data.get('password', ''))
+            if not pw: raise APIError('Digite sua senha atual.')
+            try: s = remote('/auth/v1/token?grant_type=password', 'POST', {'email': profile['email'], 'password': pw})
+            except APIError as e:
+                raise APIError(e.message if e.status == 429 else 'Senha atual incorreta.', 429 if e.status == 429 else 400) from None
+            try: remote('/auth/v1/logout?scope=local', 'POST', token=s['access_token'])
+            except (APIError, KeyError): pass
+        if path == '/api/account/profile':
+            name = clean_text(data.get('name'), 100)
+            if len(name) < 2: raise APIError('Digite seu nome.')
+            remote('/rest/v1/profiles?' + urllib.parse.urlencode({'id': 'eq.' + me}), 'PATCH', {'name': name}, service=True)
+            forget_session(self.auth_token)
+            return self.respond({'ok': True, 'name': name})
+        if path == '/api/account/password':
+            new = str(data.get('new_password', ''))
+            if len(new) < 10 or len(new) > 72 or not re.search(r'[A-Za-z]', new) or not re.search(r'\d', new):
+                raise APIError('A nova senha precisa ter de 10 a 72 caracteres, com letras e números.')
+            if new == str(data.get('password', '')): raise APIError('A nova senha precisa ser diferente da atual.')
+            check_password()
+            remote('/auth/v1/admin/users/' + me, 'PUT', {'password': new}, service=True)
+            audit('change_password', {'id': me})
+            return self.respond({'ok': True})
+        if path == '/api/account/logout-others':
+            remote('/auth/v1/logout?scope=others', 'POST', token=self.auth_token)
+            remote('/rest/v1/email_login_sessions?' + urllib.parse.urlencode({'user_id': 'eq.' + me, 'session_id': 'neq.' + str(jwt.get('session_id', ''))}), 'DELETE', service=True)
+            audit('logout_others', {'id': me})
+            return self.respond({'ok': True})
+        if path == '/api/account/delete':
+            if profile['role'] == 'admin': raise APIError('A conta do administrador principal não pode ser excluída.')
+            if str(data.get('confirm', '')).strip().upper() != 'EXCLUIR': raise APIError('Digite EXCLUIR para confirmar.')
+            check_password()
+            audit('delete_account', {'id': me, 'email': profile['email']})
+            remote('/auth/v1/admin/users/' + me, 'DELETE', service=True)
+            forget_session(self.auth_token)
+            return self.respond({'ok': True})
+        raise APIError('Rota não encontrada.', 404)
+
     def admin(self, method, path, profile):
         if path == '/api/admin/users' and method == 'GET':
             return self.respond(rows('profiles', self.auth_token, select='id,email,name,role,active,created_at', order='created_at.desc'))

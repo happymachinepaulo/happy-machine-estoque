@@ -34,7 +34,7 @@ function filtered() {
 function stats(P) {
   const ok = P.filter(p => !isPending(p));
   const s = { pecas: ok.length, unidades: ok.filter(p => p.unit === 'un').reduce((a, p) => a + p.quantity, 0), pessoas: P.reduce((a, p) => a + (p._out || 0), 0), baixo: P.filter(isLow).length };
-  const tiles = [['pecas', 'peças conferidas', 'var(--red)', 'box'], ['unidades', 'unidades guardadas', 'var(--blue)', 'grid'], ['pessoas', 'com pessoas', 'var(--pink)', 'users'], ['baixo', 'estoque baixo', 'var(--orange)', 'down']];
+  const tiles = [['pecas', 'Peças conferidas', 'var(--red)', 'box'], ['unidades', 'Unidades guardadas', 'var(--blue)', 'grid'], ['pessoas', 'Com pessoas', 'var(--pink)', 'users'], ['baixo', 'Estoque baixo', 'var(--orange)', 'down']];
   $('#estStats').innerHTML = P.length ? tiles.map(([k, l, c, ic], i) => `<div class="stat" style="--c:${c};--i:${i}"><i>${icon(ic)}</i><span>${l}</span><b data-count="${s[k]}" data-from="${lastStats[k] ?? 0}">${n(lastStats[k] ?? 0)}</b></div>`).join('') : '';
   lastStats = s; countUp($('#estStats'));
 }
