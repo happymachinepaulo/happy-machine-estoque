@@ -10,10 +10,11 @@ import * as historico from './historico.js';
 import * as admin from './admin.js';
 import * as move from './move.js';
 import * as tools from './tools.js';
+import * as galpao from './galpao.js';
 
-const views = { painel: painel.load, estoque: null, pessoas: pessoas.load, fotos: revisar.load, consertos: consertos.load, manutencao: null, historico: historico.load, admin: admin.load, config: tools.loadConfig };
+const views = { painel: painel.load, estoque: null, galpao: galpao.load, pessoas: pessoas.load, fotos: revisar.load, consertos: consertos.load, manutencao: null, historico: historico.load, admin: admin.load, config: tools.loadConfig };
 const order = Object.keys(views);
-const titles = { painel: 'Painel', estoque: 'Estoque', pessoas: 'Pessoas', fotos: 'Fotos', consertos: 'Consertos', manutencao: 'Manutenção Máquinas', historico: 'Histórico', admin: 'Admin', config: 'Configurações' };
+const titles = { painel: 'Painel', estoque: 'Estoque', galpao: 'Galpão', pessoas: 'Pessoas', fotos: 'Fotos', consertos: 'Consertos', manutencao: 'Manutenção Máquinas', historico: 'Histórico', admin: 'Admin', config: 'Configurações' };
 let inited = false, currentView = null;
 
 function moveInk() {

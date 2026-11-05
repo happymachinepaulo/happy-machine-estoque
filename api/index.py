@@ -12,6 +12,8 @@ from email.parser import BytesParser
 from email.policy import default
 
 MAX_BODY = 4_000_000
+GALPAO = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'galpao')   # fotos das estantes (só com login)
+SHELVES = ('',) + tuple('ABCDEFGHIJK')
 SESSION_TTL = 30          # segundos que uma sessão validada fica em cache
 SIGN_TTL = 3600           # validade das URLs assinadas de fotos
 SIGN_REUSE = 3000         # reaproveita URL assinada por este tempo
@@ -257,13 +259,14 @@ PHOTO_EMBED_BASIC = 'photos(id,is_primary,storage_path)'
 
 def catalogue(token):
     """Todos os produtos com a foto principal, numa única consulta."""
-    def fetch(embed):
-        return rows('products', token, select='id,name,category,quantity,min_quantity,notes,review_status,updated_at,' + embed,
+    def fetch(embed, loc=True):
+        return rows('products', token, select='id,name,category,quantity,min_quantity,notes,review_status,updated_at,' + ('location,' if loc else '') + embed,
                     **{'order': 'name.asc,id.asc', 'photos.review_status': 'eq.confirmada', 'photos.order': 'is_primary.desc,id.asc'})
-    try: items = fetch(PHOTO_EMBED)
-    except APIError as e:
-        if e.status != 400: raise
-        items = fetch(PHOTO_EMBED_BASIC)   # migração 017 ainda não aplicada
+    tries = ((PHOTO_EMBED, True), (PHOTO_EMBED, False), (PHOTO_EMBED_BASIC, False))   # 019 / 017 ainda não aplicadas
+    for i, args in enumerate(tries):
+        try: items = fetch(*args); break
+        except APIError as e:
+            if e.status != 400 or i == len(tries) - 1: raise
     firsts = []
     for p in items:
         photos = p.pop('photos', None) or []
@@ -276,7 +279,7 @@ def catalogue(token):
     with_urls(firsts, token, key='_path', thumb='_thumb')
     for p in firsts:
         p['photo'] = p.pop('thumb'); p.pop('url', None); p.pop('_path', None); p.pop('_thumb', None)
-        p['notes'] = (p.get('notes') or '')[:220]
+        p['notes'] = (p.get('notes') or '')[:220]; p.setdefault('location', '')
     return firsts
 
 
@@ -313,10 +316,10 @@ def photo_rows(token, **query):
 class handler(BaseHTTPRequestHandler):
     def log_message(self, *args): pass
 
-    def respond(self, obj, status=200, ctype='application/json; charset=utf-8', extra=None):
+    def respond(self, obj, status=200, ctype='application/json; charset=utf-8', extra=None, cache='private, no-store'):
         data = obj if isinstance(obj, bytes) else json.dumps(obj, ensure_ascii=False, separators=(',', ':')).encode()
         self.send_response(status)
-        self.send_header('Content-Type', ctype); self.send_header('Cache-Control', 'private, no-store')
+        self.send_header('Content-Type', ctype); self.send_header('Cache-Control', cache)
         self.send_header('Vary', 'Authorization'); self.send_header('X-Content-Type-Options', 'nosniff')
         for k, v in (extra or {}).items(): self.send_header(k, v)
         self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)
@@ -454,6 +457,10 @@ class handler(BaseHTTPRequestHandler):
             p['photos'] = [{k: ph[k] for k in ('id', 'filename', 'is_primary', 'url', 'thumb')} for ph in f_photos.result()]
             p['movements'] = f_moves.result()
             return self.respond(p)
+        if re.fullmatch(r'/api/galpao/t?[A-K]\d{1,2}\.jpg', path):
+            f = os.path.join(GALPAO, path.rsplit('/', 1)[1])
+            if not os.path.isfile(f): raise APIError('Foto não encontrada.', 404)
+            with open(f, 'rb') as fh: return self.respond(fh.read(), ctype='image/jpeg', cache='private, max-age=604800')
         if path == '/api/review':
             status = qs.get('status', ['pendente'])[0]
             if status not in ('pendente', 'confirmada', 'oculta', 'todas'): raise APIError('Filtro inválido.')
@@ -566,6 +573,17 @@ class handler(BaseHTTPRequestHandler):
                 return self.respond(result, 201 if editing_id is None else 200)
             except Exception:
                 self.drop_photos(*uploaded); raise
+        if re.fullmatch(r'/api/products/\d+/location', path):
+            pid = int(path.split('/')[3]); loc = str(self.json_body().get('location', '')).strip().upper()
+            if loc not in SHELVES: raise APIError('Estante inválida.')
+            found = remote('/rest/v1/products?' + urllib.parse.urlencode({'select': 'id,name,location', 'id': 'eq.' + str(pid)}), token=t)
+            if not found: raise APIError('Produto não encontrado.', 404)
+            before = found[0].get('location', '')
+            if before != loc:
+                remote('/rest/v1/products?' + urllib.parse.urlencode({'id': 'eq.' + str(pid)}), 'PATCH', {'location': loc}, service=True)
+                try: remote('/rest/v1/audit_log', 'POST', {'product_id': pid, 'action': 'location', 'before_data': before, 'after_data': loc, 'actor_id': claims(t).get('sub')}, service=True)
+                except APIError: pass
+            return self.respond({'id': pid, 'location': loc})
         if re.fullmatch(r'/api/products/\d+/(movement|confirm)', path):
             parts = path.split('/'); body = self.json_body()
             if parts[4] == 'movement': body = movement_payload(body)

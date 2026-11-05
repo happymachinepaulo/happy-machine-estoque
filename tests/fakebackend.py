@@ -78,6 +78,9 @@ class Fake:
         if p == '/storage/v1/object/sign/stock-photos':
             return [{'path': x, 'signedURL': f'/object/sign/stock-photos/{x}?token=t'} for x in data['paths']]
         if p == '/storage/v1/object/stock-photos' and method == 'DELETE': return {}
+        if p == '/rest/v1/products' and method == 'PATCH':
+            for r in self._filter(self.products, qs): r.update(data)
+            return None
         if p == '/rest/v1/products':
             rows = self._filter(self.products, qs)
             rows = [dict(r) for r in self._page(self._order(rows, qs), qs)]

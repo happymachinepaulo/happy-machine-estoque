@@ -53,6 +53,12 @@ export async function api(url, opts = {}) {
   if (!r.ok) throw new Error(data?.error || `Erro ${r.status}`);
   return data;
 }
+/* imagem que exige login (fotos do galpão): baixa com o token e guarda o endereço local */
+const blobs = new Map();
+export function blobUrl(url) {
+  if (!blobs.has(url)) blobs.set(url, request(url).then(async r => { if (!r.ok) throw new Error('Foto indisponível'); return URL.createObjectURL(await r.blob()); }).catch(e => { blobs.delete(url); throw e; }));
+  return blobs.get(url);
+}
 export async function download(url, name) {
   const r = await request(url);
   if (!r.ok) throw new Error('Não foi possível baixar o arquivo.');

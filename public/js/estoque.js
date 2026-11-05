@@ -1,6 +1,7 @@
 import { $, esc, fold, n, icon, api, download, toast, open, debounce, confirmBox, zoom, prepareImage, pickPhoto, fmtDate, kindLabel, subtabs, countUp, personColor, initials } from './core.js';
-import { state, setData, subscribe } from './state.js';
+import { state, setData, subscribe, patch } from './state.js';
 import { openMove } from './move.js';
+import { shelfOptions, shelf } from './shelves.js';
 
 const F = { q: '', cat: '', chip: 'todas', sort: 'name', list: false };
 try { F.list = localStorage.getItem('hm-list') === '1'; } catch {}
@@ -18,7 +19,7 @@ function qtyTag(p) {
   return `<div class="qty ${cls}"><b>${n(p.quantity)}</b><span>${unitLabel(p)}${isPending(p) ? ' · conferir' : ''}</span></div>`;
 }
 const card = (p, i) => `<button class="card" data-id="${p.id}" style="--i:${i}" aria-label="${esc(p.name)}, ${p.quantity} ${unitLabel(p)}">
-  <div class="ph">${p.photo ? `<img src="${esc(p.photo)}" alt="" loading="lazy" decoding="async" width="400" height="300">` : `<div class="none">${icon('photo')}Sem foto</div>`}${qtyTag(p)}${p.photo_count > 1 ? `<span class="tag">${p.photo_count} fotos</span>` : ''}${p._out ? `<span class="tag withp" title="${n(p._out)} com pessoas">${icon('users')}${n(p._out)}</span>` : ''}</div>
+  <div class="ph">${p.photo ? `<img src="${esc(p.photo)}" alt="" loading="lazy" decoding="async" width="400" height="300">` : `<div class="none">${icon('photo')}Sem foto</div>`}${qtyTag(p)}${p.photo_count > 1 ? `<span class="tag">${p.photo_count} fotos</span>` : ''}${p.location ? `<span class="tag loc" title="Estante ${esc(p.location)}">${icon('map')}${esc(p.location)}</span>` : ''}${p._out ? `<span class="tag withp" title="${n(p._out)} com pessoas">${icon('users')}${n(p._out)}</span>` : ''}</div>
   <div class="cbody"><div class="cat"><span>${esc(p.category || 'Sem categoria')}</span><span>#${p.id}</span></div><h3>${esc(p.name)}</h3></div></button>`;
 
 const CHIPS = [['todas', 'Todas', 'var(--red-l)'], ['conferir', 'A conferir', 'var(--orange)'], ['baixo', 'Estoque baixo', 'var(--red-l)'], ['pessoas', 'Com pessoas', 'var(--blue)'], ['semfoto', 'Sem foto', 'var(--pink)']];
@@ -73,6 +74,7 @@ async function openDetail(id) {
     $('#dQty').innerHTML = isUnknown(p) ? 'A contar' : `<span data-count="${p.quantity}">${n(p.quantity)}</span><small>${bigUnit(p)} no estoque</small>`;
     $('#dMin').textContent = p.min_quantity > 0 ? `Estoque mínimo: ${p.min_quantity}` : 'Sem estoque mínimo';
     $('#dHolders').innerHTML = p._with.length ? p._with.map((w, i) => `<span style="animation-delay:${i * 60}ms;background:color-mix(in srgb,${personColor(w.holder.id)} 22%,transparent);color:#fff;border:1px solid color-mix(in srgb,${personColor(w.holder.id)} 60%,transparent)"><i style="background:${personColor(w.holder.id)}">${esc(initials(w.holder.name))}</i>${esc(w.holder.name)}: ${n(w.quantity)}</span>`).join('') : '';
+    $('#dLoc').innerHTML = shelfOptions(listed?.location ?? p.location ?? '');
     $('#dWarn').classList.toggle('hidden', p.review_status !== 'pendente');
     $('#dNotes').textContent = p.notes || 'Sem observações.';
     gallery(p, 0);
@@ -145,6 +147,11 @@ export function init() {
   $('#bDel').onclick = async () => {
     if (!await confirmBox(`Excluir "${current.name}"?`, 'O histórico da peça será apagado. As fotos voltam para a revisão.', 'Excluir')) return;
     try { await api('/api/products/' + current.id, { method: 'DELETE' }); $('#dDetail').close(); toast('Peça excluída'); await reload(); document.dispatchEvent(new CustomEvent('stock:changed')); } catch (e) { toast(e.message, true); }
+  };
+  $('#dLoc').onchange = async e => {
+    const loc = e.target.value;
+    try { await api(`/api/products/${current.id}/location`, { json: { location: loc } }); current.location = loc; patch(current.id, { location: loc }); toast(loc ? `Guardada na estante ${loc} · ${shelf(loc).name}` : 'Peça sem estante'); }
+    catch (err) { toast(err.message, true); }
   };
   $('#dConfirm').onclick = async () => { try { await api(`/api/products/${current.id}/confirm`, { method: 'POST' }); toast('Peça confirmada'); await openDetail(current.id); reload(); } catch (e) { toast(e.message, true); } };
   $('#dGal').onclick = async e => {

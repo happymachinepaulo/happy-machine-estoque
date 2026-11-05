@@ -31,7 +31,7 @@ def make(i):
     im.save(tmp / name, quality=80); return name
 products, photos = [], []
 for i, (nome, cat, q, mn) in enumerate(NAMES, 1):
-    products.append({'id': i, 'name': nome, 'category': cat, 'quantity': q, 'min_quantity': mn, 'notes': '', 'source_text': '', 'review_status': 'pendente' if i in (4, 9) else 'confirmado', 'updated_at': f'2026-10-{10 + i:02d}T12:00:00+00:00'})
+    products.append({'id': i, 'name': nome, 'category': cat, 'quantity': q, 'min_quantity': mn, 'notes': '', 'source_text': '', 'review_status': 'pendente' if i in (4, 9) else 'confirmado', 'updated_at': f'2026-10-{10 + i:02d}T12:00:00+00:00', 'location': 'JJGFBKGJFCCCKCCDGBGG'[i - 1] if i not in (10, 18) else ''})
     if i not in (12, 13):
         n = make(i); files[f'uploads/{n}'] = files[f'thumbs/{n}'] = n
         photos.append({'id': i, 'product_id': i, 'filename': n, 'mime': 'image/jpeg', 'storage_path': f'uploads/{n}', 'thumb_path': f'thumbs/{n}', 'is_primary': 1, 'review_status': 'confirmada', 'review_note': '', 'created_at': ''})

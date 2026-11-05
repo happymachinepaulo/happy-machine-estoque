@@ -10,6 +10,8 @@ Controle de estoque de peças. Vercel (site estático + `api/index.py`) e Supaba
 - **Saída** vai para uma pessoa ou para um lugar/motivo (com *Outros* + texto livre). **Adicionar** vem de uma pessoa (devolução) ou de outra origem (com *Outros* + texto livre). O histórico mostra para onde foi / de onde veio.
 - **Manutenção Máquinas:** aba nova, por enquanto só "Em breve".
 - **Banco:** `supabase/018_estoque_pessoas.sql` (pessoas, estoque de cada pessoa, destino nas movimentações). Sem ela o site continua funcionando, mas a aba Pessoas fica vazia e a saída para pessoa falha.
+- **Banco:** `supabase/019_mapa_galpao.sql` (estante A–K de cada peça, usada na aba Galpão). Sem ela a planta abre, mas todas as peças aparecem sem estante e trocar a estante falha.
+- **Galpão:** a planta fica em `public/js/shelves.js` (posição, cor e nome de cada estante). As fotos das estantes ficam em `api/galpao/` e só abrem com login.
 
 ## O que mudou (v2)
 - **Rápido:** uma chamada (`/api/boot`) traz estoque + fotos + pendências; fotos com miniatura de 480 px; sessão em cache de 30 s; conexões reaproveitadas; sem SDK do Supabase, three.js ou gsap no navegador (de ~1,5 MB de JS para ~40 KB).
@@ -19,7 +21,7 @@ Controle de estoque de peças. Vercel (site estático + `api/index.py`) e Supaba
 - **Banco:** `supabase/017_desempenho.sql` cria índices e corrige as políticas RLS (a função de acesso era chamada em cada linha).
 
 ## Estrutura
-`public/` (css, js em módulos) · `api/index.py` · `supabase/schema.sql` + `017_desempenho.sql` + `018_estoque_pessoas.sql` (`historico/` = migrações antigas) · `scripts/` · `tests/` · `migration/fotos_novas/` (fotos novas + `manifest.json`).
+`public/` (css, js em módulos) · `api/index.py` · `supabase/schema.sql` + `017_desempenho.sql` + `018_estoque_pessoas.sql` + `019_mapa_galpao.sql` (`historico/` = migrações antigas) · `scripts/` · `tests/` · `migration/fotos_novas/` (fotos novas + `manifest.json`).
 
 ## Rodar local (dados de demonstração)
 `python scripts/preview.py` → http://127.0.0.1:8770 (qualquer e-mail/senha; código `000000`).

@@ -49,6 +49,7 @@
 <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12Z"/></symbol>
 <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M3 4h2l2.4 11h11l2-8H6.2"/></symbol>
 <symbol id="i-devices" viewBox="0 0 24 24"><rect x="3" y="4" width="13" height="10" rx="1.5"/><path d="M7 18h5"/><rect x="17" y="9" width="4" height="10" rx="1"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5L9 4Z"/><path d="M9 4v13.5M15 6.5V20"/></symbol>
 <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></symbol>
 </defs></svg>
 
@@ -89,6 +90,7 @@
         <span class="tabInk" aria-hidden="true"></span>
         <button class="tab" data-view="painel" style="--c:var(--white);--ink-c:var(--white);--tc:#141416"><svg class="i"><use href="#i-pulse"/></svg><span>Painel</span></button>
         <button class="tab" data-view="estoque" style="--c:var(--red-l);--ink-c:var(--red)"><svg class="i"><use href="#i-box"/></svg><span>Estoque</span></button>
+        <button class="tab" data-view="galpao" style="--c:var(--yellow);--ink-c:var(--yellow);--tc:#141416"><svg class="i"><use href="#i-map"/></svg><span>Galpão</span></button>
         <button class="tab" data-view="pessoas" style="--c:var(--blue-l);--ink-c:var(--blue)"><svg class="i"><use href="#i-users"/></svg><span>Pessoas</span></button>
         <button class="tab" data-view="fotos" style="--c:var(--pink);--ink-c:var(--pink)"><svg class="i"><use href="#i-photo"/></svg><span>Fotos</span><b id="badgeFotos" class="badge hidden"></b></button>
         <button class="tab" data-view="consertos" style="--c:var(--orange);--ink-c:var(--orange)"><svg class="i"><use href="#i-wrench"/></svg><span>Consertos</span></button>
@@ -172,6 +174,13 @@
     </section>
 
     <!-- MANUTENÇÃO -->
+    <section id="v-galpao" class="view" hidden>
+      <div class="head"><div><h1>Galpão</h1><p class="muted">A planta do estoque. Toque numa estante para ver as fotos e o que está guardado nela.</p></div></div>
+      <div class="tools"><label class="search"><span class="sr">Onde está</span><svg class="i"><use href="#i-search"/></svg><input id="gQ" class="control" type="search" placeholder="Onde está? Digite o nome da peça" autocomplete="off"></label></div>
+      <div id="gFound" class="gFound glass" hidden></div>
+      <div class="galpao"><div id="plan" class="plan glass"></div><aside id="shelfPanel" class="shelfPanel glass" aria-live="polite"></aside></div>
+    </section>
+
     <section id="v-manutencao" class="view" hidden>
       <div class="head"><div><h1>Manutenção das máquinas</h1></div></div>
       <div class="soon">
@@ -274,6 +283,7 @@
     <div class="detail"><div id="dGal" class="gal"></div>
       <div class="dside">
         <div><div id="dQty" class="big"></div><div id="dMin" class="muted"></div></div>
+        <label class="locRow"><svg class="i"><use href="#i-map"/></svg><span>Estante</span><select id="dLoc" class="control"></select></label>
         <div id="dHolders" class="holderPills"></div>
         <div id="dWarn" class="warnbox hidden"><span>Confira o nome e a quantidade para incluir esta peça no total.</span><button id="dConfirm" class="btn sm primary">Confirmar peça</button></div>
         <div id="dNotes" class="notes"></div>

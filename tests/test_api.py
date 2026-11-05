@@ -124,4 +124,19 @@ class API(unittest.TestCase):
         self.assertEqual(self.j('/api/account/logout-others', 'POST', {})[0], 200)
 
 
+    def test_estante_da_peca(self):
+        s, d = self.j('/api/products/2/location', 'POST', {'location': 'f'})
+        self.assertEqual((s, d['location']), (200, 'F'))
+        self.assertEqual(next(p for p in self.j('/api/boot')[1]['products'] if p['id'] == 2)['location'], 'F')
+        self.assertEqual(self.j('/api/products/2/location', 'POST', {'location': 'Z'})[0], 400)
+        self.assertEqual(self.j('/api/products/99/location', 'POST', {'location': 'A'})[0], 404)
+
+    def test_fotos_do_galpao_exigem_login(self):
+        self.assertEqual(self.req('/api/galpao/A1.jpg', token=False)[0], 401)
+        s, raw = self.req('/api/galpao/tA1.jpg')
+        self.assertEqual((s, raw[:2]), (200, b'\xff\xd8'))
+        self.assertEqual(self.req('/api/galpao/..%2Fapi.jpg')[0], 404)
+        self.assertEqual(self.req('/api/galpao/Z9.jpg')[0], 404)
+
+
 if __name__ == '__main__': unittest.main()
