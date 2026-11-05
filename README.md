@@ -3,7 +3,9 @@
 Controle de estoque de peças. Vercel (site estático + `api/index.py`) e Supabase (login, banco, fotos privadas).
 
 ## O que mudou (v3)
-- **Visual novo:** abas principais com indicador deslizante, subabas em cada tela, animações (entrada das telas, cartões em cascata, números que sobem, janelas com mola). Identidade do manual da marca: fundo grafite, cores neon do manual (azul, vermelho, laranja, pink, amarelo, roxo, rosa, capri), fontes Mouse Memoirs, Cutive Mono e Roboto, abertura com HAPPY em neon e a aba **Painel** ao vivo (mapa do estoque com quem está com cada peça, letreiro de movimentações e quadros de estoque baixo e mais movimentadas).
+- **Visual de vidro:** fundo grafite com as luzes das cores do manual da marca, cartões de vidro fosco, barra lateral flutuante (no celular vira barra de baixo) e fontes do manual (Mouse Memoirs, Roboto, Cutive Mono). O Painel mostra números com mini gráficos, as movimentações da semana, o que aconteceu hoje, com quem está cada peça e o que precisa repor.
+- **Configurações:** alterar nome e senha, sair dos outros aparelhos, excluir a própria conta (menos o administrador principal) e preferências do aparelho (tela inicial, cartões ou lista, abertura animada, menos animações, texto maior).
+- **Busca rápida (Ctrl K), central de alertas (sino) e lista de reposição** para copiar, mandar no WhatsApp ou imprimir.
 - **Mini estoques por pessoa (aba Pessoas):** Bruno, Matheus e quem mais for cadastrado. Cada pessoa tem uma subaba com as peças que estão com ela, *Devolver*, *Dar baixa* (usou num lugar) e *Entregar peça*.
 - **Saída** vai para uma pessoa ou para um lugar/motivo (com *Outros* + texto livre). **Adicionar** vem de uma pessoa (devolução) ou de outra origem (com *Outros* + texto livre). O histórico mostra para onde foi / de onde veio.
 - **Manutenção Máquinas:** aba nova, por enquanto só "Em breve".

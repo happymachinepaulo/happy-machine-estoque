@@ -134,3 +134,14 @@ export function countUp(root = document) {
 const COLORS = ['#345AFA', '#C31634', '#DA1476', '#E79C2A', '#8a3dff', '#D94BFA', '#0fb8c9'];
 export const personColor = id => COLORS[(Number(id) || 0) % COLORS.length];
 export const initials = name => (String(name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('') || '?').toUpperCase();
+
+/* ── preferências deste aparelho ── */
+export const prefs = {
+  get(k, d) { try { const v = localStorage.getItem('hm-pref-' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('hm-pref-' + k, JSON.stringify(v)); } catch {} },
+};
+export function applyPrefs() {
+  document.documentElement.classList.toggle('calm', !!prefs.get('calm', false));
+  document.documentElement.classList.toggle('big', !!prefs.get('big', false));
+}
+applyPrefs();

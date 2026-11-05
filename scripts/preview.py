@@ -45,6 +45,15 @@ fake.holders.append({'id': 3, 'name': 'Carlos Lima', 'active': True, 'created_at
 fake.holder_stock = [{'holder_id': h, 'product_id': pid, 'quantity': q, 'updated_at': ''} for h, pid, q in [(1, 2, 8), (1, 6, 4), (1, 15, 1), (2, 2, 5), (2, 3, 20), (2, 7, 1), (2, 11, 2), (2, 17, 1), (3, 5, 2)]]
 for p in products[:6]:
     fake._move(p['id'], 'cadastro', p['quantity'], 0, p['quantity'], 'Cadastro do item')
+# movimentações de exemplo espalhadas pela última semana (para o gráfico do Painel)
+import datetime as _dt
+_now = _dt.datetime.now(_dt.timezone.utc); _r = random.Random(7)
+for d in range(6, -1, -1):
+    for k in range(_r.randint(2, 9) if d else 5):
+        pid = _r.randint(1, len(products)); kind = _r.choice(['saida', 'saida', 'entrada', 'consumo'])
+        hid = _r.choice([1, 2, 3, None]); dest = '' if hid and kind != 'consumo' else _r.choice(['Uso em máquina', 'Cliente', 'Outros: Feira de SP'])
+        fake._move(pid, kind, -1 if kind != 'entrada' else 1, 10, 9, '', hid, dest)
+        fake.movements[-1]['created_at'] = (_now - _dt.timedelta(days=d, hours=_r.randint(0, 6), minutes=_r.randint(0, 59))).isoformat()
 api.remote = fake.remote
 
 class Handler(api.handler):
