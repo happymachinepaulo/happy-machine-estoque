@@ -40,6 +40,7 @@ for k in range(30, 40):
     photos.append({'id': k, 'product_id': None, 'filename': n, 'mime': 'image/jpeg', 'storage_path': f'uploads/{n}', 'thumb_path': f'thumbs/{n}', 'is_primary': 0, 'review_status': 'pendente',
                    'review_note': f'Nome sugerido: {NAMES[k % 10][0]}\nCadastros existentes da revisão: #{k % 10 + 1}' if k % 3 == 0 else 'Origem: WhatsApp 2026-10-02', 'created_at': ''})
 fake = Fake(products, photos, role=args.papel)
+fake.others = [{'id': '22222222-2222-4222-8222-222222222222', 'email': 'bruno@happymachine.com.br', 'name': 'Bruno', 'role': 'operator', 'active': True}, {'id': '33333333-3333-4333-8333-333333333333', 'email': 'matheus@happymachine.com.br', 'name': 'Matheus', 'role': 'operator', 'active': True}]
 fake.repairs = [{'id': 1, 'name': 'Placa controladora', 'category': 'Placas', 'quantity': 3, 'defect': 'Não liga; capacitor estufado', 'notes': '', 'status': 'em_conserto', 'photo_path': None, 'created_at': '2026-10-09T10:00:00+00:00', 'updated_at': '2026-10-12T10:00:00+00:00', 'archived_at': None}]
 fake.holders.append({'id': 3, 'name': 'Carlos Lima', 'active': True, 'created_at': ''})
 fake.holder_stock = [{'holder_id': h, 'product_id': pid, 'quantity': q, 'updated_at': ''} for h, pid, q in [(1, 2, 8), (1, 6, 4), (1, 15, 1), (2, 2, 5), (2, 3, 20), (2, 7, 1), (2, 11, 2), (2, 17, 1), (3, 5, 2)]]

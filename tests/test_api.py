@@ -1,10 +1,11 @@
 import json, threading, unittest, urllib.request, urllib.error
 from http.server import ThreadingHTTPServer
 from loadapi import load
-from fakebackend import Fake, fake_jwt
+from fakebackend import Fake, fake_jwt, UID
+api_uid = lambda: UID
 
 import os
-os.environ.update(SUPABASE_URL='http://127.0.0.1:1', SUPABASE_ANON_KEY='sb_publishable_test', APP_ORIGIN='http://app.test')
+os.environ.update(SUPABASE_URL='http://127.0.0.1:1', SUPABASE_ANON_KEY='sb_publishable_test', APP_ORIGIN='http://app.test', SUPABASE_SERVICE_ROLE_KEY='sb_secret_test')
 api = load()
 
 
@@ -124,6 +125,52 @@ class API(unittest.TestCase):
     def test_sair_dos_outros_aparelhos(self):
         self.assertEqual(self.j('/api/account/logout-others', 'POST', {})[0], 200)
 
+
+    def test_senha_gerada_legivel(self):
+        for _ in range(50):
+            pw = api.new_password()
+            self.assertRegex(pw, r'^[A-Za-z2-9]{4}(-[A-Za-z2-9]{4}){3}$')
+            self.assertFalse(set(pw) & set('0O1lI'))
+
+    def test_admin_gera_nova_senha(self):
+        other = '22222222-2222-4222-8222-222222222222'
+        self.fake.others = [{'id': other, 'email': 'bruno@happymachine.test', 'role': 'operator'}]
+        s, d = self.j(f'/api/admin/users/{other}/password', 'POST', {})
+        self.assertEqual((s, d['email']), (200, 'bruno@happymachine.test'))
+        self.assertEqual(self.fake.account_ops[-1], ('PUT', {'password': d['password']}))
+        self.assertIn(('DELETE', '/rest/v1/email_login_sessions'), self.fake.calls)
+        self.assertEqual(self.j('/api/admin/users/33333333-3333-4333-8333-333333333333/password', 'POST', {})[0], 404)
+        s, d = self.j(f'/api/admin/users/{other}/password', 'POST', {'password': 'MinhaSenhaEscolhida1'})
+        self.assertEqual((s, d['password']), (200, 'MinhaSenhaEscolhida1'))
+        self.assertEqual(self.j(f'/api/admin/users/{other}/password', 'POST', {'password': 'curta1'})[0], 400)
+        self.fake.others.append({'id': '44444444-4444-4444-8444-444444444444', 'email': 'ana@happymachine.test', 'name': 'Ana', 'role': 'operator'})
+        s, d = self.j('/api/admin/users/reset-all', 'POST', {})
+        self.assertEqual((s, [x['email'] for x in d['results'] if x['ok']]), (200, ['bruno@happymachine.test', 'ana@happymachine.test']))
+        self.fake.others[0]['role'] = 'admin'
+        self.assertEqual(self.j(f'/api/admin/users/{other}/password', 'POST', {})[0], 400)
+        self.assertEqual([x['email'] for x in self.j('/api/admin/users/reset-all', 'POST', {})[1]['results']], ['ana@happymachine.test'])
+        self.fake.profile['role'] = 'operator'; api._sessions.clear()
+        self.assertEqual(self.j(f'/api/admin/users/{other}/password', 'POST', {})[0], 403)
+
+    def test_cofre_de_senhas(self):
+        tok = api.vault_seal('Hq7m-2kPz-Rt4a-W9xe')
+        self.assertNotIn('Hq7m', tok); self.assertEqual(api.vault_open(tok), 'Hq7m-2kPz-Rt4a-W9xe')
+        self.assertIsNone(api.vault_open(tok[:-4] + 'AAAA'))           # adulterado
+        other = '22222222-2222-4222-8222-222222222222'
+        self.fake.others = [{'id': other, 'email': 'bruno@happymachine.test', 'name': 'Bruno', 'role': 'operator'}]
+        self.j(f'/api/admin/users/{other}/password', 'POST', {'password': 'MinhaSenhaEscolhida1'})
+        self.assertNotIn('MinhaSenha', json.dumps(self.fake.settings))   # guardada cifrada
+        s, d = self.j('/api/admin/passwords'); self.assertEqual((s, d[other]['password']), (200, 'MinhaSenhaEscolhida1'))
+        self.fake.profile['role'] = 'operator'; api._sessions.clear()
+        self.assertEqual(self.req('/api/admin/passwords')[0], 403)
+        self.assertEqual(self.j('/api/account/password', 'POST', {'password': 'atual', 'new_password': 'NovaSenhaForte2026'})[0], 200)
+        self.assertEqual(api.vault_open(self.fake.settings['senha:' + api_uid()]['v']), 'NovaSenhaForte2026')
+
+    def test_senha_recusada_pelo_supabase_em_portugues(self):
+        e = api.password_error(api.APIError('Password should contain at least one character of each: abc, ABC, 123, !@#', 422))
+        self.assertEqual(e.status, 400); self.assertIn('tipos de caractere', e.message)
+        self.assertIn('vazamentos', api.password_error(api.APIError('Password is known to be weak and easy to guess (pwned)', 422)).message)
+        self.assertEqual(api.password_error(api.APIError('Outro', 502)).status, 502)
 
     def test_estante_da_peca(self):
         s, d = self.j('/api/products/2/location', 'POST', {'location': 'f'})

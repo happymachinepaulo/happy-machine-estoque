@@ -72,6 +72,10 @@ class Fake:
             return {'access_token': fake_jwt(), 'refresh_token': 'r' * 20, 'expires_in': 3600}
         if p == '/rest/v1/profiles':
             if method == 'PATCH': self.profile.update(data); return None
+            if qs.get('role') == 'neq.admin': return [dict(o) for o in getattr(self, 'others', []) if o['role'] != 'admin']
+            uid = qs.get('id', '')[3:]
+            if uid and uid != UID: return [dict(o) for o in getattr(self, 'others', []) if o['id'] == uid]
+            if not uid: return [self.profile] + [dict(o) for o in getattr(self, 'others', [])]
             return [self.profile]
         if p.startswith('/auth/v1/admin/users/'):
             self.account_ops = getattr(self, 'account_ops', []) + [(method, data)]; return {}
@@ -85,7 +89,9 @@ class Fake:
         if p == '/rest/v1/app_settings':
             self.settings = getattr(self, 'settings', {})
             if method == 'POST': self.settings[data['key']] = data['value']; return None
-            k = qs.get('key', '').partition('.')[2]
+            op, _, k = qs.get('key', '').partition('.')
+            if method == 'DELETE': self.settings.pop(k, None); return None
+            if op == 'like': return [{'key': x, 'value': v} for x, v in self.settings.items() if x.startswith(k.rstrip('*'))]
             return [{'value': self.settings[k]}] if k in self.settings else []
         if p == '/storage/v1/object/sign/stock-photos':
             return [{'path': x, 'signedURL': f'/object/sign/stock-photos/{x}?token=t'} for x in data['paths']]

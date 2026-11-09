@@ -3,7 +3,7 @@
 Desempenho: conexões HTTPS reutilizadas, validação de sessão em paralelo e com cache curto,
 consultas combinadas (produto + fotos numa só) e URLs assinadas de fotos em lote e em cache.
 """
-import os, json, io, csv, re, time, base64, secrets, hashlib, threading, unicodedata
+import os, json, io, csv, re, time, base64, secrets, hashlib, hmac, threading, unicodedata
 import http.client, urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -158,6 +158,73 @@ def valid_image(mime, payload):
             (mime == 'image/png' and payload.startswith(b'\x89PNG\r\n\x1a\n')) or
             (mime == 'image/webp' and payload[:4] == b'RIFF' and payload[8:12] == b'WEBP') or
             (mime == 'image/gif' and payload[:6] in (b'GIF87a', b'GIF89a')))
+
+
+PW_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'   # sem 0/O, 1/l/I: fácil de ler e digitar
+
+
+def new_password():
+    """Senha provisória legível: 4 blocos de 4 (ex.: Hq7m-2kPz-Rt4a-W9xe), com maiúscula, minúscula, número e símbolo."""
+    while True:
+        pw = '-'.join(''.join(secrets.choice(PW_CHARS) for _ in range(4)) for _ in range(4))
+        if re.search(r'[A-Z]', pw) and re.search(r'[a-z]', pw) and re.search(r'\d', pw): return pw
+
+
+def password_error(e):
+    """Traduz a recusa de senha do Supabase (regras do painel: tamanho, símbolos, senha vazada)."""
+    msg = (e.message or '').lower()
+    if e.status in (400, 422) and ('password' in msg or 'weak' in msg):
+        if 'pwned' in msg or 'leak' in msg or 'known' in msg: return APIError('Essa senha aparece em vazamentos conhecidos. Escolha outra.', 400)
+        if 'character' in msg: return APIError('O Supabase exige mais tipos de caractere na senha (maiúscula, minúscula, número e símbolo). Escolha outra.', 400)
+        if 'at least' in msg or 'length' in msg or 'short' in msg: return APIError('O Supabase exige uma senha mais longa. Escolha outra.', 400)
+        return APIError('O Supabase recusou essa senha. Escolha outra.', 400)
+    return e
+
+
+# ───────────────────────── Cofre de senhas (só o administrador lê) ─────────────────────────
+# Cópia cifrada da senha de cada usuário em app_settings (chave "senha:<id>"), que só o servidor lê.
+# Cifra: HMAC-SHA256 em modo contador + HMAC de autenticação (só biblioteca padrão).
+# A chave vem de PASSWORD_VAULT_KEY ou, se ela não existir, é derivada da chave de serviço do Supabase.
+def _vault_keys():
+    base = os.environ.get('PASSWORD_VAULT_KEY') or os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
+    if not base: raise APIError('Administração não configurada.', 503)
+    root = hashlib.sha256(b'happy-estoque/cofre-senhas/v1|' + base.encode()).digest()
+    return hmac.new(root, b'enc', hashlib.sha256).digest(), hmac.new(root, b'mac', hashlib.sha256).digest()
+
+
+def _stream(key, nonce, n):
+    out = b''; i = 0
+    while len(out) < n:
+        out += hmac.new(key, nonce + i.to_bytes(4, 'big'), hashlib.sha256).digest(); i += 1
+    return out[:n]
+
+
+def vault_seal(text):
+    ke, km = _vault_keys(); nonce = secrets.token_bytes(16); data = text.encode()
+    ct = bytes(a ^ b for a, b in zip(data, _stream(ke, nonce, len(data))))
+    tag = hmac.new(km, b'v1' + nonce + ct, hashlib.sha256).digest()
+    return 'v1.' + base64.urlsafe_b64encode(nonce + ct + tag).decode()
+
+
+def vault_open(token):
+    try:
+        ver, _, b64 = str(token).partition('.'); raw = base64.urlsafe_b64decode(b64)
+        if ver != 'v1' or len(raw) < 48: return None
+        ke, km = _vault_keys(); nonce, ct, tag = raw[:16], raw[16:-32], raw[-32:]
+        if not hmac.compare_digest(tag, hmac.new(km, b'v1' + nonce + ct, hashlib.sha256).digest()): return None
+        return bytes(a ^ b for a, b in zip(ct, _stream(ke, nonce, len(ct)))).decode()
+    except (ValueError, UnicodeError): return None
+
+
+def vault_put(uid, password):
+    """Guarda (ou apaga, com password=None) a cópia cifrada. Nunca derruba a troca de senha."""
+    key = 'senha:' + uid
+    try:
+        if password is None: remote('/rest/v1/app_settings?' + urllib.parse.urlencode({'key': 'eq.' + key}), 'DELETE', service=True)
+        else: remote('/rest/v1/app_settings?on_conflict=key', 'POST', {'key': key, 'value': {'v': vault_seal(password), 'at': datetime.now(timezone.utc).isoformat()}},
+                     service=True, headers={'Prefer': 'resolution=merge-duplicates'})
+        return True
+    except APIError: return False
 
 
 # ───────────────────────── Sessão (3 consultas em paralelo + cache) ─────────────────────────
@@ -739,7 +806,9 @@ class handler(BaseHTTPRequestHandler):
                 raise APIError('A nova senha precisa ter de 16 a 72 caracteres, com letras e números.')
             if new == str(data.get('password', '')): raise APIError('A nova senha precisa ser diferente da atual.')
             check_password()
-            remote('/auth/v1/admin/users/' + me, 'PUT', {'password': new}, service=True)
+            try: remote('/auth/v1/admin/users/' + me, 'PUT', {'password': new}, service=True)
+            except APIError as e: raise password_error(e) from None
+            if profile['role'] != 'admin': vault_put(me, new)
             logout_others()   # quem tinha a senha antiga perde o acesso nos outros aparelhos
             audit('change_password', {'id': me}); log_access(self, 'senha_alterada', me, profile['email'], session_id=jwt.get('session_id', ''))
             return self.respond({'ok': True})
@@ -753,6 +822,7 @@ class handler(BaseHTTPRequestHandler):
             check_password()
             audit('delete_account', {'id': me, 'email': profile['email']}); log_access(self, 'conta_excluida', me, profile['email'])
             remote('/auth/v1/admin/users/' + me, 'DELETE', service=True)
+            vault_put(me, None)
             forget_session(self.auth_token)
             return self.respond({'ok': True})
         raise APIError('Rota não encontrada.', 404)
@@ -763,11 +833,15 @@ class handler(BaseHTTPRequestHandler):
         if path == '/api/admin/users' and method == 'POST':
             data = self.json_body(); email = str(data.get('email', '')).strip().lower(); name = str(data.get('name', '')).strip()[:100]
             if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', email): raise APIError('Informe um e-mail válido.')
-            password = secrets.token_urlsafe(24) + 'aA9!'
-            user = remote('/auth/v1/admin/users', 'POST', {'email': email, 'password': password, 'email_confirm': True, 'user_metadata': {'name': name}}, service=True)
+            password = new_password()
+            try: user = remote('/auth/v1/admin/users', 'POST', {'email': email, 'password': password, 'email_confirm': True, 'user_metadata': {'name': name}}, service=True)
+            except APIError as e:
+                if e.status == 422 and 'already' in (e.message or '').lower(): raise APIError('Já existe uma conta com este e-mail.', 409) from None
+                raise password_error(e) from None
             uid = user['id']
             try:
                 remote('/rest/v1/profiles', 'POST', {'id': uid, 'email': email, 'name': name, 'role': 'operator', 'active': True}, service=True)
+                vault_put(uid, password)
                 remote('/rest/v1/audit_log', 'POST', {'action': 'create_user', 'after_data': json.dumps({'id': uid, 'email': email}), 'actor_id': profile['id']}, service=True)
             except Exception:
                 raise APIError('Não foi possível concluir o cadastro. A conta ainda não tem acesso.', 502)
@@ -781,9 +855,47 @@ class handler(BaseHTTPRequestHandler):
             remote('/rest/v1/profiles?' + urllib.parse.urlencode({'id': 'eq.' + uid}), 'PATCH', {'active': active}, service=True)
             remote('/rest/v1/audit_log', 'POST', {'action': 'user_active', 'after_data': json.dumps({'id': uid, 'active': active}), 'actor_id': profile['id']}, service=True)
             return self.respond({'ok': True})
+        if re.fullmatch(r'/api/admin/users/[0-9a-f-]{36}/password', path) and method == 'POST':
+            uid = path.split('/')[4]; chosen = self.json_body().get('password')
+            if chosen not in (None, ''):
+                chosen = str(chosen)
+                if len(chosen) < 16 or len(chosen) > 72 or not re.search(r'[A-Za-z]', chosen) or not re.search(r'\d', chosen):
+                    raise APIError('A senha precisa ter de 16 a 72 caracteres, com letras e números.')
+            users = remote('/rest/v1/profiles?' + urllib.parse.urlencode({'id': 'eq.' + uid, 'select': 'id,email,name,role'}), service=True)
+            if not users: raise APIError('Usuário não encontrado.', 404)
+            if users[0]['role'] == 'admin': raise APIError('Troque a senha do administrador em Configurações.')
+            return self.respond(self.reset_password(users[0], profile['id'], chosen or None))
+        if path == '/api/admin/users/reset-all' and method == 'POST':
+            users = remote('/rest/v1/profiles?' + urllib.parse.urlencode({'select': 'id,email,name,role', 'role': 'neq.admin', 'order': 'name.asc'}), service=True) or []
+            out = []
+            for u in users:
+                try: out.append(self.reset_password(u, profile['id']))
+                except APIError as e: out.append({'ok': False, 'email': u['email'], 'name': u.get('name', ''), 'error': e.message})
+            return self.respond({'results': out})
+        if path == '/api/admin/passwords' and method == 'GET':
+            try: rows_ = remote('/rest/v1/app_settings?' + urllib.parse.urlencode({'key': 'like.senha:*', 'select': 'key,value'}), service=True) or []
+            except APIError: raise APIError('Rode a migração 020 no Supabase para guardar as senhas.', 503) from None
+            out = {}
+            for r in rows_:
+                v = r.get('value') or {}; pw = vault_open(v.get('v', ''))
+                if pw is not None: out[r['key'][6:]] = {'password': pw, 'at': v.get('at', '')}
+            try: remote('/rest/v1/audit_log', 'POST', {'action': 'view_passwords', 'after_data': json.dumps({'total': len(out)}), 'actor_id': profile['id']}, service=True)
+            except APIError: pass
+            return self.respond(out)
         if path == '/api/admin/logs' and method == 'GET':
             return self.respond(self.logs())
         raise APIError('Rota não encontrada.', 404)
+
+    def reset_password(self, user, actor, password=None):
+        """Troca a senha de um usuário (gerada ou escolhida pelo admin) e o desconecta de todos os aparelhos."""
+        password = password or new_password()
+        try: remote('/auth/v1/admin/users/' + user['id'], 'PUT', {'password': password}, service=True)
+        except APIError as e: raise password_error(e) from None
+        remote('/rest/v1/email_login_sessions?' + urllib.parse.urlencode({'user_id': 'eq.' + user['id']}), 'DELETE', service=True)
+        vault_put(user['id'], password)
+        try: remote('/rest/v1/audit_log', 'POST', {'action': 'reset_password', 'after_data': json.dumps({'id': user['id'], 'email': user['email']}), 'actor_id': actor}, service=True)
+        except APIError: pass
+        return {'ok': True, 'email': user['email'], 'name': user.get('name', ''), 'password': password}
 
     def logs(self):
         """Página de logs (só administrador): acessos com conta e aparelho + alterações importantes."""
