@@ -11,9 +11,9 @@ const EV = {
 const ACT = {
   create: 'Cadastrou peça', update: 'Editou peça', delete: 'Excluiu peça', movement: 'Movimentou estoque', confirm: 'Confirmou quantidade', location: 'Mudou de estante',
   review_photo: 'Revisou foto', attach_photo: 'Adicionou foto', holder_create: 'Cadastrou pessoa', holder_update: 'Editou pessoa', holder_consume: 'Baixa de pessoa',
-  change_password: 'Trocou a senha', logout_others: 'Saiu dos outros aparelhos', delete_account: 'Excluiu a conta', create_user: 'Criou usuário', user_active: 'Ativou/desativou usuário',
+  change_password: 'Trocou a senha', logout_others: 'Saiu dos outros aparelhos', delete_account: 'Excluiu a conta', create_user: 'Criou usuário', reset_password: 'Gerou nova senha', user_active: 'Ativou/desativou usuário',
 };
-const ACCOUNT = new Set(['change_password', 'logout_others', 'delete_account', 'create_user', 'user_active']);
+const ACCOUNT = new Set(['change_password', 'logout_others', 'delete_account', 'create_user', 'reset_password', 'user_active']);
 const FIELDS = { name: 'nome', quantity: 'qtd', amount: 'qtd', kind: 'tipo', destination: 'para', location: 'estante', category: 'categoria', min_quantity: 'mínimo', status: 'status', email: 'e-mail', active: 'ativo', note: 'obs' };
 
 const users = () => new Map((data?.users || []).map(u => [u.id, u]));
@@ -28,7 +28,7 @@ function detail(a) {
   if (a.action === 'location') return `${a.before_data || 'sem estante'} → ${a.after_data || 'sem estante'}`;
   let o; try { o = JSON.parse(a.after_data); } catch { return a.after_data || ''; }
   if (!o || typeof o !== 'object') return String(o ?? '');
-  if (a.action === 'user_active' || a.action === 'create_user') { const u = users().get(o.id); return `${u ? (u.name || u.email) : (o.email || '')}${'active' in o ? (o.active ? ' · ativado' : ' · desativado') : ''}`; }
+  if (a.action === 'user_active' || a.action === 'create_user' || a.action === 'reset_password') { const u = users().get(o.id); return `${u ? (u.name || u.email) : (o.email || '')}${'active' in o ? (o.active ? ' · ativado' : ' · desativado') : ''}`; }
   const KIND = { entrada: 'entrada', saida: 'saída', ajuste: 'ajuste', consumo: 'baixa', cadastro: 'cadastro' };
   return Object.entries(FIELDS).filter(([k]) => o[k] !== undefined && o[k] !== '').slice(0, 4).map(([k, l]) => `${l}: ${k === 'kind' ? KIND[o[k]] || o[k] : o[k]}`).join(' · ');
 }
