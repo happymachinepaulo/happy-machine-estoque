@@ -176,7 +176,8 @@
 
     <!-- MANUTENÇÃO -->
     <section id="v-galpao" class="view" hidden>
-      <div class="head"><div><h1>Galpão</h1><p class="muted">A foto do galpão de verdade. Toque numa estante para entrar nela e depois toque na peça.</p></div></div>
+      <div class="head"><div><h1>Galpão</h1><p class="muted" id="gHint">O estoque em 3D, montado a partir das fotos. Busque uma peça para ver onde ela está e o caminho até ela.</p></div>
+        <div class="acts"><div class="seg" id="gMode" role="group" aria-label="Como ver o galpão"><button type="button" data-mode="3d" aria-pressed="true">3D</button><button type="button" data-mode="foto" aria-pressed="false">Foto real</button></div></div></div>
       <div class="tools"><label class="search"><span class="sr">Onde está</span><svg class="i"><use href="#i-search"/></svg><input id="gQ" class="control" type="search" placeholder="Onde está? Digite o nome da peça" autocomplete="off"></label></div>
       <div id="gFound" class="gFound glass" hidden></div>
       <div class="galpao"><div id="plan" class="plan glass"></div><aside id="shelfPanel" class="shelfPanel glass" aria-live="polite" hidden></aside></div>
