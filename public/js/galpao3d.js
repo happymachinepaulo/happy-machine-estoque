@@ -127,32 +127,33 @@ function frame(s) {
 /* o que vai em cada prateleira, por tipo de estante (cores tiradas das fotos) */
 const CARD = ['#c49a6c', '#b88d5f', '#d0a878', '#bf9466', '#caa273'];
 const RECIPES = {
-  placas: r => r() < .55 ? ['plain', .26, .025, .19, pick(r, ['#1f7a3a', '#226b3c', '#2f8f4e', '#1d5e8a'])] : r() < .5 ? ['card', .3, .16, .24, pick(r, CARD)] : ['plain', .22, .12, .18, pick(r, ['#1a1a1c', '#e7e7e7', '#2d6cdf'])],
+  placas: r => r() < .55 ? ['plain', .26, .025, .19, pick(r, ['#2c5a3a', '#335f40', '#24452f', '#2a3f5a'])] : r() < .5 ? ['card', .3, .16, .24, pick(r, CARD)] : ['plain', .22, .12, .18, pick(r, ['#1a1a1c', '#e7e7e7', '#2d6cdf'])],
   fontes: r => r() < .7 ? ['metal', .15, .09, .14, '#b9bdc3'] : ['card', .3, .18, .25, pick(r, CARD)],
   pcs: r => r() < .5 ? ['plain', .19, .42, .44, '#141416'] : r() < .4 ? ['plain', .34, .03, .24, pick(r, ['#8e1b26', '#2b2b2e'])] : ['card', .32, .2, .26, pick(r, CARD)],
   visores: r => r() < .5 ? ['plain', .3, .1, .22, '#f1f1f1'] : r() < .5 ? ['plain', .22, .12, .14, '#202024'] : ['card', .26, .14, .22, pick(r, CARD)],
   pagamento: r => r() < .45 ? ['plain', .14, .22, .2, '#1a1a1d'] : r() < .5 ? ['metal', .16, .1, .14, '#b4b8be'] : ['card', .26, .16, .22, pick(r, CARD)],
   rede: r => r() < .35 ? ['plain', .24, .07, .18, pick(r, ['#1f6f7a', '#2a7f8c', '#4b2a8a', '#e8c51a'])] : r() < .4 ? ['plain', .34, .2, .26, '#f2f2f2'] : ['card', .3, .22, .26, pick(r, CARD)],
-  garra: r => r() < .3 ? ['plain', .3, .1, .2, '#f2d21b'] : r() < .4 ? ['plain', .16, .18, .16, pick(r, ['#f0d43a', '#d9d9d9', '#1c1c1f', '#2e8b57'])] : r() < .5 ? ['card', .28, .16, .24, pick(r, CARD)] : ['plain', .22, .06, .16, '#1f7a3a'],
-  contadoras: r => r() < .4 ? ['plain', .3, .18, .26, '#2b31a8'] : r() < .5 ? ['plain', .28, .22, .26, '#dcdcdc'] : ['plain', .2, .1, .14, pick(r, ['#c8202e', '#1b1b1e'])],
+  garra: r => r() < .3 ? ['plain', .3, .1, .2, '#d9bd2a'] : r() < .4 ? ['plain', .16, .18, .16, pick(r, ['#cdb43a', '#c9c9c9', '#1c1c1f', '#2f5a3e'])] : r() < .5 ? ['card', .28, .16, .24, pick(r, CARD)] : ['plain', .22, .06, .16, '#1f7a3a'],
+  contadoras: r => r() < .4 ? ['plain', .3, .18, .26, '#2c3290'] : r() < .5 ? ['plain', .28, .22, .26, '#dcdcdc'] : ['plain', .2, .1, .14, pick(r, ['#c8202e', '#1b1b1e'])],
   led: r => r() < .45 ? ['metal', .28, .24, .07, '#a9adb3'] : r() < .6 ? ['plain', .5, .03, .12, '#f2f2f2'] : ['plain', .45, .06, .1, '#d58a12'],
 };
 function fillShelf(s, B, r, levels) {
   const f = frame(s), recipe = RECIPES[s.fill] || RECIPES.placas;
   levels.forEach((y, li) => {
     const top = li + 1 < levels.length ? levels[li + 1] - .03 : y + .38;
-    const room = top - y - .02, want = room * (.5 + r() * .45);
+    const room = top - y - .02, want = room * (.25 + r() * .4);
     let a = -f.len / 2 + .03;
     while (a < f.len / 2 - .1) {
       if (r() < .06) { a += .1 + r() * .2; continue; }         // vão vazio
-      const [k, sx0, sy0, sz0, col] = recipe(r), sc = 1.25 + r() * .35;
+      const [k, sx0, sy0, sz0, col] = recipe(r), sc = 1.1 + r() * .3;
       const sx = Math.min(sx0 * sc, f.len / 2 - a - .02), sy = Math.min(sy0 * sc, room), sz = Math.min(sz0 * sc * 1.15, f.dep - .04);
       if (sx < .06) break;
       // fileira de trás (aparece por cima) e da frente
       for (const row of sz < f.dep * .55 ? [-1, 1] : [0]) {
         let yy = y + .012, c = col, kk = k;
         const off = row ? row * (f.dep / 2 - sz / 2 - .02) : (r() - .5) * (f.dep - sz) * .5;
-        while (yy + sy <= y + .012 + Math.max(want, sy) + .001) {
+        let cnt = 0;
+        while (yy + sy <= y + .012 + Math.max(want, sy) + .001 && cnt++ < (sy < .05 ? 1 : 2)) {
           const p = f.at(a + sx / 2, off, yy);
           B.add(kk, p.x, p.y, p.z, sx - .008, sy - .004, sz, c, f.rot + (r() - .5) * .06);
           yy += sy; if (r() < .35) { const n2 = recipe(r); if (n2[2] * sc <= sy * 1.3) { kk = n2[0]; c = n2[4]; } }
@@ -283,7 +284,8 @@ function buildProps(M, T, B, r, g) {
   const deck = new THREE.Mesh(new THREE.PlaneGeometry(Fm.d, Fm.w), M.deck); deck.rotation.x = -Math.PI / 2; deck.rotation.z = Math.PI / 2; deck.position.set(Fm.x + Fm.w / 2, .9, Fm.z + Fm.d / 2); g.add(deck);
   B.add('plain', Fm.x + Fm.w / 2, .9, Fm.z + .3, .3, .05, .4, '#1d1d20'); B.add('plain', Fm.x + Fm.w / 2, .95, Fm.z + .3, .32, .03, .42, '#2a2a2e');
   // impressoras e CPU em cima da estante B
-  B.add('plain', 6.16, 2.06, 3.4, .42, .26, .4, '#f1f1f1'); B.add('plain', 6.16, 2.06, 3.95, .42, .3, .42, '#2d2d31'); B.add('plain', 6.18, 2.06, 4.45, .2, .42, .42, '#121214');
+  { const Bs = SHELVES.find(x => x.id === 'B'), bx = Bs.x + Bs.w / 2, bh = Bs.h + .01;
+    B.add('plain', bx, bh, Bs.z + .3, .42, .26, .4, '#f1f1f1'); B.add('plain', bx, bh, Bs.z + .85, .42, .3, .42, '#2d2d31'); B.add('plain', bx + .02, bh, Bs.z + 1.35, .2, .42, .42, '#121214'); }
   // fliperamas deitados (estampa de bolhas coloridas)
   PROPS.fliperamas.forEach((F, i) => {
     const mats = [M.arcadeSide, M.arcadeSide, M.arcade, M.arcadeSide, M.arcade, M.arcade];
@@ -309,8 +311,8 @@ function buildProps(M, T, B, r, g) {
   add(new THREE.CylinderGeometry(.03, .03, .9), M.white, w - .05, A.y + .15, A.z - .7).rotation.x = Math.PI / 2;
   add(new THREE.CylinderGeometry(.025, .025, A.y), M.white, w - .05, A.y / 2, A.z - 1.12);
   // caixas soltas no chão (como nas fotos)
-  [[5.5, 4.95, .5, .36, .4], [2.95, 4.6, .45, .3, .38], [1.0, 4.8, .4, .28, .36], [3.1, .7, .4, .3, .35]].forEach(([x, z, sx, sy, sz]) => B.add('card', x, 0, z, sx, sy, sz, pick(r, CARD), r() * .4));
-  B.add('plain', 2.7, 0, 6.6, .6, .3, .4, '#151517'); B.add('plain', 3.3, 0, 6.7, .5, .3, .4, '#151517'); B.add('card', 3.05, .3, 6.65, .4, .25, .35, '#c9a274');
+  PROPS.soltas.forEach(([x, z]) => B.add('card', x, 0, z, .42 + r() * .1, .28 + r() * .08, .36, pick(r, CARD), r() * .4));
+  PROPS.caixotes.forEach(([x, z]) => B.add('plain', x, 0, z, .55, .3, .4, '#151517'));
 }
 
 /* ── rota: caminho mais curto na planta (grade de 10 cm) ── */
@@ -511,7 +513,7 @@ function tags() {
   const w = R.el.clientWidth, h = R.el.clientHeight, v = new THREE.Vector3();
   for (const b of box.children) {
     const s = SHELVES.find(x => x.id === b.dataset.shelf); if (!s) continue;
-    v.set(s.x + s.w / 2, (s.kind === 'alvenaria' ? s.h + .5 : s.h) + .18, s.z + s.d / 2).project(R.camera);
+    { const f = frame(s); v.set(f.cx + f.front.x * f.dep * .6, (s.kind === 'alvenaria' ? s.h + .5 : s.h) + .18, f.cz + f.front.z * f.dep * .6).project(R.camera); }
     const on = v.z < 1 && v.x > -1.1 && v.x < 1.1 && v.y > -1.1 && v.y < 1.1;
     b.style.visibility = on ? '' : 'hidden';
     if (on) b.style.transform = `translate(${(v.x + 1) / 2 * w}px,${(1 - v.y) / 2 * h}px) translate(-50%,-100%)`;
