@@ -432,9 +432,9 @@ details summary{color:var(--ink-3)}
 .soon::after{background:var(--pink);width:240px;height:220px;right:-60px;bottom:-80px}
 .gears{position:relative;width:150px;height:120px;margin-bottom:6px}
 .gears svg{position:absolute;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.gears .g1{width:86px;height:86px;left:8px;top:22px;stroke:var(--red-l);filter:drop-shadow(0 0 6px var(--red-l));animation:spin 4s linear infinite}
-.gears .g2{width:56px;height:56px;left:82px;top:4px;stroke:var(--blue-l);filter:drop-shadow(0 0 6px var(--blue));animation:spin 2.6s linear infinite reverse}
-.gears .g3{width:44px;height:44px;left:88px;top:62px;stroke:var(--capri);filter:drop-shadow(0 0 6px var(--capri));animation:spin 2.1s linear infinite reverse}
+.gears .gr1{width:86px;height:86px;left:8px;top:22px;stroke:var(--red-l);filter:drop-shadow(0 0 6px var(--red-l));animation:spin 4s linear infinite}
+.gears .gr2{width:56px;height:56px;left:82px;top:4px;stroke:var(--blue-l);filter:drop-shadow(0 0 6px var(--blue));animation:spin 2.6s linear infinite reverse}
+.gears .gr3{width:44px;height:44px;left:88px;top:62px;stroke:var(--capri);filter:drop-shadow(0 0 6px var(--capri));animation:spin 2.1s linear infinite reverse}
 @keyframes spin{to{transform:rotate(360deg)}}
 .soon h2{font:400 clamp(60px,8vw,96px)/.9 var(--display);text-transform:uppercase;letter-spacing:.01em}
 .dots i{font-style:normal;display:inline-block;animation:bounce 1.2s ease-in-out infinite;color:var(--red-l)}
