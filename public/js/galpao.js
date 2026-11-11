@@ -1,8 +1,10 @@
-/* Galpão: a foto panorâmica real do estoque. Passar o dedo ou o mouse destaca a estante; tocar nela
+/* Galpão: duas formas de ver o estoque, alternadas no topo da aba.
+   3D: a sala montada a partir das fotos (galpao3d.js), com produto localizado, rota da porta até a estante e divergência
+   (peças abaixo do mínimo em vermelho). Foto real: a foto panorâmica do estoque. Passar o dedo ou o mouse destaca a estante; tocar nela
    faz a câmera "entrar" na foto geral até a estante e troca para a foto de perto, com as peças marcadas.
    Peça cadastrada abre a ficha; peça sem cadastro abre o cadastro com o recorte da foto.
    O administrador pode redesenhar onde cada estante está no panorama (botão Ajustar). */
-import { $, $$, esc, fold, n, icon, api, toast, blobUrl } from './core.js';
+import { $, $$, esc, fold, n, icon, api, toast, blobUrl, fmtDate } from './core.js';
 import { state, patch, subscribe } from './state.js';
 import { SHELVES, PANO, PANO_RATIO, shelf, shelfOptions } from './shelves.js';
 import { SPOTS } from './spots.js';
@@ -10,6 +12,12 @@ import { openDetail, newWithCrop } from './estoque.js';
 
 let sel = null, inited = false, q = '', layout = PANO, zoom = 1, busy = false;
 let shot = null;          // { s, k, key } foto aberta
+let mode = '3d', G3 = null, g3mode = 'geral', card = null;   // card = { kind: 'shelf'|'prod'|'div', id, pid, meters }
+try { mode = localStorage.getItem('hm-galpao') === 'foto' ? 'foto' : '3d'; } catch {}
+const isPending = p => p.review_status === 'pendente';
+const isLow = p => !isPending(p) && p.min_quantity > 0 && p.quantity <= p.min_quantity;
+const lowBy = () => state.products.filter(p => p.location && isLow(p)).reduce((a, p) => ((a[p.location] = (a[p.location] || 0) + 1), a), {});
+const unitOf = p => p.unit === 'm' ? 'm' : p.unit === 'lote' ? 'lote' : 'un';
 let edit = null;          // { id, rects } modo de ajuste
 const items = id => state.products.filter(p => (p.location || '') === id).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 const units = list => list.reduce((a, p) => a + (p.unit === 'un' ? p.quantity : 0), 0);
@@ -21,6 +29,15 @@ const qty = p => p.review_status === 'pendente' && !p.quantity ? '?' : n(p.quant
 
 /* ── panorama ── */
 function stage() {
+  if (mode === '3d') return `<div class="pv g3on" id="pv">
+    <div class="g3" id="g3"><div class="g3Load" id="g3Load"><span></span>Montando o galpão em 3D…</div></div>
+    <div class="g3Tags" id="g3Tags"></div>
+    <div class="g3Kpi" id="g3Kpi"></div>
+    <div class="g3Card" id="g3Card" hidden></div>
+    <div class="pvShot" id="pvShot" hidden></div>
+    <div class="pvBar" id="pvBar"></div>
+  </div>
+  <div class="pvChips" id="pvChips"></div>`;
   return `<div class="pv" id="pv">
     <div class="pvScroll" id="pvScroll"><div class="pvIn" id="pvIn" style="--ar:${PANO_RATIO}">
       <img id="pvImg" alt="Foto panorâmica do galpão" draggable="false">
@@ -42,12 +59,20 @@ function bar() {
     return;
   }
   b.className = 'pvBar';
+  if (mode === '3d') {
+    const low = Object.values(lowBy()).reduce((a, v) => a + v, 0);
+    b.innerHTML = `<span class="pvHint">${icon('arrow')}Arraste para girar · pinça ou rodinha para aproximar · toque numa estante</span>
+      <div class="pvActs"><button class="btn sm ghost" data-g3="geral" aria-pressed="${g3mode === 'geral' && !card}">${icon('map')}Visão geral</button>
+      <button class="btn sm ghost g3Div" data-g3="divergencia" aria-pressed="${g3mode === 'divergencia'}">${icon('bell')}Divergência${low ? `<small>${low}</small>` : ''}</button></div>`;
+    return;
+  }
   b.innerHTML = `<span class="pvHint">${icon('arrow')}Arraste para olhar o galpão · toque numa estante</span>
     <div class="pvActs">${admin() ? `<button class="btn sm ghost" data-edit title="Marcar onde cada estante está na foto">${icon('edit')}Ajustar</button>` : ''}
     <button class="btn icon sm" data-z="in" aria-label="Aproximar">${icon('plus')}</button><button class="btn icon sm" data-z="out" aria-label="Afastar">${icon('minus')}</button></div>`;
 }
 function hits() { return q ? new Set(state.products.filter(p => p._s.includes(q) && p.location).map(p => p.location)) : null; }
 function boxes() {
+  if (mode === '3d') return paint3d();
   const h = hits(), all = SHELVES.filter(s => rects(s.id).length);
   $('#pvBoxes').innerHTML = all.map(s => rects(s.id).map(([x, y, w, hh]) => `<rect class="pvBox${sel === s.id ? ' on' : ''}${h?.has(s.id) ? ' hit' : ''}${edit && edit.id === s.id ? ' ed' : ''}" data-shelf="${s.id}" x="${x}" y="${y}" width="${w}" height="${hh}" rx=".6" style="--c:${s.c}"/>`).join('')).join('');
   $('#pvTags').innerHTML = all.map(s => {
@@ -58,7 +83,7 @@ function boxes() {
 }
 /* escurece a foto toda menos as estantes destacadas */
 function shade(ids) {
-  const p = $('#pvShade'); if (!p) return;
+  const p = $('#pvShade'); if (!p || mode === '3d') return;
   const holes = ids.flatMap(id => rects(id)).map(([x, y, w, h]) => `M${x} ${y}h${w}v${h}h${-w}Z`).join('');
   p.setAttribute('d', holes ? 'M0 0H100V100H0Z' + holes : '');
   p.classList.toggle('show', !!holes);
@@ -66,7 +91,8 @@ function shade(ids) {
 function chips() {
   const el = $('#pvChips'); if (!el) return;
   const loose = items('').length;
-  el.innerHTML = SHELVES.map(s => `<button data-shelf="${s.id}" style="--c:${s.c}" aria-pressed="${sel === s.id}" class="${rects(s.id).length ? '' : 'off'}" title="${rects(s.id).length ? '' : 'Esta estante não aparece na foto geral'}"><i>${s.id}</i><span>${esc(s.name)}</span><small>${items(s.id).length}</small></button>`).join('')
+  const has = id => mode === '3d' || rects(id).length;
+  el.innerHTML = SHELVES.map(s => `<button data-shelf="${s.id}" style="--c:${s.c}" aria-pressed="${sel === s.id}" class="${has(s.id) ? '' : 'off'}" title="${has(s.id) ? '' : 'Esta estante não aparece na foto geral'}"><i>${s.id}</i><span>${esc(s.name)}</span><small>${items(s.id).length}</small></button>`).join('')
     + (loose ? `<button data-shelf="" class="loose" aria-pressed="${sel === ''}"><i>?</i><span>Sem estante</span><small>${loose}</small></button>` : '');
 }
 function sizePano() {
@@ -156,7 +182,9 @@ function zoomOut() {
 }
 
 async function go(id, focusPid = null) {
-  if (busy || edit) return; busy = true;
+  if (busy || edit) return;
+  if (mode === '3d') return go3d(id, focusPid);
+  busy = true;
   try {
     if (shot) await closeShot(false);
     sel = id; boxes(); chips(); side();
@@ -183,7 +211,7 @@ function openShot(s, key, url, focusPid) {
       <footer class="pvFoot"><p class="vsLegend"><span class="lg has"></span>No estoque: toque para abrir<span class="lg new"></span>Sem cadastro: toque para cadastrar</p>
       ${s.photos > 1 ? `<div class="vsThumbs">${Array.from({ length: s.photos }, (_, j) => `<button data-k="${s.id}${j + 1}" aria-current="${j + 1 === k}"><img alt="Foto ${j + 1}" data-src="/api/galpao/t${s.id}${j + 1}.jpg"></button>`).join('')}</div>` : ''}</footer>` : ''}`;
   el.hidden = false; el.classList.toggle('bare', !key); $('#pv').classList.add('shotting');
-  $('#pv').style.setProperty('--sh', $('#pvScroll').clientHeight + 'px');
+  $('#pv').style.setProperty('--sh', ($('#pvScroll') || $('#pv')).clientHeight + 'px');
   requestAnimationFrame(() => el.classList.add('in'));
   if (!key) return;
   $('#vsSpots').innerHTML = spots.map((x, i) => { const p = x.id && byId(x.id); return `<button class="spot ${p ? 'has' : 'new'}${focusPid && x.id === focusPid ? ' pick' : ''}" data-i="${i}" style="left:${x.x}%;top:${x.y}%;width:${x.w}%;height:${x.h}%;--d:${i * 70}ms" aria-label="${esc(p ? p.name : x.name)}${p ? '' : ' (sem cadastro)'}"><span>${icon(p ? 'box' : 'plus')}${esc(p ? p.name : x.name)}${p ? `<em>${qty(p)}</em>` : ''}</span></button>`; }).join('');
@@ -200,6 +228,100 @@ async function closeShot(clearSel = true) {
   await zoomOut();
   if (clearSel) { sel = null; boxes(); chips(); side(); }
 }
+
+/* ── 3D ── */
+const shelfPhotoKey = (s, pid) => { if (!s.photos) return null; if (pid) for (let k = 1; k <= s.photos; k++) if ((SPOTS[s.id + k] || []).some(x => x.id === pid)) return s.id + k; return s.id + '1'; };
+async function mount3d() {
+  const host = $('#g3'); if (!host) return;
+  try {
+    G3 = await import('./galpao3d.js');
+    if (!$('#g3') || mode !== '3d') return;
+    G3.mount(host, {
+      onPick: id => { if (busy) return; if (id) go(id); else if (sel !== null || card) reset3d(); },
+      onHover: id => $$('#g3Tags .pvTag').forEach(b => b.classList.toggle('hov', b.dataset.shelf === id)),
+      tagBox: () => $('#g3Tags'),
+    });
+    $('#g3Load')?.remove(); $('#pv').classList.add('ok');
+    paint3d();
+  } catch (e) {
+    console.error(e);
+    $('#g3Load').innerHTML = `Este aparelho não conseguiu abrir o 3D. <button class="btn sm" data-mode="foto">Ver a foto real</button>`;
+  }
+}
+function paint3d() {
+  const h = hits(), low = lowBy();
+  const tg = $('#g3Tags');
+  if (tg) tg.innerHTML = SHELVES.map(s => {
+    const c = items(s.id).length, l = low[s.id] || 0, red = g3mode === 'divergencia' && l;
+    return `<button class="pvTag g3Tag${sel === s.id ? ' on' : ''}${h ? (h.has(s.id) ? ' hit' : ' dim') : ''}${red ? ' red' : ''}" data-shelf="${s.id}" style="--c:${red ? '#ff3b55' : s.c}" aria-label="Estante ${s.id}: ${esc(s.name)}, ${c} peças"><b>${s.id}</b><span>${esc(s.name)}</span><small>${red ? `${l} em falta` : c}</small></button>`;
+  }).join('');
+  const k = $('#g3Kpi');
+  if (k) {
+    const placed = state.products.filter(p => p.location), loose = state.products.filter(p => !p.location).length, lows = Object.values(low).reduce((a, v) => a + v, 0);
+    k.innerHTML = `<div><small>Peças nas estantes</small><b>${n(placed.length)}</b></div><div><small>Unidades</small><b>${n(units(placed))}</b></div>
+      <div class="${lows ? 'bad' : ''}"><small>Abaixo do mínimo</small><b>${n(lows)}</b></div><div><small>Sem estante</small><b>${n(loose)}</b></div>`;
+  }
+  G3?.update({ sel, hits: h, low, mode: g3mode });
+  cardRender();
+}
+async function go3d(id, pid = null) {
+  busy = true;
+  try {
+    sel = id; G3?.clearRoute();
+    card = pid ? { kind: 'prod', id, pid } : id ? { kind: 'shelf', id } : null;
+    const s = shelf(id);
+    boxes(); chips(); side(); bar();
+    if (!s) { $('#shelfPanel').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    await G3?.focus(id);
+    if (pid && sel === id) { const r = G3?.route(id); if (r && card?.pid === pid) { card.meters = r.meters; cardRender(); } }
+  } finally { busy = false; }
+}
+function reset3d() {
+  sel = null; card = null; G3?.clearRoute(); G3?.overview();
+  boxes(); chips(); side(); bar();
+}
+function cardRender() {
+  const el = $('#g3Card'); if (!el) return;
+  if (g3mode === 'divergencia' && !card) {
+    const list = state.products.filter(p => p.location && isLow(p)).sort((a, b) => a.location.localeCompare(b.location) || a.name.localeCompare(b.name, 'pt-BR'));
+    el.hidden = false; el.className = 'g3Card div';
+    el.innerHTML = `<header><span class="g3Live red"><i></i>Divergência de estoque</span><button class="g3X" data-g3x aria-label="Fechar">${icon('x')}</button></header>
+      <p class="g3Lead">${list.length ? `<b>${list.length}</b> ${list.length === 1 ? 'peça está' : 'peças estão'} no mínimo ou abaixo dele. Toque para ver onde está.` : 'Nenhuma peça abaixo do mínimo. Tudo certo!'}</p>
+      <ul class="g3List">${list.slice(0, 40).map(p => `<li><button data-pid="${p.id}" data-go="${p.location}"><span class="shBadge sm" style="--c:#ff3b55">${p.location}</span><span class="tx"><b>${esc(p.name)}</b><small>Sistema ${n(p.quantity)} ${unitOf(p)} · mínimo ${n(p.min_quantity)}</small></span></button></li>`).join('')}</ul>`;
+    return;
+  }
+  if (!card) { el.hidden = true; el.innerHTML = ''; return; }
+  const s = shelf(card.id); if (!s) { el.hidden = true; return; }
+  el.hidden = false;
+  const list = items(s.id), low = list.filter(isLow), key = shelfPhotoKey(s, card.pid);
+  const fotos = key ? `<button class="btn sm" data-g3photo="${key}">${icon('photo')}Fotos da estante</button>` : '';
+  if (card.kind === 'prod') {
+    const p = byId(card.pid); if (!p) { card = { kind: 'shelf', id: s.id }; return cardRender(); }
+    const bad = isLow(p), spotted = key && (SPOTS[key] || []).some(x => x.id === p.id);
+    el.className = 'g3Card prod' + (bad ? ' warn' : '');
+    el.innerHTML = `<header><span class="g3Live${bad ? ' red' : ''}"><i></i>${bad ? 'Estoque insuficiente' : 'Produto localizado'}</span><button class="g3X" data-g3x aria-label="Fechar">${icon('x')}</button></header>
+      <small class="g3Cap">Posição</small><div class="g3Pos"><span class="shBadge" style="--c:${s.c}">${s.id}</span><b>Estante ${s.id}</b></div>
+      <div class="g3Prod">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : `<span class="ph">${icon('box')}</span>`}<div><b>${esc(p.name)}</b><small>#${p.id} · ${esc(p.category || 'Sem categoria')}</small></div></div>
+      <dl><div class="opt"><dt>Estante</dt><dd>${esc(s.name)}</dd></div><div><dt>Saldo no sistema</dt><dd class="${bad ? 'bad' : ''}">${qty(p)} ${unitOf(p)}</dd></div>
+      <div><dt>Mínimo</dt><dd>${p.min_quantity > 0 ? n(p.min_quantity) : '—'}</dd></div><div class="opt"><dt>Última mudança</dt><dd>${esc(fmtDate(p.updated_at) || '—')}</dd></div></dl>
+      ${card.meters ? `<p class="g3Route">${icon('arrow')}Rota da porta até a estante: <b>≈ ${card.meters.toFixed(1).replace('.', ',')} m</b> · ${Math.max(3, Math.round(card.meters / 1.1))} s a pé</p>` : ''}
+      <div class="row"><button class="btn sm primary" data-g3open="${p.id}">${icon('box')}Abrir ficha</button>${spotted ? `<button class="btn sm" data-g3photo="${key}" data-g3pid="${p.id}">${icon('cam')}Ver na foto</button>` : fotos}</div>`;
+    return;
+  }
+  el.className = 'g3Card shelf';
+  el.innerHTML = `<header><span class="g3Live" style="--lc:${s.c}"><i></i>Estante ${s.id}</span><button class="g3X" data-g3x aria-label="Fechar">${icon('x')}</button></header>
+    <div class="g3Pos"><span class="shBadge" style="--c:${s.c}">${s.id}</span><b>${esc(s.name)}</b></div>
+    <dl><div><dt>Tipos de peça</dt><dd>${n(list.length)}</dd></div><div><dt>Unidades</dt><dd>${n(units(list))}</dd></div><div><dt>Abaixo do mínimo</dt><dd class="${low.length ? 'bad' : ''}">${n(low.length)}</dd></div></dl>
+    <div class="row"><button class="btn sm primary" data-g3route="${s.id}">${icon('arrow')}Rota até aqui</button>${fotos}</div>`;
+}
+function setMode(m) {
+  if (m === mode) return;
+  mode = m; try { localStorage.setItem('hm-galpao', m); } catch {}
+  if (shot) { shot = null; }
+  G3?.unmount(); sel = null; card = null;
+  $('#plan').innerHTML = ''; modeBtns(); render();
+}
+function modeBtns() { $$('#gMode [data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode)); const h = $('#gHint'); if (h) h.textContent = mode === '3d' ? 'O estoque em 3D, montado a partir das fotos. Busque uma peça para ver onde ela está e o caminho até ela.' : 'A foto do galpão de verdade. Toque numa estante para entrar nela e depois toque na peça.'; }
 function step(d) { const s = shot.s, k = (shot.k - 1 + d + s.photos) % s.photos + 1; openShot(s, s.id + k, null); }
 
 async function crop(x) {
@@ -270,6 +392,9 @@ async function saveEdit() {
 
 export function render() {
   if ($('#v-galpao').hidden) return;
+  modeBtns();
+  if (!$('#pv') && mode === '3d') { $('#plan').innerHTML = stage(); bar(); mount3d(); }
+  else if (mode === '3d') { G3?.wake(); bar(); }
   if (!$('#pv')) {
     $('#plan').innerHTML = stage(); pointer(); bar();
     const img = $('#pvImg');
@@ -293,6 +418,20 @@ export function init() {
   const v = $('#v-galpao');
   v.addEventListener('click', e => {
     if (e.target.closest('#pvScroll') && $('#pvScroll').dataset.drag) return;
+    const md = e.target.closest('[data-mode]'); if (md) return setMode(md.dataset.mode);
+    if (mode === '3d') {
+      const gm = e.target.closest('[data-g3]');
+      if (gm) { const m = gm.dataset.g3; if (m === 'geral') { g3mode = 'geral'; reset3d(); } else { g3mode = g3mode === 'divergencia' ? 'geral' : 'divergencia'; card = null; sel = null; G3?.clearRoute(); G3?.overview(); boxes(); chips(); side(); bar(); } return; }
+      if (e.target.closest('[data-g3x]')) { if (g3mode === 'divergencia' && !card) { g3mode = 'geral'; bar(); } return reset3d(); }
+      const rt = e.target.closest('[data-g3route]'); if (rt) { const r = G3?.route(rt.dataset.g3route); if (r) toast(`Rota: ≈ ${r.meters.toFixed(1).replace('.', ',')} m da porta até a estante ${rt.dataset.g3route}`); return; }
+      const op3 = e.target.closest('[data-g3open]'); if (op3) return openDetail(+op3.dataset.g3open);
+      const ph = e.target.closest('[data-g3photo]');
+      if (ph) { const s = shelf(sel); const pid = +ph.dataset.g3pid || null; if (s) blobUrl(`/api/galpao/${ph.dataset.g3photo}.jpg`).catch(() => null).then(u => openShot(s, ph.dataset.g3photo, u, pid)); return; }
+      const gl = e.target.closest('.g3List [data-pid]'); if (gl) return go(gl.dataset.go, +gl.dataset.pid);
+      if (e.target.closest('[data-close-shot]')) return closeShot(false);
+      const t3 = e.target.closest('[data-shelf]');
+      if (t3 && !e.target.closest('#gFound') && !e.target.closest('.shOpen')) { if (sel === t3.dataset.shelf && shelf(sel)?.photos && !shot) { const s = shelf(sel), k = s.id + '1'; blobUrl(`/api/galpao/${k}.jpg`).catch(() => null).then(u => openShot(s, k, u, null)); return; } return go(t3.dataset.shelf); }
+    }
     if (e.target.closest('[data-edit]')) return startEdit();
     const ed = e.target.closest('[data-ed]'); if (ed) { edit.id = ed.dataset.ed; bar(); boxes(); return; }
     if (e.target.closest('[data-edclear]')) { delete edit.rects[edit.id]; bar(); boxes(); return; }
@@ -319,6 +458,6 @@ export function init() {
   });
   v.addEventListener('change', e => { const s = e.target.closest('select[data-loc]'); if (s) setLocation(+s.dataset.loc, s.value); });
   $('#gQ').addEventListener('input', e => { q = fold(e.target.value.trim()); boxes(); finder(); });
-  addEventListener('resize', () => { if ($('#pv') && !$('#v-galpao').hidden) { sizePano(); if (shot) { $('#pvZoom')?.remove(); } } });
+  addEventListener('resize', () => { if ($('#pv') && !$('#v-galpao').hidden && mode !== '3d') { sizePano(); if (shot) { $('#pvZoom')?.remove(); } } });
 }
 export function load() { init(); render(); }

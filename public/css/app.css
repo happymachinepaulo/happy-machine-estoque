@@ -820,3 +820,68 @@ html:not(.isAdmin) .adminOnly{display:none!important}
 .pwShow{font-weight:700;letter-spacing:.04em;user-select:all;-webkit-user-select:all}
 .isAdmin .opOnly{display:none}
 .opOnly{display:block}
+/* ── Galpão 3D ── */
+#gMode button{padding:0 16px;font-size:14px}
+.g3{position:relative;height:min(74vh,720px);min-height:380px;touch-action:none;background:radial-gradient(120% 90% at 50% 10%,#1d1d22,#0b0b0d)}
+.g3Canvas{display:block;width:100%;height:100%;outline:none}
+.g3Load{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--ink-2);font-size:14px;text-align:center;padding:20px}
+.g3Load span{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.12);border-top-color:var(--capri);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.g3Tags{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.g3Tags .pvTag{left:0;top:0;translate:none;will-change:transform;transition:opacity .25s,background .2s,scale .25s var(--spring)}
+.g3Tags .pvTag:hover,.g3Tags .pvTag.hov,.g3Tags .pvTag.on,.g3Tags .pvTag.hit{transform:none;scale:1.08}
+.g3 .moving~.g3Tags .pvTag span{max-width:0}
+.g3Tags .pvTag.red{border-color:#ff3b55;background:rgba(60,8,16,.85);box-shadow:0 0 18px -2px rgba(255,59,85,.75)}
+.g3Tags .pvTag.red b{background:#ff3b55;color:#fff}
+.g3Tags .pvTag.red small{color:#ffb3bf}
+.g3Kpi{position:absolute;left:12px;top:12px;z-index:2;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 24px);pointer-events:none}
+.g3Kpi div{display:grid;gap:1px;padding:7px 12px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(12,12,16,.62);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.g3Kpi small{font:600 9.5px/1.2 var(--font);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.g3Kpi b{font:500 17px/1.15 var(--font);font-variant-numeric:tabular-nums;color:#fff}
+.g3Kpi .bad b{color:#ff6b80}
+.g3Card{position:absolute;right:12px;top:12px;z-index:3;width:min(340px,calc(100% - 24px));max-height:calc(100% - 84px);overflow:auto;display:grid;gap:10px;padding:14px;border:1px solid rgba(110,242,255,.28);border-radius:18px;background:rgba(10,12,16,.78);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);box-shadow:0 20px 50px -20px #000,0 0 0 1px rgba(255,255,255,.03) inset;animation:g3In .45s var(--ease) both;scrollbar-width:thin}
+.g3Card[hidden]{display:none}
+.g3Card.warn,.g3Card.div{border-color:rgba(255,59,85,.5);box-shadow:0 20px 50px -20px #000,0 0 30px -10px rgba(255,59,85,.6)}
+@keyframes g3In{from{opacity:0;transform:translateY(-8px) scale(.98)}}
+.g3Card header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.g3Live{--lc:var(--capri);display:inline-flex;align-items:center;gap:7px;font:700 11px/1 var(--font);letter-spacing:.12em;text-transform:uppercase;color:var(--lc)}
+.g3Live i{width:8px;height:8px;border-radius:50%;background:var(--lc);box-shadow:0 0 10px var(--lc);animation:g3Blink 1.4s ease-in-out infinite}
+.g3Live.red{--lc:#ff3b55}
+@keyframes g3Blink{50%{opacity:.35}}
+.g3X{display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:8px;background:rgba(255,255,255,.06);color:var(--ink-2)}
+.g3X:hover{background:rgba(255,255,255,.14)}
+.g3X svg{width:15px;height:15px}
+.g3Cap{font:600 10px/1 var(--font);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:-4px}
+.g3Pos{display:flex;align-items:center;gap:10px}
+.g3Pos b{font:400 26px/1.05 var(--display);text-transform:uppercase;letter-spacing:.01em}
+.g3Prod{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:rgba(255,255,255,.05)}
+.g3Prod img,.g3Prod .ph{flex:none;width:46px;height:46px;border-radius:9px;object-fit:cover;background:rgba(255,255,255,.06);display:grid;place-items:center;color:var(--ink-3)}
+.g3Prod div{display:grid;min-width:0}.g3Prod b{font-size:14.5px;line-height:1.25}.g3Prod small{color:var(--ink-3);font-size:12px}
+.g3Card dl{display:grid;gap:0;margin:0}
+.g3Card dl div{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px}
+.g3Card dl div:last-child{border-bottom:0}
+.g3Card dt{color:var(--ink-3)}.g3Card dd{margin:0;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.g3Card dd.bad{color:#ff6b80}
+.g3Route{display:flex;align-items:center;gap:7px;margin:0;padding:8px 10px;border-radius:10px;background:rgba(110,242,255,.08);color:var(--capri);font-size:12.5px}
+.g3Route svg{width:14px;height:14px;flex:none}
+.g3Card .row{display:flex;gap:6px;flex-wrap:wrap}.g3Card .row .btn{flex:1}
+.g3Lead{margin:0;font-size:13px;color:var(--ink-2)}.g3Lead b{color:#ff6b80}
+.g3List{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.g3List button{display:flex;align-items:center;gap:10px;width:100%;padding:6px 8px;border:0;border-radius:10px;background:rgba(255,59,85,.07);text-align:left}
+.g3List button:hover{background:rgba(255,59,85,.16)}
+.g3List .tx{display:grid;min-width:0}.g3List b{font-size:13.5px}.g3List small{color:var(--ink-3);font-size:11.5px}
+.pv.g3on .pvBar .btn[aria-pressed=true]{background:rgba(255,255,255,.14);color:#fff;border-color:var(--gl-2)}
+.g3Div small{min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#ff3b55;color:#fff;font:700 11px/18px var(--font)}
+.pv.g3on .pvShot{z-index:5}
+@media(max-width:640px){
+  .g3{height:66vh;min-height:360px}
+  .g3Kpi{left:8px;top:8px;max-width:calc(100% - 16px);display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+  .g3Kpi div{padding:5px 7px;border-radius:10px}.g3Kpi b{font-size:14px}.g3Kpi small{font-size:7.5px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g3Card{left:8px;right:8px;top:auto;bottom:56px;width:auto;max-height:48%;padding:11px;gap:7px;border-radius:16px}
+  .g3Card .g3Pos b{font-size:19px}.g3Card .shBadge{width:34px;height:34px;font-size:22px;border-radius:10px}
+  .g3Card dl div{padding:4px 0;font-size:12px}
+  .g3Card.shelf dl{grid-template-columns:repeat(3,1fr);gap:6px}.g3Card.shelf dl div{display:grid;justify-content:start;border:0;padding:0}.g3Card.shelf dd{text-align:left}
+  .g3Prod{padding:6px}.g3Prod img,.g3Prod .ph{width:38px;height:38px}
+  .g3Card dl .opt,.g3Card .g3Cap{display:none}
+  .g3Tags .pvTag{font-size:11px}
+}
