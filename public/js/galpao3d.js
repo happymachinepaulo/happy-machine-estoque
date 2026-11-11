@@ -6,6 +6,7 @@ import * as THREE from './vendor/three.module.min.js';
 import { OrbitControls } from './vendor/OrbitControls.js';
 import { RoomEnvironment } from './vendor/RoomEnvironment.js';
 import { SHELVES, ROOM, PROPS } from './shelves.js';
+import { Products, fillProducts } from './galpao3dProdutos.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const FACE = { n: V(0, 0, -1), s: V(0, 0, 1), e: V(1, 0, 0), w: V(-1, 0, 0) };
@@ -124,45 +125,8 @@ function frame(s) {
   return { cx, cz, run, front, len, dep, at, rot };
 }
 
-/* o que vai em cada prateleira, por tipo de estante (cores tiradas das fotos) */
 const CARD = ['#c49a6c', '#b88d5f', '#d0a878', '#bf9466', '#caa273'];
-const RECIPES = {
-  placas: r => r() < .55 ? ['plain', .26, .025, .19, pick(r, ['#2c5a3a', '#335f40', '#24452f', '#2a3f5a'])] : r() < .5 ? ['card', .3, .16, .24, pick(r, CARD)] : ['plain', .22, .12, .18, pick(r, ['#1a1a1c', '#e7e7e7', '#2d6cdf'])],
-  fontes: r => r() < .7 ? ['metal', .15, .09, .14, '#b9bdc3'] : ['card', .3, .18, .25, pick(r, CARD)],
-  pcs: r => r() < .5 ? ['plain', .19, .42, .44, '#141416'] : r() < .4 ? ['plain', .34, .03, .24, pick(r, ['#8e1b26', '#2b2b2e'])] : ['card', .32, .2, .26, pick(r, CARD)],
-  visores: r => r() < .5 ? ['plain', .3, .1, .22, '#f1f1f1'] : r() < .5 ? ['plain', .22, .12, .14, '#202024'] : ['card', .26, .14, .22, pick(r, CARD)],
-  pagamento: r => r() < .45 ? ['plain', .14, .22, .2, '#1a1a1d'] : r() < .5 ? ['metal', .16, .1, .14, '#b4b8be'] : ['card', .26, .16, .22, pick(r, CARD)],
-  rede: r => r() < .35 ? ['plain', .24, .07, .18, pick(r, ['#1f6f7a', '#2a7f8c', '#4b2a8a', '#e8c51a'])] : r() < .4 ? ['plain', .34, .2, .26, '#f2f2f2'] : ['card', .3, .22, .26, pick(r, CARD)],
-  garra: r => r() < .3 ? ['plain', .3, .1, .2, '#d9bd2a'] : r() < .4 ? ['plain', .16, .18, .16, pick(r, ['#cdb43a', '#c9c9c9', '#1c1c1f', '#2f5a3e'])] : r() < .5 ? ['card', .28, .16, .24, pick(r, CARD)] : ['plain', .22, .06, .16, '#1f7a3a'],
-  contadoras: r => r() < .4 ? ['plain', .3, .18, .26, '#2c3290'] : r() < .5 ? ['plain', .28, .22, .26, '#dcdcdc'] : ['plain', .2, .1, .14, pick(r, ['#c8202e', '#1b1b1e'])],
-  led: r => r() < .45 ? ['metal', .28, .24, .07, '#a9adb3'] : r() < .6 ? ['plain', .5, .03, .12, '#f2f2f2'] : ['plain', .45, .06, .1, '#d58a12'],
-};
-function fillShelf(s, B, r, levels) {
-  const f = frame(s), recipe = RECIPES[s.fill] || RECIPES.placas;
-  levels.forEach((y, li) => {
-    const top = li + 1 < levels.length ? levels[li + 1] - .03 : y + .38;
-    const room = top - y - .02, want = room * (.25 + r() * .4);
-    let a = -f.len / 2 + .03;
-    while (a < f.len / 2 - .1) {
-      if (r() < .06) { a += .1 + r() * .2; continue; }         // vão vazio
-      const [k, sx0, sy0, sz0, col] = recipe(r), sc = 1.1 + r() * .3;
-      const sx = Math.min(sx0 * sc, f.len / 2 - a - .02), sy = Math.min(sy0 * sc, room), sz = Math.min(sz0 * sc * 1.15, f.dep - .04);
-      if (sx < .06) break;
-      // fileira de trás (aparece por cima) e da frente
-      for (const row of sz < f.dep * .55 ? [-1, 1] : [0]) {
-        let yy = y + .012, c = col, kk = k;
-        const off = row ? row * (f.dep / 2 - sz / 2 - .02) : (r() - .5) * (f.dep - sz) * .5;
-        let cnt = 0;
-        while (yy + sy <= y + .012 + Math.max(want, sy) + .001 && cnt++ < (sy < .05 ? 1 : 2)) {
-          const p = f.at(a + sx / 2, off, yy);
-          B.add(kk, p.x, p.y, p.z, sx - .008, sy - .004, sz, c, f.rot + (r() - .5) * .06);
-          yy += sy; if (r() < .35) { const n2 = recipe(r); if (n2[2] * sc <= sy * 1.3) { kk = n2[0]; c = n2[4]; } }
-        }
-      }
-      a += sx + .008 + r() * .03;
-    }
-  });
-}
+let PRODS = null;   // produtos das prateleiras (galpao3dProdutos.js)
 
 /* estante preta de metal com prateleiras de tela (e fundo de tela nas "tela") */
 function metalShelf(s, M, B, r, g) {
@@ -185,7 +149,7 @@ function metalShelf(s, M, B, r, g) {
     const uv = back.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * f.len / .26, uv.getY(i) * (h - .1) / .26);
     const bm = new THREE.Mesh(back, M.back); bm.position.copy(f.at(0, -f.dep / 2 + .01, h / 2 + .03)); g.add(bm);
   }
-  fillShelf(s, B, r, levels);
+  fillProducts(s, f, levels, r, PRODS);
   return { levels };
 }
 
@@ -249,7 +213,7 @@ function buildRoom(M, T, B, r, g) {
   const walls = [];
   const wall = (x0, z0, x1, z1, y0, y1, n) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(t, Math.abs(x1 - x0)), y1 - y0, Math.max(t, Math.abs(z1 - z0))), M.wall);
-    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.receiveShadow = true; m.castShadow = true; m.userData.n = n; g.add(m); walls.push(m); return m;
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.receiveShadow = true; m.castShadow = true; m.userData = { n, y0, y1 }; g.add(m); walls.push(m); return m;
   };
   wall(-t, -t / 2, w + t, -t / 2, 0, h, V(0, 0, 1));                 // fundo (alvenaria)
   wall(-t / 2, 0, -t / 2, l, 0, h, V(1, 0, 0));                      // esquerda
@@ -258,8 +222,20 @@ function buildRoom(M, T, B, r, g) {
   wall(-t, l + t / 2, d.x, l + t / 2, 0, h, V(0, 0, -1));
   wall(d.x + d.w, l + t / 2, w + t, l + t / 2, 0, h, V(0, 0, -1));
   wall(d.x, l + t / 2, d.x + d.w, l + t / 2, 2.1, h, V(0, 0, -1));
-  const door = new THREE.Mesh(new THREE.BoxGeometry(d.w - .08, 2.06, .04), new THREE.MeshStandardMaterial({ color: '#3b3d42', roughness: .4, metalness: .5 }));
-  door.position.set(d.x + d.w / 2, 1.03, l + t + .03); g.add(door); walls.push(Object.assign(door, { userData: { n: V(0, 0, -1) } }));
+  // porta dupla de metal: duas folhas com puxador, batente e soleira
+  const dm = new THREE.MeshStandardMaterial({ color: '#4a4d53', roughness: .38, metalness: .6 }), hm = new THREE.MeshStandardMaterial({ color: '#c9ccd1', roughness: .25, metalness: .9 });
+  const leaf = (x0, side) => {
+    const g2 = new THREE.Group(), lw = d.w / 2 - .03;
+    const pl = new THREE.Mesh(new THREE.BoxGeometry(lw, 2.04, .045), dm); pl.position.set(lw / 2 * side, 1.02, 0); pl.castShadow = true; g2.add(pl);
+    for (const y of [.55, 1.5]) { const fr = new THREE.Mesh(new THREE.BoxGeometry(lw - .12, .5, .008), new THREE.MeshStandardMaterial({ color: '#3c3f44', roughness: .5, metalness: .5 })); fr.position.set(lw / 2 * side, y, -.026); g2.add(fr); }
+    const hd = new THREE.Mesh(new THREE.BoxGeometry(.03, .22, .04), hm); hd.position.set((lw - .07) * side, 1.05, -.05); g2.add(hd);
+    g2.position.set(x0, 0, l + t / 2); g.add(g2);
+    g2.userData = { n: V(0, 0, -1), y0: 0, y1: 2.06, leaf: true }; g2.position.y = 0; walls.push(g2);
+  };
+  leaf(d.x + .02, 1); leaf(d.x + d.w - .02, -1);
+  const jamb = (x, w2) => { const j = new THREE.Mesh(new THREE.BoxGeometry(w2, 2.1, t + .04), dm); j.position.set(x, 1.05, l + t / 2); g.add(j); j.userData = { n: V(0, 0, -1), y0: 0, y1: 2.1 }; walls.push(j); };
+  jamb(d.x + .015, .03); jamb(d.x + d.w - .015, .03);
+  const sill = new THREE.Mesh(new THREE.BoxGeometry(d.w, .012, t + .1), hm); sill.position.set(d.x + d.w / 2, .006, l + t / 2); g.add(sill);
   // teto com as luzes quadradas de LED
   const ceil = new THREE.Mesh(new THREE.PlaneGeometry(w, l), M.ceil); ceil.rotation.x = Math.PI / 2; ceil.position.set(w / 2, h, l / 2); g.add(ceil);
   PROPS.luzes.forEach(([x, z]) => {
@@ -414,7 +390,7 @@ export function mount(el, hooks = {}) {
   scene.add(sun, sun.target);
 
   const world = new THREE.Group(); world.userData.T = T; scene.add(world);
-  const B = new Batch(), r = rng(20261110);
+  const B = new Batch(), r = rng(20261110); PRODS = new Products();
   R.room = buildRoom(M, T, B, r, world);
   buildProps(M, T, B, r, world);
   const hitGeo = new THREE.BoxGeometry(1, 1, 1), hitMat = new THREE.MeshBasicMaterial({ visible: false });
@@ -426,7 +402,7 @@ export function mount(el, hooks = {}) {
     const hit = new THREE.Mesh(hitGeo, hitMat); hit.scale.set(s.w + .1, s.h + .1, s.d + .1); hit.position.set(s.x + s.w / 2, (s.h + .1) / 2, s.z + s.d / 2); hit.userData.shelf = s.id; world.add(hit); R.hits.push(hit);
     const gl = glowFor(s); scene.add(gl); R.glows[s.id] = gl;
   }
-  B.build(M, world);
+  B.build(M, world); PRODS.build(world); PRODS = null;
 
   // marca da entrada no chão
   const ent = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshBasicMaterial({ map: T.ring, color: '#6EF2FF', transparent: true, opacity: .6, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -485,7 +461,13 @@ export function wake() {
 /* paredes entre a câmera e a sala somem (casa de bonecas); o teto some visto de cima */
 function walls() {
   const c = R.camera.position, mid = V(ROOM.w / 2, 0, ROOM.l / 2);
-  for (const w of R.room.walls) { const n = w.userData.n, p = w.position; const out = (c.x - p.x) * n.x + (c.z - p.z) * n.z < -.05; w.visible = !out; }
+  const cut = .32;   // parede entre a câmera e a sala vira só um rodapé, para ver a porta e o formato da sala
+  for (const w of R.room.walls) {
+    const u = w.userData, n = u.n, p = w.position, out = (c.x - p.x) * n.x + (c.z - p.z) * n.z < -.05;
+    if (u.leaf) { w.scale.y = out ? cut / 2.06 : 1; continue; }
+    if (u.y0 > 0) { w.visible = !out; continue; }
+    const h = u.y1 - u.y0; w.scale.y = out ? cut / h : 1; w.position.y = out ? cut / 2 : (u.y0 + u.y1) / 2;
+  }
   R.room.ceil.visible = c.y < ROOM.h - .05 && c.x > 0 && c.x < ROOM.w && c.z > 0 && c.z < ROOM.l;
   void mid;
 }

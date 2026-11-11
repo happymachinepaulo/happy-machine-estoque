@@ -5,7 +5,7 @@
    Cada estante: x/z = canto de cima à esquerda, w = largura (x), d = profundidade (z), h = altura, lv = prateleiras,
    face = lado da frente (n/s/e/w), kind = metal | tela (metal com fundo de tela) | alvenaria | cestos,
    fill = o tipo de coisa que aparece nas prateleiras; photos = quantas fotos a estante tem em api/galpao/. */
-export const ROOM = { w: 4.6, l: 7.6, h: 2.9, door: { x: 1.0, w: 1.0 } };
+export const ROOM = { w: 4.6, l: 7.6, h: 2.9, door: { x: 0.75, w: 1.6 } };
 /* Uma fileira só no meio (I de um lado, J do outro), uma fileira em cada parede lateral e a alvenaria no fundo. */
 export const SHELVES = [
   { id: 'H', name: 'Alvenaria: caixas, telas e impressoras', c: '#EFEFEF', photos: 11, x: 0.55, z: 0, w: 3.5, d: 0.46, h: 2.3, face: 's', kind: 'alvenaria', fill: 'alvenaria' },
@@ -26,11 +26,11 @@ export const PROPS = {
   moldura: { x: 4.12, z: 4.66, w: 0.48, d: 0.92, h: 2.05 },              // estante vazia, só a armação
   fliperamas: [{ x: 2.45, z: 5.95, w: 1.45, d: 0.56, h: 0.72 }, { x: 2.45, z: 6.6, w: 1.45, d: 0.56, h: 0.72 }],
   escada: { x: 2.55, z: 5.55 },
-  cadeira: { x: 0.95, z: 6.4 },
+  cadeira: { x: 1.05, z: 5.5 },
   ar: { z: 6.1, y: 2.35 },                                               // ar-condicionado na parede direita (leste)
   luzes: [[1.1, 1.9], [3.3, 1.9], [1.1, 4.6], [3.3, 3.9], [2.0, 6.7]],
   soltas: [[3.5, 5.0], [1.2, 5.2], [3.0, 0.65]],                          // caixas no chão
-  caixotes: [[1.6, 7.0], [2.2, 7.1]],                                     // caixotes pretos perto da porta
+  caixotes: [[3.75, 7.25], [4.25, 7.2]],                                  // caixotes pretos no canto da porta
 };
 /* Onde cada estante aparece na foto panorâmica (api/galpao/pano.jpg), em % da largura e da altura: [x, y, largura, altura].
    É só o ponto de partida: o administrador redesenha pelo botão Ajustar do Galpão, e o que ele salvar vale no lugar disto.
