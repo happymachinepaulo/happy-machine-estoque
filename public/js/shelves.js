@@ -1,48 +1,94 @@
 /* Estantes do galpão e a planta usada no 3D (em metros, vista de cima).
-   Remontada a partir das fotos de 10/11/2026: parede de alvenaria branca no fundo (norte), cestos pretos e o
-   ar-condicionado no canto da porta (sudeste), pilha de caixas embrulhadas no corredor da direita e as fileiras
-   de estantes pretas no meio. x vai da parede esquerda (oeste) para a direita; z vai do fundo (alvenaria) para a porta.
-   Cada estante: x/z = canto de cima à esquerda, w = largura (x), d = profundidade (z), h = altura, lv = prateleiras,
-   face = lado da frente (n/s/e/w), kind = metal | tela (metal com fundo de tela) | alvenaria | cestos,
-   fill = o tipo de coisa que aparece nas prateleiras; photos = quantas fotos a estante tem em api/galpao/. */
-export const ROOM = { w: 4.6, l: 7.6, h: 2.9, door: { x: 0.75, w: 1.6 } };
-/* Uma fileira só no meio (I de um lado, J do outro), uma fileira em cada parede lateral e a alvenaria no fundo. */
+   Refeita em 11/11/2026 medindo as fotos de 10/11 (IMG 7676 a 7691), as fotos antigas de cada estante e a panorâmica.
+   x vai da parede da porta (esquerda) para a parede dos cestos (direita); z vai da alvenaria (fundo) para a parede do ar.
+   - fundo: a alvenaria branca H ocupa a parede inteira, em duas colunas (7682, 7684, 7685);
+   - parede esquerda, do fundo para a porta: G com a cadeira na frente (7686, 7688), F (7687), depois dois móveis em que as
+     letras são faixas de prateleira: no primeiro, D embaixo, E no meio e as fontes chaveadas de B em cima (foto B2); no
+     segundo, as placas de A embaixo (fotos A2 a A5) e as fontes ATX de B em cima (foto B1). Depois as escadas e a porta
+     dupla, que não aparece em nenhuma foto: é o único trecho de parede livre, e é de onde a panorâmica e as fotos 7677 a
+     7679 foram tiradas;
+   - meio: uma fileira só, de uma estante de fundo: C com os computadores (7682, 7691), uma estante sem letra (seladora azul
+     e maleta de alumínio, 7681), a das placas e do domo branco (foto A1, conta como A) e a pilha embrulhada na ponta;
+   - parede direita, do fundo para o ar: I (7682, 7683), J com fundo de tela (7680), a estante de tela das caixinhas com a
+     CPU e as impressoras em cima, o vão aberto em cima e os cestos de cabos K até o canto (7677, 7678, 7679);
+   - parede do ar: ar-condicionado no alto, os quatro fliperamas em pé lado a lado e a coluna de cestos escalonada (7678, 7690).
+   SHELVES são as letras (o que o sistema guarda em cada peça). UNITS são os móveis de verdade: x/z = canto, w = largura (x),
+   d = profundidade (z), h = altura do tampo, lv = altura de cada prateleira, face = lado da frente (n/s/e/w),
+   kind = metal | tela (metal com fundo de tela) | aberta | alvenaria | cestos, fill = o que aparece em cada prateleira
+   (de baixo para cima), id = letra do móvel inteiro, bands = letras por faixa de prateleira [letra, da, até], roof = o que
+   fica em cima do tampo, go = lado por onde se chega (quando não é o da frente). */
+export const ROOM = { w: 3.9, l: 8.2, h: 2.9, door: { wall: 'w', z: 5.75, w: 1.6 } };
 export const SHELVES = [
-  { id: 'H', name: 'Alvenaria: caixas, telas e impressoras', c: '#EFEFEF', photos: 11, x: 0.55, z: 0, w: 3.5, d: 0.46, h: 2.3, face: 's', kind: 'alvenaria', fill: 'alvenaria' },
-  { id: 'A', name: 'Placas e eletrônica', c: '#345AFA', photos: 5, x: 4.12, z: 0.75, w: 0.48, d: 2.2, h: 2.05, lv: 5, face: 'w', kind: 'tela', fill: 'placas' },
-  { id: 'B', name: 'Fontes de energia', c: '#E79C2A', photos: 2, x: 4.12, z: 2.95, w: 0.48, d: 1.7, h: 2.05, lv: 5, face: 'w', kind: 'tela', fill: 'fontes' },
-  { id: 'K', name: 'Cestos de cabos', c: '#9d9daa', photos: 0, x: 4.04, z: 5.6, w: 0.56, d: 1.12, h: 1.75, face: 'w', kind: 'cestos', fill: 'cabos' },
-  { id: 'I', name: 'Contadoras de cédulas e moedas', c: '#DA1476', photos: 4, x: 1.55, z: 0.95, w: 0.5, d: 3.6, h: 2.0, lv: 5, face: 'w', kind: 'metal', fill: 'contadoras' },
-  { id: 'J', name: 'Garra e mecânica', c: '#C31634', photos: 8, x: 2.05, z: 0.95, w: 0.5, d: 3.6, h: 2.0, lv: 5, face: 'e', kind: 'metal', fill: 'garra' },
-  { id: 'C', name: 'TI e computadores', c: '#6EF2FF', photos: 5, x: 0, z: 0.6, w: 0.5, d: 1.6, h: 2.05, lv: 5, face: 'e', kind: 'metal', fill: 'pcs' },
-  { id: 'D', name: 'Visores e câmeras', c: '#D94BFA', photos: 4, x: 0, z: 2.2, w: 0.5, d: 1.2, h: 2.05, lv: 5, face: 'e', kind: 'metal', fill: 'visores' },
-  { id: 'E', name: 'Pagamento: moedeiros e noteiros', c: '#9a5cff', photos: 2, x: 0, z: 3.4, w: 0.5, d: 1.1, h: 2.05, lv: 5, face: 'e', kind: 'metal', fill: 'pagamento' },
-  { id: 'F', name: 'Iluminação e LED', c: '#FFFF3C', photos: 6, x: 0, z: 4.5, w: 0.5, d: 1.5, h: 2.05, lv: 5, face: 'e', kind: 'metal', fill: 'led' },
-  { id: 'G', name: 'Rede, DVR e estabilizadores', c: '#7f9bff', photos: 5, x: 0, z: 6.0, w: 0.5, d: 1.4, h: 2.05, lv: 4, face: 'e', kind: 'metal', fill: 'rede' },
+  { id: 'H', name: 'Alvenaria: caixas, telas e impressoras', c: '#EFEFEF', photos: 11 },
+  { id: 'I', name: 'Contadoras de cédulas e moedas', c: '#DA1476', photos: 4 },
+  { id: 'J', name: 'Garra e mecânica', c: '#C31634', photos: 8 },
+  { id: 'B', name: 'Fontes de energia', c: '#E79C2A', photos: 2 },
+  { id: 'K', name: 'Cestos de cabos', c: '#9d9daa', photos: 0 },
+  { id: 'C', name: 'TI e computadores', c: '#6EF2FF', photos: 5 },
+  { id: 'A', name: 'Placas e eletrônica', c: '#345AFA', photos: 5 },
+  { id: 'D', name: 'Visores e câmeras', c: '#D94BFA', photos: 4 },
+  { id: 'E', name: 'Pagamento: moedeiros e noteiros', c: '#9a5cff', photos: 2 },
+  { id: 'G', name: 'Rede, DVR e estabilizadores', c: '#7f9bff', photos: 5 },
+  { id: 'F', name: 'Iluminação e LED', c: '#FFFF3C', photos: 6 },
 ];
+const LV4 = [.1, .46, .86, 1.26], LV5 = [.1, .46, .86, 1.26, 1.66];
+export const UNITS = [
+  { key: 'H', id: 'H', kind: 'alvenaria', x: 0, z: 0, w: 3.9, d: .46, h: 1.95, top: 2.42, face: 's' },
+  // parede esquerda
+  { key: 'G', id: 'G', kind: 'metal', x: 0, z: .56, w: .5, d: 1.4, h: 2.02, face: 'e', lv: LV4, fill: ['rede', 'rede', 'rede', 'redeTopo'], roof: 'paineis' },
+  { key: 'F', id: 'F', kind: 'metal', x: 0, z: 1.98, w: .5, d: 1.05, h: 2.02, face: 'e', lv: LV4, fill: ['refletores', 'led', 'led', 'caixasAltas'], roof: 'bandeja' },
+  { key: 'E3', kind: 'metal', x: 0, z: 3.05, w: .5, d: 1, h: 2.02, face: 'e', lv: LV4, fill: ['visores', 'visores', 'pagamento', 'chaveadas'], bands: [['D', 0, 1], ['E', 2, 2], ['B', 3, 3]], roof: 'caixaBaixa' },
+  { key: 'E4', kind: 'metal', x: 0, z: 4.07, w: .5, d: .95, h: 2.02, face: 'e', lv: LV4, fill: ['chao', 'placas', 'placas', 'atx'], bands: [['A', 0, 2], ['B', 3, 3]], roof: 'caixaJca' },
+  // fileira do meio
+  { key: 'C', id: 'C', kind: 'metal', x: 1.6, z: 1.3, w: .55, d: 1.35, h: 2.02, face: 'e', lv: [.1, .56, 1.04, 1.52], fill: 'pcs', roof: 'caixasEmPe' },
+  { key: 'M1', kind: 'metal', x: 1.6, z: 2.67, w: .55, d: 1.05, h: 2.02, face: 'e', lv: LV5, fill: 'diversos', roof: 'espuma' },
+  { key: 'M2', id: 'A', kind: 'metal', x: 1.6, z: 3.74, w: .55, d: 1.15, h: 2.02, face: 'e', go: 'w', lv: LV5, fill: ['adaptadores', 'placas', 'placas', 'placas', 'diversos'], roof: 'paineisFita' },
+  // parede direita
+  { key: 'I', id: 'I', kind: 'metal', x: 3.4, z: .48, w: .5, d: 2.24, h: 2.02, face: 'w', bays: 2, lv: LV5, fill: ['contadoras', 'contadoras', 'estojos', 'contadoras', 'caixas'], roof: 'potes' },
+  { key: 'J', id: 'J', kind: 'tela', x: 3.4, z: 2.74, w: .5, d: 2.46, h: 2.02, face: 'w', bays: 2, lv: LV5, fill: 'garra', roof: 'plastico' },
+  { key: 'P', kind: 'tela', sides: true, x: 3.4, z: 5.22, w: .5, d: .78, h: 2.05, face: 'w', lv: LV4, fill: 'caixinhas', roof: 'impressoras' },
+  { key: 'V', kind: 'aberta', x: 3.4, z: 6.02, w: .5, d: .93, h: 1.95, face: 'w', lv: [.1, .42, .78, 1], fill: ['caixas', 'aberta', 'aberta', 'bandeja'] },
+  { key: 'K', id: 'K', kind: 'cestos', x: 3.45, z: 6.97, w: .45, d: 1.1, h: 1.72, face: 'w', cols: 2, rows: 6 },
+  { key: 'K2', id: 'K', kind: 'cestos', x: 2.88, z: 7.75, w: .55, d: .45, h: 1.16, face: 'n', cols: 1, rows: 4, step: true },
+];
+/* Onde fica cada letra: uma ou mais caixas { x, z, w, d, y0, y1, face, kind }. A primeira é a principal (etiqueta, câmera e rota).
+   Faixas iguais em móveis encostados (as fontes de B) viram uma caixa só. */
+export const ZONES = {};
+for (const u of UNITS) {
+  const top = u.top || u.h + (u.roof ? .34 : .04);
+  const add = (id, y0, y1, whole) => {
+    const list = ZONES[id] ||= [], z = { x: u.x, z: u.z, w: u.w, d: u.d, y0, y1, face: u.go || u.face, kind: u.kind }, p = list[list.length - 1];
+    if (p && p.x === z.x && p.w === z.w && p.y0 === y0 && p.y1 === y1 && Math.abs(p.z + p.d - z.z) < .05) return void (p.d = z.z + z.d - p.z);
+    const i = list.findIndex(q => !q.whole); z.whole = whole;
+    list.splice(whole && i >= 0 ? i : list.length, 0, z);                  // o móvel inteiro vem antes das faixas
+  };
+  if (u.id) add(u.id, 0, top, true);
+  for (const [id, a, b] of u.bands || []) add(id, a ? u.lv[a] - .04 : 0, b + 1 < u.lv.length ? u.lv[b + 1] - .04 : top, false);
+}
 /* O que não é estante mas aparece nas fotos (também em metros). */
 export const PROPS = {
-  pilha: { x: 2.75, z: 4.7, w: 0.76, d: 0.76, h: 2.45 },                 // caixas embrulhadas em filme, na cabeça da fileira do meio
-  moldura: { x: 4.12, z: 4.66, w: 0.48, d: 0.92, h: 2.05 },              // estante vazia, só a armação
-  fliperamas: [{ x: 2.45, z: 5.95, w: 1.45, d: 0.56, h: 0.72 }, { x: 2.45, z: 6.6, w: 1.45, d: 0.56, h: 0.72 }],
-  escada: { x: 2.55, z: 5.55 },
-  cadeira: { x: 1.05, z: 5.5 },
-  ar: { z: 6.1, y: 2.35 },                                               // ar-condicionado na parede direita (leste)
-  luzes: [[1.1, 1.9], [3.3, 1.9], [1.1, 4.6], [3.3, 3.9], [2.0, 6.7]],
-  soltas: [[3.5, 5.0], [1.2, 5.2], [3.0, 0.65]],                          // caixas no chão
-  caixotes: [[3.75, 7.25], [4.25, 7.2]],                                  // caixotes pretos no canto da porta
+  pilha: { x: 1.5, z: 4.93, w: .8, d: .78, h: 2.5 },                       // caixas embrulhadas em filme, na ponta da fileira do meio
+  monte: { x: 1, z: 5.72, w: .68, d: .66, h: .42 },                        // uma das mesmas caixas no chão, na frente da porta, com uma caixa de papelão em cima
+  fliperamas: [.5, .8, 1.1, 1.4].map(x => ({ x, z: 6.98, w: .29, d: 1.2, h: .9 })),   // em pé, lado a lado, encostados na parede do ar
+  escadas: { x: .05, z: 5.07, w: .35, d: .6 },                             // escada de degraus e escada articulada, entre a última estante e a porta
+  cadeira: { x: .98, z: 1.25 },                                            // na frente da estante G
+  ar: { x: 2.33, y: 2.52 },                                                // ar-condicionado no alto da parede do ar; o cano sai pelo canto dos cestos
+  luzes: [[.95, 1.6], [2.95, 1.6], [.95, 4.1], [2.95, 4.1], [.95, 6.5], [2.95, 6.5]],
+  soltas: [[2.7, 5.78], [2.5, 6.12], [3.02, 6.42], [1.25, .95]],           // caixas no chão
+  caixotes: [[2.2, 7.18]],                                                 // caixote vermelho com cabos azuis no chão
+  caixa001: [.78, .7],                                                     // caixa preta 001 no chão, na frente da alvenaria
 };
 /* Onde cada estante aparece na foto panorâmica (api/galpao/pano.jpg), em % da largura e da altura: [x, y, largura, altura].
    É só o ponto de partida: o administrador redesenha pelo botão Ajustar do Galpão, e o que ele salvar vale no lugar disto.
-   D, E, F e I ficam atrás da pilha de caixas e da escada nesta foto, por isso não estão marcadas. */
+   A foto foi tirada da porta: à esquerda fica o móvel das fontes ATX (B) com as placas embaixo (A); no meio, a fileira do
+   meio com a estante das placas (A) na frente e os computadores (C) no fundo; à direita, os cestos (K).
+   D, E, F, G, I e J ficam fora do quadro ou atrás da pilha de caixas e da escada, por isso não estão marcadas. */
 export const PANO_RATIO = 2365 / 978;
 export const PANO = {
   B: [[0, 40, 11, 38]],
-  A: [[0, 78, 11, 22]],
-  H: [[11, 33, 4, 59], [15, 30, 4.5, 11]],
-  G: [[15, 41, 10, 59]],
-  J: [[25, 19, 11.5, 81]],
-  C: [[69, 29, 16, 71]],
+  A: [[0, 78, 11, 22], [25, 19, 11.5, 81]],
+  H: [[11, 33, 3.7, 59]],
+  C: [[14.7, 30, 4.6, 62]],
   K: [[85.5, 45, 14.5, 55]],
 };
 export const shelf = id => SHELVES.find(s => s.id === id);
