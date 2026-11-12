@@ -11,7 +11,10 @@
      e maleta de alumínio, 7681), a das placas e do domo branco (foto A1, conta como A) e a pilha embrulhada na ponta;
    - parede direita, do fundo para o ar: I (7682, 7683), J com fundo de tela (7680), a estante de tela das caixinhas com a
      CPU e as impressoras em cima, o vão aberto em cima e os cestos de cabos K até o canto (7677, 7678, 7679);
-   - parede do ar: ar-condicionado no alto, os quatro fliperamas em pé lado a lado e a coluna de cestos escalonada (7678, 7690).
+   - parede do ar: ar-condicionado no alto, os quatro fliperamas em pé lado a lado e a coluna de cestos escalonada (7678, 7690);
+   - chão: não tem caixa de papelão solta no meio. Elas ficam empilhadas ao lado dos fliperamas, do lado da porta, sem ficar
+     na frente dela (7690, confirmado pelo dono do estoque); a caixa embrulhada com uma caixa em cima fica encostada na pilha
+     (7676, 7677, 7679).
    SHELVES são as letras (o que o sistema guarda em cada peça). UNITS são os móveis de verdade: x/z = canto, w = largura (x),
    d = profundidade (z), h = altura do tampo, lv = altura de cada prateleira, face = lado da frente (n/s/e/w),
    kind = metal | tela (metal com fundo de tela) | aberta | alvenaria | cestos, fill = o que aparece em cada prateleira
@@ -68,13 +71,14 @@ for (const u of UNITS) {
 /* O que não é estante mas aparece nas fotos (também em metros). */
 export const PROPS = {
   pilha: { x: 1.5, z: 4.93, w: .8, d: .78, h: 2.5 },                       // caixas embrulhadas em filme, na ponta da fileira do meio
-  monte: { x: 1, z: 5.72, w: .68, d: .66, h: .42 },                        // uma das mesmas caixas no chão, na frente da porta, com uma caixa de papelão em cima
+  monte: { x: 1.45, z: 5.72, w: .68, d: .66, h: .42 },                     // uma das mesmas caixas no chão, encostada na pilha, com uma caixa de papelão em cima
   fliperamas: [.5, .8, 1.1, 1.4].map(x => ({ x, z: 6.98, w: .29, d: 1.2, h: .9 })),   // em pé, lado a lado, encostados na parede do ar
   escadas: { x: .05, z: 5.07, w: .35, d: .6 },                             // escada de degraus e escada articulada, entre a última estante e a porta
   cadeira: { x: .98, z: 1.25 },                                            // na frente da estante G
   ar: { x: 2.33, y: 2.52 },                                                // ar-condicionado no alto da parede do ar; o cano sai pelo canto dos cestos
   luzes: [[.95, 1.6], [2.95, 1.6], [.95, 4.1], [2.95, 4.1], [.95, 6.5], [2.95, 6.5]],
-  soltas: [[2.7, 5.78], [2.5, 6.12], [3.02, 6.42], [1.25, .95]],           // caixas no chão
+  caixas: { x: .04, z: 7.42, w: .42, d: .76 },                             // caixas de papelão empilhadas ao lado dos fliperamas, do lado da porta, sem ficar na frente dela
+  soltas: [[1.25, .95]],                                                   // caixa no chão perto da cadeira
   caixotes: [[2.2, 7.18]],                                                 // caixote vermelho com cabos azuis no chão
   caixa001: [.78, .7],                                                     // caixa preta 001 no chão, na frente da alvenaria
 };

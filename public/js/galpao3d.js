@@ -289,7 +289,7 @@ function buildProps(M, T, B, r, g) {
   const P = PROPS.pilha, px = P.x + P.w / 2, pz = P.z + P.d / 2;
   add(new THREE.BoxGeometry(P.w, P.h, P.d), M.wrap, px, P.h / 2, pz);
   add(new THREE.BoxGeometry(P.w + .03, P.h + .02, P.d + .03), M.film, px, P.h / 2 + .005, pz).castShadow = false;
-  // uma das mesmas caixas no chão, na frente da porta, com uma caixa de papelão em cima
+  // uma das mesmas caixas no chão, encostada na pilha, com uma caixa de papelão em cima
   const N = PROPS.monte, nx = N.x + N.w / 2, nz = N.z + N.d / 2, wt = T.wrap.clone(); wt.repeat.set(1, .4); wt.offset.set(0, .6); wt.needsUpdate = true;
   add(new THREE.BoxGeometry(N.w, N.h, N.d), new THREE.MeshStandardMaterial({ map: wt, roughness: .35, metalness: .05 }), nx, N.h / 2, nz);
   add(new THREE.BoxGeometry(N.w + .03, N.h + .02, N.d + .03), M.film, nx, N.h / 2 + .005, nz).castShadow = false;
@@ -331,8 +331,12 @@ function buildProps(M, T, B, r, g) {
   add(new THREE.CylinderGeometry(.032, .032, 1.14), M.white, w - .06, A.y - .2, l - .06 - .57).rotation.x = Math.PI / 2;
   for (const [x, z] of [[A.x + .95, l - .05], [w - .05, l - .32], [w - .05, l - 1.14]]) add(new THREE.BoxGeometry(.06, .1, .06), grey, x, A.y - .2, z);
   add(new THREE.CylinderGeometry(.012, .012, A.y - .15), M.white, A.x + .52, (A.y - .15) / 2, l - .03);
-  // no chão: caixas soltas, o caixote vermelho com cabos azuis, um pote transparente e a caixa preta 001
+  // no chão: a caixa perto da cadeira, as caixas de papelão empilhadas ao lado dos fliperamas (do lado da porta, sem ficar na
+  // frente dela), o caixote vermelho com cabos azuis, um pote transparente e a caixa preta 001
   PROPS.soltas.forEach(([x, z]) => B.add('card', x, 0, z, .42 + r() * .1, .28 + r() * .08, .36, pick(r, CARD), r() * .4));
+  { const K = PROPS.caixas, kx = K.x + K.w / 2;
+    B.add('card', kx, 0, K.z + .19, K.w, .3, .36, CARD[0], .03); B.add('card', kx - .01, .3, K.z + .19, K.w - .04, .27, .34, CARD[2], -.05);
+    B.add('card', kx - .01, 0, K.z + K.d - .19, K.w - .02, .28, .34, CARD[3], -.03); }
   PROPS.caixotes.forEach(([x, z]) => { B.add('plain', x, 0, z, .5, .3, .36, '#b8262b', .2); for (let i = 0; i < 4; i++) B.add('plain', x + (r() - .5) * .5, i < 2 ? .3 : 0, z + (r() - .5) * .3 - (i < 2 ? 0 : .32), .22, .05, .2, '#2a63d6', r() * 3); B.add('plain', x - .1, 0, z + .42, .44, .26, .32, '#dfe7ec', -.1); });
   labelBin(g, T, M, '001', V(PROPS.caixa001[0], 0, PROPS.caixa001[1]), .52, .3, 's');
 }
@@ -340,7 +344,7 @@ function buildProps(M, T, B, r, g) {
 /* ── rota: caminho mais curto na planta (grade de 10 cm) ── */
 function obstacles() {
   const o = UNITS.map(s => [s.x, s.z, s.w, s.d]);
-  for (const F of [PROPS.pilha, PROPS.monte, PROPS.escadas, ...PROPS.fliperamas]) o.push([F.x, F.z, F.w, F.d]);
+  for (const F of [PROPS.pilha, PROPS.monte, PROPS.escadas, PROPS.caixas, ...PROPS.fliperamas]) o.push([F.x, F.z, F.w, F.d]);
   return o;
 }
 function findPath(from, to) {
@@ -580,8 +584,8 @@ function stepFly() {
 export function overview(instant = false) {
   if (!R) return Promise.resolve();
   R.view = null;
-  const portrait = R.el.clientHeight > R.el.clientWidth * 1.05, far = 1.05;
-  const t = portrait ? V(ROOM.w / 2, 0, ROOM.l / 2 + .4) : V(ROOM.w / 2 + .1, .55, ROOM.l / 2 - .25);
+  const portrait = R.el.clientHeight > R.el.clientWidth * 1.05, far = 1.08;
+  const t = portrait ? V(ROOM.w / 2, 0, ROOM.l / 2 + .4) : V(ROOM.w / 2 + .05, .5, ROOM.l / 2 - .05);
   const asp = R.el.clientWidth / Math.max(1, R.el.clientHeight), dist = 5 / (Math.tan(THREE.MathUtils.degToRad(R.camera.fov / 2)) * Math.min(1, asp));
   // de fora da porta, olhando para dentro: a alvenaria no fundo e os cestos à direita, como na foto panorâmica
   const p = portrait ? t.clone().add(V(-.2, .86, .46).normalize().multiplyScalar(dist)) : V(ROOM.w / 2 - 5.6 * far, 7.6 * far, ROOM.l / 2 + 6.2 * far);
