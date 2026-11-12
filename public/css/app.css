@@ -884,4 +884,5 @@ html:not(.isAdmin) .adminOnly{display:none!important}
   .g3Prod{padding:6px}.g3Prod img,.g3Prod .ph{width:38px;height:38px}
   .g3Card dl .opt,.g3Card .g3Cap{display:none}
   .g3Tags .pvTag{font-size:11px}
+  .g3Tags .pvTag:not(.on):not(.hit):not(.red){padding:3px;gap:0}.g3Tags .pvTag:not(.on):not(.hit):not(.red) small{display:none}   /* no celular só a letra, para as etiquetas não se cobrirem */
 }

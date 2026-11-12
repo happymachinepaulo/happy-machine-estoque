@@ -272,7 +272,7 @@ async function go3d(id, pid = null) {
     const s = shelf(id);
     boxes(); chips(); side(); bar();
     if (!s) { $('#shelfPanel').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
-    await G3?.focus(id);
+    await G3?.focus(id, !!pid);
     if (pid && sel === id) { const r = G3?.route(id); if (r && card?.pid === pid) { card.meters = r.meters; cardRender(); } }
   } finally { busy = false; }
 }

@@ -63,8 +63,17 @@ const MODELS = {
   rolo: () => [.24, .05, .24, [P.ring(.09, .022, 0, 0, 0, '#ececec'), P.ring(.07, .02, 0, .03, 0, '#e2e2e2')]],
   caixa: () => [.3, .2, .25, [P.box(.3, .2, .25, 0, 0, 0, '#c49a6c'), P.box(.3, .002, .06, 0, .2, 0, '#d9bb8f'), P.box(.1, .05, .002, -.06, .07, .126, '#f3f3f3')]],
   caixaBaixa: () => [.32, .12, .24, [P.box(.32, .12, .24, 0, 0, 0, '#bf9466'), P.box(.08, .04, .002, .08, .04, .121, '#f3f3f3')]],
+  caixinha: () => [.2, .15, .2, [P.box(.2, .15, .2, 0, 0, 0, '#c7a071'), P.box(.11, .07, .002, 0, .04, .101, '#f4f4f4'), P.box(.2, .002, .04, 0, .15, 0, '#dcc199')]],
+  maleta: () => [.46, .16, .34, [P.box(.46, .16, .34, 0, 0, 0, '#c3c7cc', true), P.box(.46, .012, .345, 0, .074, 0, '#1b1b1d'), P.box(.14, .03, .02, 0, .065, .18, '#1b1b1d'), P.box(.03, .03, .01, -.14, .07, .172, '#e8e8e8', true), P.box(.03, .03, .01, .14, .07, .172, '#e8e8e8', true)]],
+  seladora: () => [.5, .13, .12, [P.box(.5, .04, .12, 0, 0, 0, '#1f55b8'), P.box(.46, .03, .05, .01, .09, 0, '#2a63d6', false, 0, 0), P.box(.04, .09, .08, -.22, .04, 0, '#1f55b8'), P.box(.4, .006, .012, .02, .04, 0, '#d9d9d9', true)]],
+  bobina: () => [.09, .08, .09, [P.cyl(.042, .08, 0, 0, 0, '#f3f3f1'), P.cyl(.012, .082, 0, 0, 0, '#8a8a8a')]],
+  adaptador: () => [.1, .06, .15, [P.box(.09, .055, .13, 0, 0, 0, '#17171a'), P.box(.02, .02, .03, 0, .02, .075, '#2a2a2e')]],
+  roloAzul: () => [.5, .27, .27, [P.cyl(.135, .5, 0, .135, 0, '#2247c9', false, 0, Math.PI / 2, 18), P.cyl(.04, .502, 0, .135, 0, '#101012', false, 0, Math.PI / 2)]],
+  estojo: () => [.1, .13, .2, [P.box(.1, .13, .2, 0, 0, 0, '#c8202a'), P.box(.1, .01, .2, 0, .085, 0, '#8f141c')]],
+  estojoRoxo: () => [.1, .13, .2, [P.box(.1, .13, .2, 0, 0, 0, '#3a2fa6'), P.box(.1, .01, .2, 0, .085, 0, '#241c74')]],
+  bandejaPreta: () => [.6, .05, .34, tray(.6, .05, .34, '#1a1a1c')],
 };
-/* o que aparece em cada tipo de estante: [modelo, peso, quantos empilhar no máximo] */
+/* o que aparece em cada tipo de prateleira: [modelo, peso, quantos empilhar no máximo, no mínimo] */
 export const MIX = {
   placas: [['placa', 5, 4], ['placaAzul', 2, 3], ['placaPreta', 2, 2], ['domo', 1, 1], ['fonte', 1, 2], ['caixaBaixa', 1, 2]],
   fontes: [['fonte', 8, 3], ['fonteChaveada', 3, 3], ['caixa', 1, 1]],
@@ -75,6 +84,19 @@ export const MIX = {
   rede: [['roteador', 4, 4], ['roteadorRoxo', 2, 3], ['dvr', 3, 3], ['caixaBranca', 2, 1], ['garrafas', 1, 1], ['caixa', 2, 2]],
   garra: [['cestoAmarelo', 4, 1], ['garra', 3, 1], ['joystick', 3, 1], ['noteiroAmarelo', 3, 2], ['pote', 2, 1], ['placa', 2, 3]],
   contadoras: [['contadora', 4, 1], ['contadoraMoeda', 3, 1], ['tuboAzul', 3, 2], ['rolo', 2, 3]],
+  estojos: [['estojo', 4, 2], ['estojoRoxo', 4, 2], ['tuboAzul', 3, 2], ['contadoraMoeda', 1, 1]],
+  redeTopo: [['caixa', 4, 3, 2], ['roteador', 4, 7, 3], ['roteadorRoxo', 2, 6, 2], ['caixaBaixa', 2, 5, 2]],
+  refletores: [['refletor', 8, 2], ['caixaBaixa', 1, 1]],
+  caixasAltas: [['caixaBaixa', 6, 6, 4], ['caixa', 3, 3, 2]],
+  caixas: [['caixa', 5, 2], ['caixaBaixa', 3, 3]],
+  chaveadas: [['fonteChaveada', 8, 9, 4], ['caixaBaixa', 2, 5, 3], ['caixinha', 2, 4, 2]],
+  atx: [['fonte', 9, 6, 3]],
+  chao: [['caixa', 5, 1], ['roloAzul', 2, 1], ['caixaBaixa', 2, 2]],
+  diversos: [['caixa', 4, 2], ['caixaBaixa', 3, 3], ['maleta', 2, 1], ['seladora', 1, 1], ['caixaBranca', 2, 1], ['pote', 1, 1]],
+  adaptadores: [['adaptador', 7, 2], ['fonte', 2, 1], ['caixaBaixa', 1, 1]],
+  caixinhas: [['caixinha', 9, 2], ['caixaBaixa', 1, 2]],
+  aberta: [['bobina', 5, 2], ['caixa', 3, 1], ['caixaBaixa', 2, 2], ['pote', 1, 1], ['caixinha', 2, 1]],
+  bandeja: [['bandejaPreta', 6, 1], ['caixinha', 1, 1]],
 };
 
 const cache = {};
@@ -104,11 +126,12 @@ export class Products {
   }
 }
 
-/* enche as prateleiras de uma estante (f = eixos da estante, levels = alturas das prateleiras) */
-export function fillProducts(s, f, levels, r, out) {
-  const mix = MIX[s.fill] || MIX.placas, yaw = Math.atan2(f.front.x, f.front.z);
+/* enche as prateleiras de um móvel (f = eixos do móvel, levels = alturas das prateleiras, roof = altura do tampo) */
+export function fillProducts(s, f, levels, r, out, roof) {
+  const yaw = Math.atan2(f.front.x, f.front.z);
   levels.forEach((y, li) => {
-    const top = li + 1 < levels.length ? levels[li + 1] - .03 : y + .42, room = top - y - .02;
+    const mix = MIX[Array.isArray(s.fill) ? s.fill[li] : s.fill] || MIX.placas;
+    const top = (li + 1 < levels.length ? levels[li + 1] : roof || y + .45) - .03, room = top - y - .02;
     let a = -f.len / 2 + .03;
     while (a < f.len / 2 - .08) {
       if (r() < .07) { a += .08 + r() * .18; continue; }               // vão vazio, como na estante de verdade
@@ -118,7 +141,7 @@ export function fillProducts(s, f, levels, r, out) {
       for (const row of rows) {
         if (row && r() < .18) continue;
         const off = row ? row * (f.dep / 2 - md.d / 2 - .015) : (f.dep - md.d) / 2 * (r() - .5) * .5;
-        const n = 1 + Math.floor(r() * Math.min(m[2], Math.floor(room / md.h)));
+        const cap = Math.max(1, Math.min(m[2], Math.floor(room / md.h))), lo = Math.min(cap, m[3] || 1), n = lo + Math.floor(r() * (cap - lo + 1));
         for (let k = 0; k < n; k++) {
           const p = f.at(a + md.w / 2 + (r() - .5) * .01, off, y + .012 + k * md.h);
           out.add(m[0], p.x, p.y, p.z, yaw + (r() - .5) * (k ? .2 : .1));
