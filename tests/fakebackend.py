@@ -107,6 +107,9 @@ class Fake:
                     r['photos'] = [{'id': ph['id'], 'is_primary': ph['is_primary'], 'storage_path': ph['storage_path'], 'thumb_path': ph.get('thumb_path')}
                                    for ph in sorted(self.photos, key=lambda x: (-x['is_primary'], x['id'])) if ph['product_id'] == r['id'] and ph['review_status'] == 'confirmada']
             return rows
+        if p == '/rest/v1/photos' and method == 'PATCH':
+            for r in self._filter(self.photos, qs): r.update(data)
+            return None
         if p == '/rest/v1/photos':
             rows = self._order(self._filter(self.photos, qs), qs); total = len(rows)
             out = [dict(r) for r in self._page(rows, qs)]

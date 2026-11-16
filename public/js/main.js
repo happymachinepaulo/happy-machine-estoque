@@ -12,6 +12,7 @@ import * as move from './move.js';
 import * as tools from './tools.js';
 import * as galpao from './galpao.js';
 import * as logs from './logs.js';
+import { fixThumbs } from './thumbs.js';
 
 const views = { painel: painel.load, estoque: null, galpao: galpao.load, pessoas: pessoas.load, fotos: revisar.load, consertos: consertos.load, manutencao: null, historico: historico.load, admin: admin.load, logs: logs.load, config: tools.loadConfig };
 const order = Object.keys(views);
@@ -75,7 +76,7 @@ async function ready() {
   splash();
   who(); show();
   await estoque.reload(false);
-  who(); moveInk();
+  who(); moveInk(); fixThumbs();
   if (ADMIN_ONLY.includes(location.hash.slice(1)) && state.me?.role !== 'admin') location.hash = 'estoque';
   else if (ADMIN_ONLY.includes(location.hash.slice(1)) && currentView !== location.hash.slice(1)) show();   // a conta só fica conhecida depois do carregamento
 }
