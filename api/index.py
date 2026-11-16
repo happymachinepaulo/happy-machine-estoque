@@ -3,7 +3,7 @@
 Desempenho: conexões HTTPS reutilizadas, validação de sessão em paralelo e com cache curto,
 consultas combinadas (produto + fotos numa só) e URLs assinadas de fotos em lote e em cache.
 """
-import os, json, io, csv, re, time, base64, secrets, hashlib, hmac, threading, unicodedata
+import os, json, io, csv, re, time, base64, secrets, hashlib, hmac, threading, unicodedata, gzip
 import http.client, urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -444,7 +444,8 @@ def holders(token):
 
 
 def pending_photos(token):
-    return len(rows('photos', token, select='id', review_status='eq.pendente'))
+    """Só o total (count=exact), sem baixar a lista inteira de fotos pendentes."""
+    return remote('/rest/v1/photos?' + urllib.parse.urlencode({'select': 'id', 'review_status': 'eq.pendente', 'limit': 1}), token=token, count=True)[1]
 
 
 def photo_rows(token, **query):
@@ -464,9 +465,13 @@ class handler(BaseHTTPRequestHandler):
 
     def respond(self, obj, status=200, ctype='application/json; charset=utf-8', extra=None, cache='private, no-store'):
         data = obj if isinstance(obj, bytes) else json.dumps(obj, ensure_ascii=False, separators=(',', ':')).encode()
+        # JSON/CSV grandes (o /api/boot leva a lista inteira de peças com links de fotos) vão com gzip: ~5x menos dados
+        packed = len(data) > 1024 and not ctype.startswith('image/') and 'gzip' in self.headers.get('Accept-Encoding', '')
+        if packed: data = gzip.compress(data, 5)
         self.send_response(status)
         self.send_header('Content-Type', ctype); self.send_header('Cache-Control', cache)
-        self.send_header('Vary', 'Authorization'); self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('Vary', 'Authorization, Accept-Encoding'); self.send_header('X-Content-Type-Options', 'nosniff')
+        if packed: self.send_header('Content-Encoding', 'gzip')
         for k, v in (extra or {}).items(): self.send_header(k, v)
         self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)
 

@@ -42,6 +42,14 @@ class API(unittest.TestCase):
     def test_health_sem_login(self): self.assertEqual(self.j('/api/health', token=False), (200, {'ok': True}))
     def test_sem_token_401(self): self.assertEqual(self.req('/api/boot', token=False)[0], 401)
 
+    def test_boot_com_gzip(self):
+        import gzip
+        r = urllib.request.Request(f'http://127.0.0.1:{self.port}/api/boot', headers={'Authorization': 'Bearer ' + fake_jwt(), 'Accept-Encoding': 'gzip'})
+        with urllib.request.urlopen(r) as x:
+            self.assertEqual(x.headers['Content-Encoding'], 'gzip'); self.assertIn('Accept-Encoding', x.headers['Vary'])
+            d = json.loads(gzip.decompress(x.read()))
+        self.assertEqual(len(d['products']), 3); self.assertEqual(d['pending_photos'], 5)
+
     def test_boot_traz_tudo_numa_chamada(self):
         s, d = self.j('/api/boot'); self.assertEqual(s, 200)
         self.assertEqual(len(d['products']), 3); self.assertEqual(d['pending_photos'], 5)
