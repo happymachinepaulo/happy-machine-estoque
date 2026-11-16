@@ -20,3 +20,5 @@ tests/*.json
 
 output/
 tmp/
+node_modules/
+dist/

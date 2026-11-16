@@ -27,6 +27,10 @@ Controle de estoque de peças. Vercel (site estático + `api/index.py`) e Supaba
 ## Rodar local (dados de demonstração)
 `python scripts/preview.py` → http://127.0.0.1:8770 (qualquer e-mail/senha; código `000000`).
 
+## Código publicado (ofuscado)
+O código legível fica em `public/`. Na Vercel, `npm run build` (arquivo `build.mjs`) gera `dist/` com o JS juntado, minificado e embaralhado, CSS minificado e sem source maps: é isso que aparece no F12. Para testar essa versão localmente: `npm install`, `npm run build` e `python scripts/preview.py --dist`.
+Ofuscar só dificulta a leitura; nada que roda no navegador fica 100% escondido. Por isso chaves secretas ficam só na API (`api/`), nunca em `public/`.
+
 ## Testes
 `cd tests && python -m unittest test_api`
 
