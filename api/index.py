@@ -424,6 +424,8 @@ def catalogue(token):
         firsts.append(p)
     with_urls(firsts, token, key='_path', thumb='_thumb')
     for p in firsts:
+        # sem miniatura o site mostra a foto original (1200x1600) no card; o navegador gera a miniatura e envia (/api/photos/<id>/thumb)
+        p['needs_thumb'] = bool(p['_path'] and not p['_thumb'] and str(p['_path']).lower().endswith(('.jpg', '.jpeg', '.png', '.webp')))
         p['photo'] = p.pop('thumb'); p.pop('url', None); p.pop('_path', None); p.pop('_thumb', None)
         p['notes'] = (p.get('notes') or '')[:220]; p.setdefault('location', '')
     return firsts
@@ -687,6 +689,19 @@ class handler(BaseHTTPRequestHandler):
             except APIError: thumb_path = None
         return path, thumb_path
 
+    def save_thumb(self, photo_id):
+        """Guarda a miniatura (480 px) que o navegador gerou de uma foto antiga que não tinha."""
+        _, _, thumb = self.multipart()
+        if not thumb or thumb['mime'] != 'image/jpeg' or len(thumb['data']) > 300_000: raise APIError('Miniatura inválida.')
+        found = remote('/rest/v1/photos?' + urllib.parse.urlencode({'select': 'id,storage_path,thumb_path', 'id': 'eq.' + str(photo_id)}), token=self.auth_token)
+        if not found: raise APIError('Foto não encontrada.', 404)
+        ph = found[0]
+        if ph.get('thumb_path'): return {'id': photo_id, 'thumb': sign_paths([ph['thumb_path']], self.auth_token).get(ph['thumb_path'])}
+        name = 'thumbs/' + re.sub(r'[^A-Za-z0-9_-]', '', ph['storage_path'].rsplit('/', 1)[-1].rsplit('.', 1)[0])[:80] + f'-{photo_id}.jpg'
+        remote('/storage/v1/object/stock-photos/' + name, 'POST', thumb['data'], service=True, headers={'Content-Type': 'image/jpeg', 'x-upsert': 'true'})
+        remote('/rest/v1/photos?' + urllib.parse.urlencode({'id': 'eq.' + str(photo_id), 'thumb_path': 'is.null'}), 'PATCH', {'thumb_path': name}, service=True)
+        return {'id': photo_id, 'thumb': sign_paths([name], self.auth_token).get(name)}
+
     def drop_photos(self, *paths):
         paths = [p for p in paths if p]
         if paths:
@@ -775,6 +790,8 @@ class handler(BaseHTTPRequestHandler):
             payload = {'holder_id': int(path.split('/')[3]), 'amount': integer(body.get('amount', ''), 1), 'destination': clean_text(body.get('destination'), 120), 'note': clean_text(body.get('note'), 180)}
             if not payload['destination']: raise APIError('Informe onde a peça foi usada.')
             return self.respond(self.stock_command('holder_consume', pid, payload))
+        if re.fullmatch(r'/api/photos/\d+/thumb', path):
+            return self.respond(self.save_thumb(int(path.split('/')[3])))
         if re.fullmatch(r'/api/photos/\d+/review', path):
             return self.respond(self.stock_command('review_photo', int(path.split('/')[3]), self.json_body()))
         raise APIError('Rota não encontrada.', 404)

@@ -50,6 +50,18 @@ class API(unittest.TestCase):
             d = json.loads(gzip.decompress(x.read()))
         self.assertEqual(len(d['products']), 3); self.assertEqual(d['pending_photos'], 5)
 
+    def test_miniatura_gerada_no_navegador(self):
+        self.fake.photos[0]['thumb_path'] = None
+        p1 = next(p for p in self.j('/api/boot')[1]['products'] if p['id'] == 1); self.assertTrue(p1['needs_thumb'])
+        b = 'xXx'; jpg = b'\xff\xd8\xff' + b'0' * 100
+        body = (f'--{b}\r\nContent-Disposition: form-data; name="thumb"; filename="t.jpg"\r\nContent-Type: image/jpeg\r\n\r\n').encode() + jpg + f'\r\n--{b}--\r\n'.encode()
+        r = urllib.request.Request(f'http://127.0.0.1:{self.port}/api/photos/1/thumb', data=body, method='POST', headers={'Authorization': 'Bearer ' + fake_jwt(), 'Content-Type': f'multipart/form-data; boundary={b}'})
+        with urllib.request.urlopen(r) as x: d = json.loads(x.read())
+        self.assertTrue(d['thumb']); path = self.fake.photos[0]['thumb_path']
+        self.assertTrue(path.startswith('thumbs/') and path.endswith('-1.jpg')); self.assertEqual(self.fake.uploads['/storage/v1/object/stock-photos/' + path], jpg)
+        api._signed.clear()
+        p1 = next(p for p in self.j('/api/boot')[1]['products'] if p['id'] == 1); self.assertFalse(p1['needs_thumb']); self.assertIn('thumbs/', p1['photo'])
+
     def test_boot_traz_tudo_numa_chamada(self):
         s, d = self.j('/api/boot'); self.assertEqual(s, 200)
         self.assertEqual(len(d['products']), 3); self.assertEqual(d['pending_photos'], 5)
