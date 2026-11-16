@@ -7,8 +7,9 @@ from http.server import ThreadingHTTPServer
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tests'))
-ap = argparse.ArgumentParser(); ap.add_argument('--fotos'); ap.add_argument('--porta', type=int, default=8770); ap.add_argument('--papel', default='admin')
+ap = argparse.ArgumentParser(); ap.add_argument('--fotos'); ap.add_argument('--porta', type=int, default=8770); ap.add_argument('--papel', default='admin'); ap.add_argument('--dist', action='store_true', help='serve dist/ (versão ofuscada, rode npm run build antes)')
 args = ap.parse_args()
+WEB = (ROOT / ('dist' if args.dist else 'public')).resolve()
 os.environ.update(SUPABASE_URL=f'http://127.0.0.1:{args.porta}', SUPABASE_ANON_KEY='sb_publishable_demo', APP_ORIGIN=f'http://127.0.0.1:{args.porta}')
 from loadapi import load
 from fakebackend import Fake
@@ -80,8 +81,8 @@ class Handler(api.handler):
         if path.startswith('/storage/v1/object/sign/stock-photos/'):
             f = files.get(path.split('/stock-photos/', 1)[1]); data = (tmp / f).read_bytes() if f else None; ctype = 'image/jpeg'
         else:
-            rel = path.lstrip('/') or 'index.html'; fp = (ROOT / 'public' / rel).resolve()
-            if not fp.is_file() or ROOT / 'public' not in fp.parents: fp = ROOT / 'public' / 'index.html'
+            rel = path.lstrip('/') or 'index.html'; fp = (WEB / rel).resolve()
+            if not fp.is_file() or WEB not in fp.parents: fp = WEB / 'index.html'
             data = fp.read_bytes(); ctype = mimetypes.guess_type(str(fp))[0] or 'application/octet-stream'
         if data is None: self.send_response(404); self.end_headers(); return
         self.send_response(200); self.send_header('Content-Type', ctype); self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)

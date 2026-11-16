@@ -1,10 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": "public",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "functions": {
     "api/index.py": {
       "maxDuration": 30,
-      "excludeFiles": "{public/**,local/**,.private/**,scripts/**,tests/**,supabase/**,migration/**,docs/**,.env*,**/__pycache__/**,**/*.zip,*.md,*.bat}"
+      "excludeFiles": "{public/**,dist/**,node_modules/**,build.mjs,package*.json,local/**,.private/**,scripts/**,tests/**,supabase/**,migration/**,docs/**,.env*,**/__pycache__/**,**/*.zip,*.md,*.bat}"
     }
   },
   "rewrites": [
